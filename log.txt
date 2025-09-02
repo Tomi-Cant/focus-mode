@@ -1,0 +1,55 @@
+Script started at 2025-08-10 19:32:46.852846
+Script started at 2025-08-10 19:33:18.755386
+Script started at 2025-08-10 19:35:36.878245
+Script started at 2025-08-10 19:42:19.305240
+    Deleted C:\Users\tomic\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup - File Explorer 2025-08-10 19:42:19.306314
+Script started at 2025-08-10 19:42:32.940452
+    Deleted Home - File Explorer 2025-08-10 19:42:32.940452
+    Deleted Epic Games Launcher 2025-08-10 19:42:33.942239
+Script started at 2025-08-10 19:45:15.098798
+    Deleted no.pyw - Visual Studio Code 2025-08-10 19:45:15.098798
+Script started at 2025-08-10 19:48:34.053639
+    Deleted no.pyw - Visual Studio Code 2025-08-10 19:48:34.054650
+Script started at 2025-08-10 19:49:18.660605
+    Deleted no.pyw - Visual Studio Code 2025-08-10 19:49:18.661605
+Script started at 2025-08-10 19:50:16.889775
+    Deleted Epic Games Launcher 2025-08-10 19:50:19.891324
+Script started at 2025-08-10 19:51:38.540383
+    Closed Epic Games Launcher 2025-08-10 19:51:53.546914
+Script started at 2025-08-10 19:56:07.425439
+Script started at 2025-08-11 15:43:54.086973
+Script started at 2025-08-11 15:45:01.615349
+Script started at 2025-08-11 15:50:42.117273
+Script started at 2025-08-11 15:50:46.732516
+Script started at 2025-08-11 15:51:26.693003
+Script started at 2025-08-11 15:52:18.483086
+|Session ended|
+Script started at 2025-08-11 15:52:20.713097
+|Session ended|
+Script started at 2025-08-11 15:56:11.802163
+|Session ended|
+Script started at 2025-08-11 15:56:50.159583
+|Session ended|
+Script started at 2025-08-11 15:57:01.856445
+|Session ended|
+Script started at 2025-08-11 16:00:18.818093
+|Session ended|
+Script started at 2025-08-11 16:01:21.222286
+|Session ended|
+Script started at 2025-08-11 16:01:29.441492
+|Session ended|
+Script started at 2025-08-11 16:13:35.493547
+|Session ended|
+Script started at 2025-08-11 16:13:36.553407
+|Session ended|
+Script started at 2025-08-11 16:13:48.214235
+|Session ended|
+Script started at 2025-08-11 16:13:49.272293
+|Session ended|
+Script started at 2025-08-11 16:14:20.269026
+|Session ended|
+Script started at 2025-08-11 16:14:43.500244
+|Session ended|
+Script started at 2025-08-12 07:46:54.946613
+    Closed Epic Games Launcher 2025-08-12 08:15:52.774285
+    Closed Steam 2025-08-12 08:16:05.783282
