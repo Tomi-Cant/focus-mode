@@ -5,7 +5,7 @@ import time
 import json
 import window_to_process
 from os.path import dirname,abspath,join
-parent_path = dirname(dirname(abspath(__file__)))
+parent_path = dirname(abspath(__file__))
 path=join(parent_path,"blacklist.json")
 no_list=["Epic Games Launcher","Steam",'Minecraft Lanuncher']
 

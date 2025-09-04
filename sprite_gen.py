@@ -38,4 +38,3 @@ def generate_text(group:pygame.sprite.Group,surface:pygame.surface.Surface,text:
 class test(pygame.sprite.Sprite):
     def __init__(self,*args):
         super().__init__()
-print(generate_matrix(pygame.sprite.Group(),test,10,2,2,10,23,100,100,10))
