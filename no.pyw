@@ -7,14 +7,14 @@ import window_to_process
 from os.path import dirname,abspath,join
 parent_path = dirname(dirname(abspath(__file__)))
 path=join(parent_path,"blacklist.json")
-end_time= 14
 no_list=["Epic Games Launcher","Steam",'Minecraft Lanuncher']
 
 
 with open(path, "r",encoding="utf-8") as f:
     no_list=json.load(f)["blacklist"]
     added=json.load(f)["added_list"]
-    end_time= json.load(f)["endtime"]
+    set_hour= json.load(f)["set_hour"]
+    set_minute= json.load(f)['set_minute']
 path=join(parent_path,"log.txt")
 
 with open(path, "a") as log:
@@ -22,12 +22,12 @@ with open(path, "a") as log:
 while True:
     win =win32gui.GetForegroundWindow()
     window =win32gui.GetWindowText(win)
-    if window in no_list and datetime.datetime.now().hour < end_time :
+    if window in no_list and datetime.datetime.now()>=datetime.datetime.now().replace(hour=set_hour,minute=set_minute):
         win32gui.PostMessage(win, win32con.WM_CLOSE, 0, 0)
         with open(path, "a") as log:
             log.write(f"    Closed {window} {datetime.datetime.now()}\n")
     time.sleep(.5)
-    if datetime.datetime.now().hour >=end_time:
+    if datetime.datetime.now()>=datetime.datetime.now().replace(hour=set_hour,minute=set_minute):
         with open(path, "a") as log:
             log.write(f"|Target Time Reached|\n")
         break
