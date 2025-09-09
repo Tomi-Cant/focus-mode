@@ -11,23 +11,26 @@ no_list=["Epic Games Launcher","Steam",'Minecraft Lanuncher']
 
 
 with open(path, "r",encoding="utf-8") as f:
-    no_list=json.load(f)["blacklist"]
-    added=json.load(f)["added_list"]
-    set_hour= json.load(f)["set_hour"]
-    set_minute= json.load(f)['set_minute']
+    data=json.load(f)
+no_list=data["blacklist"]
+added=data["added_list"]
+set_hour= data["set_hour"]  
+set_minute= data['set_minute']
 path=join(parent_path,"log.txt")
-
+set_time=datetime.datetime.now().replace(hour=int(set_hour),minute=int(set_minute))
 with open(path, "a") as log:
     log.write(f"Script started at {datetime.datetime.now()}\n")
 while True:
+    curr_time=datetime.datetime.now()
     win =win32gui.GetForegroundWindow()
     window =win32gui.GetWindowText(win)
-    if window in no_list and datetime.datetime.now()>=datetime.datetime.now().replace(hour=set_hour,minute=set_minute):
-        win32gui.PostMessage(win, win32con.WM_CLOSE, 0, 0)
-        with open(path, "a") as log:
-            log.write(f"    Closed {window} {datetime.datetime.now()}\n")
-    time.sleep(.5)
-    if datetime.datetime.now()>=datetime.datetime.now().replace(hour=set_hour,minute=set_minute):
+    if  curr_time<=set_time:
+        if window in no_list:
+            win32gui.PostMessage(win, win32con.WM_CLOSE, 0, 0)
+            with open(path, "a") as log:
+                log.write(f"    Closed {window} {curr_time}\n")
+            time.sleep(.5)
+    if curr_time>=set_time:
         with open(path, "a") as log:
             log.write(f"|Target Time Reached|\n")
         break
@@ -35,10 +38,10 @@ while True:
     for i in window_to_process.check_windows(added):
         win32gui.PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
         with open(path, "a") as log:
-            log.write(f"    Closed {i['title']} {datetime.datetime.now()}\n")
+            log.write(f"    Closed {i['title']} {curr_time}\n")
         no_list.append(i['pid'])
         added.remove(i)
-    while True:
+    while no_list:
         for proc in window_to_process.process_search(no_list):
             try:
                 proc.kill()
@@ -50,5 +53,5 @@ while True:
         else:
             print(f"Process '{proc.info['name']}' not found.")
         with open(path, "a") as log:
-            log.write(f"    Closed {proc.name()} {datetime.datetime.now()}\n")
+            log.write(f"    Closed {proc.name()} {curr_time}\n")
             

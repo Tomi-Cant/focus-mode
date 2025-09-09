@@ -1,19 +1,20 @@
 import pygame
 import sys, os
 import json
+
 import new_window as nw
 import sprite_gen as sg
 from os.path import dirname,abspath,join
 from tkinter import filedialog
-
+error_text=""
 parent_path = dirname(abspath(__file__))
 path=join(parent_path,"blacklist.json")
-error=False
+
 
 with open(path, "r",encoding="utf-8") as f:
-    temp=json.load(f)
-no_list=temp['added_list']
-allowed_chars=temp['allowed_chars']
+    session_temp=json.load(f)
+no_list=session_temp['added_list']
+allowed_chars=session_temp['allowed_chars']
 pygame.init()
 
 screen = pygame.display.set_mode((800, 800))
@@ -24,8 +25,8 @@ clock = pygame.time.Clock()
 
 font = pygame.font.SysFont("Arial", 20)
 
-class button(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color, text,func,args=None):
+class Button(pygame.sprite.Sprite):
+    def __init__(self, x, y, width, height, color, text:str,func,args=None):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([width, height])
         self.image.fill(color)
@@ -57,7 +58,7 @@ class button(pygame.sprite.Sprite):
         self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
 
 
-class text_edit(button):
+class Text_Edit(Button):
     
     def __init__(self, x, y, width, height, color, text):
         super().__init__(x, y, width, height, color, text,func=None)
@@ -78,7 +79,6 @@ class text_edit(button):
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_RETURN:
                     self.active = False
-                    self.enter(self.text)
                 if event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
                     print(f"{self.text =}")   
@@ -90,31 +90,40 @@ class text_edit(button):
         
     
     def enter(self,text):
-        no_list.append(text)
+        global error, error_text
+        if text!= "Enter Program Name":
+            no_list.append(text)
+        else:
+            error_text="Error! Please enter a program name."
+            error=True
         
 def add_to_blacklist():
     file_path = filedialog.askopenfilename(
     title="Select a file",
     filetypes=[("All files", "*.*"), ("Text files", "*.txt"), ("Executeable files", "*.exe")]
-    #TODO: convert file to something for the blacklist
-)
+    )
+    print(file_path)
 def remove_from_blacklist():
     print("remove distraction")
 def help():
     print("help")
+error=False
 def save():
-    if time_is_valid==True:
+    global error,error_text
+    valid=time_is_valid()
+    if valid:
         print("save and exit")
         exit()
     else:
-       error =True
+        print("Error")
+        error =True
+        error_text="Error! Please enter a valid time."
 
     
-    #TODO: make a time invalid message (prob with make window)
 def time_is_valid() ->bool:
     numbers=['1','2','3','4','5','6','7','8','9','0']
    
-    if 0<len(hour_box.text)<2 or 0<len(minute_box.text)<2:
+    if 0>len(hour_box.text)>2 or 0>len(minute_box.text)>2:
         return False
     combined=hour_box.text+minute_box.text
     for i in hour_box and combined:
@@ -122,37 +131,49 @@ def time_is_valid() ->bool:
             continue 
         else: 
             return False
-    if int(hour_box.text)>24 and int(minute_box.text)>59:
+    if int(hour_box.text)>24 and int(minute_box.text)>60:
         return False
-    print(len(hour_box.text),len(minute_box.text))
+    
     return True
     
 def exit():
+    session_temp['added_list']=no_list
+    session_temp['set_hour']=hour_box.text.lstrip("0") if hour_box.text.lstrip("0") !="0" else "0"
+    session_temp['set_minute']=minute_box.text.lstrip("0")if minute_box.text.lstrip("0") !="0" else "0"
     with open(path, "w",encoding="utf-8") as f:
-        json.dump(temp,f, ensure_ascii=False, indent=2)
+        json.dump(session_temp,f, ensure_ascii=False, indent=2)
     pygame.quit()
     sys.exit()
     
 def enter():
     distraction_input.enter(distraction_input.text)
 buttons = pygame.sprite.Group()
-buttons.add(button(100, 50, 175, 50, (255,0,0), "Add To List",add_to_blacklist))
-buttons.add(button(100, 150, 175, 50, (255,0,0), "Remove From List",remove_from_blacklist))
-buttons.add(button(100, 250, 175, 50, (255,0,0), "Help",help))
-buttons.add(button(100, 350, 175, 50, (255,0,0), "Save & Exit",save))
-buttons.add(button(100, 450, 175, 50, (255,0,0), "Enter",enter))
-distraction_input=text_edit(133,550,251,50,(255,255,255),"Enter Program Name")
-hour_box=text_edit(100,650,175,50,(255,255,255),temp['set_hour'])
-minute_box=text_edit(300,650,175,50,(255,255,255),temp['set_minute'])
+buttons.add(Button(100, 50, 175, 50, (255,0,0), "Add To List",add_to_blacklist))
+buttons.add(Button(100, 150, 175, 50, (255,0,0), "Remove From List",remove_from_blacklist))
+buttons.add(Button(100, 250, 175, 50, (255,0,0), "Help",help))
+buttons.add(Button(100, 350, 175, 50, (255,0,0), "Save & Exit",save))
+buttons.add(Button(100, 450, 175, 50, (255,0,0), "Enter",enter))
+distraction_input=Text_Edit(133,550,251,50,(255,255,255),"Enter Program Name")
+hour_box=Text_Edit(150,650,75,50,(255,255,255),session_temp['set_hour'])
+minute_box=Text_Edit(45,650,75,50,(255,255,255),session_temp['set_minute'])
 text_boxes= pygame.sprite.Group()
 text_boxes.add(distraction_input,hour_box,minute_box)
+error_message=nw.Popup_Window(250,400,400,150,(0,0,0),"Error!") 
+
+frames=0
 def draw():
-    screen.blit(font.render("Focus Mode", True, (255, 255, 255)), (100, 100))
+    global frames,error
     screen.fill((75,75,75))
     buttons.draw(screen)        
     text_boxes.draw(screen)
-    if error:
-         nw.new_window(400,400,325,150,(255,255,255),"Error!") 
+    if error and frames<210:
+        screen.blit(error_message.image,error_message.rect)
+        error_message.update([error_text])
+        frames+=1
+    if frames>=210:
+        frames=0
+        
+        error=False
    # sg.generate_line(buttons,button,1,400,50,175,50,0,0,color=(255,0,0),text="Set Hours")
     pygame.display.update()
     clock.tick(60)

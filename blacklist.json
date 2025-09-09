@@ -1,5 +1,9 @@
 {
   "_comment": "Dont go editing this file, it defeats the purpose of the program",
+  "blacklist": [],
+  "added_list": [],
+  "set_hour": "15",
+  "set_minute": "21",
   "allowed_chars": [
     " ",
     "!",
@@ -1105,9 +1109,5 @@
     "ꭦ",
     "ꭧ",
     "ꭨ"
-  ],
-  "blacklist": [],
-  "added_list": [],
-  "set_hour": "0",
-  "set_minute": "0"
+  ]
 }
