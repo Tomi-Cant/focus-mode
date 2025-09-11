@@ -1,5 +1,5 @@
 import pygame
-import sys, os
+import sys, os, random
 import json
 
 import new_window as nw
@@ -15,18 +15,27 @@ with open(path, "r",encoding="utf-8") as f:
     session_temp=json.load(f)
 no_list=session_temp['added_list']
 allowed_chars=session_temp['allowed_chars']
+json_blacklist=session_temp['blacklist']
+sent_list=json_blacklist+no_list
+sent_list.sort()
+while len(sent_list)<20:
+    test=random.randint(0,244)
+    sent_list.append(str(test))
+list_end=15
+
 pygame.init()
 
-screen = pygame.display.set_mode((800, 800))
+screen = pygame.display.set_mode((800, 700))
 
 pygame.display.set_caption("Focus Mode")
 
 clock = pygame.time.Clock()
 
 font = pygame.font.SysFont("Arial", 20)
+large_font = pygame.font.SysFont("Arial", 50)
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color, text:str,func,args=None):
+    def __init__(self, x, y, width, height, color, text:str='',func=None,args=None):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([width, height])
         self.image.fill(color)
@@ -60,54 +69,74 @@ class Button(pygame.sprite.Sprite):
 
 class Text_Edit(Button):
     
-    def __init__(self, x, y, width, height, color, text):
-        super().__init__(x, y, width, height, color, text,func=None)
+    def __init__(self, x, y, width, height, color, text,muteable=True):
+        super().__init__(x, y, width, height, color, text)
         self.active = False
-        
+        self.muteable=muteable
     def update(self,event,pos):
         if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
             self.active = not self.active
             super().update(event,pos)
-        if not self.rect.collidepoint(pos):
+        if not self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
             self.active = False
             self.color = (255,255,255)
         if self.active:
             self.color = (0,0,255)
-            if event.type == pygame.KEYUP:
-                if pygame.key.name(event.key) in allowed_chars:
-                    self.text += pygame.key.name(event.key)
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_RETURN:
-                    self.active = False
-                if event.key == pygame.K_BACKSPACE:
-                    self.text = self.text[:-1]
-                    print(f"{self.text =}")   
+            if self.muteable:
+                if event.type == pygame.KEYUP:
+                    if pygame.key.name(event.key) in allowed_chars:
+                        self.text += pygame.key.name(event.key)
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_RETURN:
+                        self.active = False
+                    if event.key == pygame.K_BACKSPACE:
+                        self.text = self.text[:-1]
+                        print(f"{self.text =}")   
         elif not self.active:
             self.color = (255,255,255)
             self.image.fill(self.color)
         self.text_sur = self.font.render(self.text, True, (0,0,0))
         self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
         
-    
-    def enter(self,text):
+    def enter(self,text)-> bool:
         global error, error_text
         if text!= "Enter Program Name":
             no_list.append(text)
+            return True
         else:
             error_text="Error! Please enter a program name."
             error=True
-        
+            return False
+
+
+def shorten(text:str,box_width:int)-> str:
+    render=font.render(text,True,(255,255,255))
+    while render.get_width()>box_width:
+        text=text[:-1]
+        render=font.render(text+'...',True,(255,255,255))
+    text=text.rstrip()
+    text=text+'...'
+    return text
+
 def add_to_blacklist():
+    global sent_list
     file_path = filedialog.askopenfilename(
     title="Select a file",
     filetypes=[("All files", "*.*"), ("Text files", "*.txt"), ("Executeable files", "*.exe")]
     )
     print(file_path)
+    file_path=file_path.split("\\")[-1]
+    
+    sent_list.append(file_path)
+    
 def remove_from_blacklist():
     print("remove distraction")
+    
 def help():
     print("help")
+    
 error=False
+
 def save():
     global error,error_text
     valid=time_is_valid()
@@ -119,7 +148,6 @@ def save():
         error =True
         error_text="Error! Please enter a valid time."
 
-    
 def time_is_valid() ->bool:
     numbers=['1','2','3','4','5','6','7','8','9','0']
    
@@ -146,52 +174,68 @@ def exit():
     sys.exit()
     
 def enter():
-    distraction_input.enter(distraction_input.text)
+   if distraction_input.enter(distraction_input.text):
+       sent_list.append(distraction_input.text)
+    
+blacklist=pygame.sprite.Group()
+gui_blacklist=sg.generate_line(blacklist,Text_Edit,list_end,550,25,350,45,None,46,True,text=sent_list[list_end-15:list_end],color=(255,255,255),muteable=False)
 buttons = pygame.sprite.Group()
 buttons.add(Button(100, 50, 175, 50, (255,0,0), "Add To List",add_to_blacklist))
 buttons.add(Button(100, 150, 175, 50, (255,0,0), "Remove From List",remove_from_blacklist))
 buttons.add(Button(100, 250, 175, 50, (255,0,0), "Help",help))
 buttons.add(Button(100, 350, 175, 50, (255,0,0), "Save & Exit",save))
 buttons.add(Button(100, 450, 175, 50, (255,0,0), "Enter",enter))
+
 distraction_input=Text_Edit(133,550,251,50,(255,255,255),"Enter Program Name")
 hour_box=Text_Edit(150,650,75,50,(255,255,255),session_temp['set_hour'])
 minute_box=Text_Edit(45,650,75,50,(255,255,255),session_temp['set_minute'])
 text_boxes= pygame.sprite.Group()
 text_boxes.add(distraction_input,hour_box,minute_box)
-error_message=nw.Popup_Window(250,400,400,150,(0,0,0),"Error!") 
 
+error_message=nw.Popup_Window(250,400,400,150,(0,0,0),"Error!") 
 frames=0
+
 def draw():
     global frames,error
     screen.fill((75,75,75))
     buttons.draw(screen)        
     text_boxes.draw(screen)
+    gui_blacklist.draw(screen)
+    time_sep=large_font.render(":",True,(0,0,0))
+    screen.blit(time_sep,(87,615))
     if error and frames<210:
         screen.blit(error_message.image,error_message.rect)
         error_message.update([error_text])
         frames+=1
     if frames>=210:
         frames=0
-        
         error=False
    # sg.generate_line(buttons,button,1,400,50,175,50,0,0,color=(255,0,0),text="Set Hours")
     pygame.display.update()
     clock.tick(60)
     
-def main():
-    while True:
-        pos=pygame.mouse.get_pos()
-        for event in pygame.event.get():
-            buttons.update(event=event,pos=pos)
-            text_boxes.update(pos=pos,event=event)
-            if event.type == pygame.QUIT:
-               save()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                   save()
-        draw()
+
+while True:
+    draw()
+    pos=pygame.mouse.get_pos()
+    for event in pygame.event.get():
+        buttons.update(event=event,pos=pos)
+        text_boxes.update(pos=pos,event=event)
+        gui_blacklist.update(pos=pos,event=event)
+        if event.type == pygame.QUIT:
+            save()
+        if event.type == pygame.MOUSEWHEEL:
+            print(event.y)
+            if event.y==1 and list_end>15: #going up the list/ up the screen
+                list_end-=1
+            elif event.y==-1 and list_end<len(sent_list): #going down the list/ down the screen
+                list_end+=1
+                
+            gui_blacklist=sg.generate_line(blacklist,Text_Edit,15,550,25,350,45,None,46,True,text=sent_list[list_end-15:list_end],color=(255,255,255),muteable=False)
         
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                save()
+    draw()
+    
 
-
-if __name__ == "__main__":
-    main()  

@@ -16,13 +16,25 @@ def generate_matrix(group:pygame.sprite.Group,obj,num:int,rows:int,x,y,width,hei
     return group,matrix
 
 def generate_line(group:pygame.sprite.Group,obj,num:int,x,y,width,height,x_step,y_step,up_down:bool=False,**kwargs)-> pygame.sprite.Group:
-    #change to choose direction up/down or left/right
-    for sprite in range(num):
-        group.add(obj(x,y,width,height,**kwargs))
-        if up_down:
-            y+=y_step
-        else:
-            x+=x_step
+    
+    if kwargs['text']:
+        given_text=kwargs['text']
+        print(given_text)
+        kwargs.pop('text')
+        for sprite in range(num):
+           
+            group.add(obj(x,y,width,height,**kwargs,text=" "+given_text[sprite]))
+            if up_down:
+                y+=y_step
+            else:
+                x+=x_step
+    else:
+        for sprite in range(num):
+            group.add(obj(x,y,width,height,**kwargs))
+            if up_down:
+                y+=y_step
+            else:
+                x+=x_step
     return group
 # make def for text
 def generate_text(group:pygame.sprite.Group,surface:pygame.surface.Surface,text:str,x,y,width,height,x_step,y_step,updown:bool=True,**kwargs):
