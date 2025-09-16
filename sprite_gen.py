@@ -16,10 +16,9 @@ def generate_matrix(group:pygame.sprite.Group,obj,num:int,rows:int,x,y,width,hei
     return group,matrix
 
 def generate_line(group:pygame.sprite.Group,obj,num:int,x,y,width,height,x_step,y_step,up_down:bool=False,**kwargs)-> pygame.sprite.Group:
-    
+    #checks if text is passed then iterates through each one if a list is given
     if kwargs['text']:
         given_text=kwargs['text']
-        print(given_text)
         kwargs.pop('text')
         for sprite in range(num):
            

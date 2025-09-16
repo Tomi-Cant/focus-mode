@@ -53,7 +53,8 @@ class Button(pygame.sprite.Sprite):
         if self.rect.collidepoint(pos):
             self.color = (0,0,200)
             self.image.fill(self.color)
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            # checks for a function and executes it with or without its params
+            if event.type == pygame.MOUSEBUTTONDOWN: 
                 if self.args != None and self.func != None:
                     self.func(self.args)
                 elif self.func != None:
@@ -76,12 +77,13 @@ class Text_Edit(Button):
     def update(self,event,pos):
         if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
             self.active = not self.active
-            super().update(event,pos)
+            super().update(event,pos) #calls button update method
         if not self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
             self.active = False
             self.color = (255,255,255)
         if self.active:
             self.color = (0,0,255)
+            # checks if meant to be a static textbox
             if self.muteable:
                 if event.type == pygame.KEYUP:
                     if pygame.key.name(event.key) in allowed_chars:
@@ -97,7 +99,7 @@ class Text_Edit(Button):
             self.image.fill(self.color)
         self.text_sur = self.font.render(self.text, True, (0,0,0))
         self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
-        
+    # meant for specific textboxes
     def enter(self,text)-> bool:
         global error, error_text
         if text!= "Enter Program Name":
@@ -108,7 +110,7 @@ class Text_Edit(Button):
             error=True
             return False
 
-
+    #condesnses text till it can fit within the given constraints of the surface
 def shorten(text:str,box_width:int)-> str:
     render=font.render(text,True,(255,255,255))
     while render.get_width()>box_width:
@@ -117,16 +119,17 @@ def shorten(text:str,box_width:int)-> str:
     text=text.rstrip()
     text=text+'...'
     return text
-
+# takes user into file explorer and parses the executable from the output
 def add_to_blacklist():
     global sent_list
     file_path = filedialog.askopenfilename(
+        initialdir=parent_path[0:3]+"Program Files",
     title="Select a file",
-    filetypes=[("All files", "*.*"), ("Text files", "*.txt"), ("Executeable files", "*.exe")]
+    filetypes=[ ("Executeable files", "*.exe"),("All files", "*.*")]
     )
     print(file_path)
-    file_path=file_path.split("\\")[-1]
-    
+    file_path=file_path.split("/")[-1]
+    print(file_path)
     sent_list.append(file_path)
     
 def remove_from_blacklist():
@@ -149,6 +152,7 @@ def save():
         error_text="Error! Please enter a valid time."
 
 def time_is_valid() ->bool:
+    # insures that the input is a number and that is within the range of timedate
     numbers=['1','2','3','4','5','6','7','8','9','0']
    
     if 0>len(hour_box.text)>2 or 0>len(minute_box.text)>2:
@@ -165,6 +169,8 @@ def time_is_valid() ->bool:
     return True
     
 def exit():
+    #no direct links to the program other than through 
+    # save to ensure the data doesnt have to be rentered
     session_temp['added_list']=no_list
     session_temp['set_hour']=hour_box.text.lstrip("0") if hour_box.text.lstrip("0") !="0" else "0"
     session_temp['set_minute']=minute_box.text.lstrip("0")if minute_box.text.lstrip("0") !="0" else "0"
@@ -178,6 +184,7 @@ def enter():
        sent_list.append(distraction_input.text)
     
 blacklist=pygame.sprite.Group()
+# generates the right hand list that displays the banned list of programs.
 gui_blacklist=sg.generate_line(blacklist,Text_Edit,list_end,550,25,350,45,None,46,True,text=sent_list[list_end-15:list_end],color=(255,255,255),muteable=False)
 buttons = pygame.sprite.Group()
 buttons.add(Button(100, 50, 175, 50, (255,0,0), "Add To List",add_to_blacklist))
@@ -203,6 +210,7 @@ def draw():
     gui_blacklist.draw(screen)
     time_sep=large_font.render(":",True,(0,0,0))
     screen.blit(time_sep,(87,615))
+    # makes an error popup with a dynamic message that lasts for 3 seconds
     if error and frames<210:
         screen.blit(error_message.image,error_message.rect)
         error_message.update([error_text])
@@ -210,7 +218,6 @@ def draw():
     if frames>=210:
         frames=0
         error=False
-   # sg.generate_line(buttons,button,1,400,50,175,50,0,0,color=(255,0,0),text="Set Hours")
     pygame.display.update()
     clock.tick(60)
     

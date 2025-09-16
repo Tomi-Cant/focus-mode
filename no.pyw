@@ -10,7 +10,7 @@ path=join(parent_path,"blacklist.json")
 no_list=["Epic Games Launcher","Steam",'Minecraft Lanuncher']
 
 
-with open(path, "r",encoding="utf-8") as f:
+with open(path, "r",encoding="utf-8") as f: # json data collect
     data=json.load(f)
 no_list=data["blacklist"]
 added=data["added_list"]
@@ -20,7 +20,7 @@ path=join(parent_path,"log.txt")
 set_time=datetime.datetime.now().replace(hour=int(set_hour),minute=int(set_minute))
 with open(path, "a") as log:
     log.write(f"Script started at {datetime.datetime.now()}\n")
-while True:
+while True: #old method for titles
     curr_time=datetime.datetime.now()
     win =win32gui.GetForegroundWindow()
     window =win32gui.GetWindowText(win)
@@ -35,14 +35,14 @@ while True:
             log.write(f"|Target Time Reached|\n")
         break
     
-    for i in window_to_process.check_windows(added):
+    for i in window_to_process.check_windows(added): # converts application titles to their .exe counterpart (untested)
         win32gui.PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
         with open(path, "a") as log:
             log.write(f"    Closed {i['title']} {curr_time}\n")
         no_list.append(i['pid'])
         added.remove(i)
-    while no_list:
-        for proc in window_to_process.process_search(no_list):
+    while no_list: #newer process based method
+        for proc in window_to_process.process_search(no_list): #checks if process is banned with error catches
             try:
                 proc.kill()
                 print(f"Process '{proc}' terminated successfully.")

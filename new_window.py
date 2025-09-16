@@ -17,6 +17,7 @@ class Popup_Window(pygame.sprite.Sprite):
             self.image.blit(self.title,(125,0))
         
     def update(self,txt_lines:list[str]):
+        # used to display the error message.
         for i in txt_lines:
             temp=self.font.render(i, True, (255,255,255))
             self.image.blit(temp,temp.get_rect(topleft=(10,100)))
