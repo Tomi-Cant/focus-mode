@@ -35,7 +35,7 @@ font = pygame.font.SysFont("Arial", 20)
 large_font = pygame.font.SysFont("Arial", 50)
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color, text:str='',func=None,args=None):
+    def __init__(self, x, y, width, height, color, text:str='',func=None,args=None,text_color=(0,0,0)):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([width, height])
         self.image.fill(color)
@@ -45,60 +45,80 @@ class Button(pygame.sprite.Sprite):
         self.text=text
         self.color = color
         self.font = pygame.font.SysFont("Arial", 20)
-        self.text_sur = self.font.render(text, True, (255,255,255))  
+        self.text_sur = self.font.render(shorten(self.text,self.rect.width-10), True,(0,0,0))
+        self.text_color=text_color
         self.func =func
         self.args=args
 
-    def update(self,event,pos):
-        if self.rect.collidepoint(pos):
-            self.color = (0,0,200)
-            self.image.fill(self.color)
-            # checks for a function and executes it with or without its params
-            if event.type == pygame.MOUSEBUTTONDOWN: 
-                if self.args != None and self.func != None:
-                    self.func(self.args)
-                elif self.func != None:
-                    self.func()
-                self.color = (0,0,100)
+    def update(self,event,pos,refresh=False):
+        if not refresh:
+            if self.rect.collidepoint(pos):
+                self.color = (150,150,255)
                 self.image.fill(self.color)
+                # checks for a function and executes it with or without its params
+                if event.type == pygame.MOUSEBUTTONDOWN: 
+                    if self.args != None and self.func != None:
+                        self.func(self.args)
+                    elif self.func != None:
+                        self.func()
+                    self.color = (0,0,255)
+                    self.image.fill(self.color)
+            else:
+                self.color = (255,0,0)
+                self.image.fill(self.color)
+            self.rect = self.image.get_rect(topleft=self.rect.topleft) 
+            self.text_sur = self.font.render(shorten(self.text,self.rect.width-10), True, self.text_color)
+            self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
         else:
-            self.color = (255,0,0)
-            self.image.fill(self.color)
-        self.rect = self.image.get_rect(topleft=self.rect.topleft) 
-        self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
-
-
+            self.rect = self.image.get_rect(topleft=self.rect.topleft) 
+            self.text_sur = self.font.render(shorten(self.text,self.rect.width-10), True, self.text_color)
+            self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
 class Text_Edit(Button):
     
-    def __init__(self, x, y, width, height, color, text,muteable=True):
-        super().__init__(x, y, width, height, color, text)
+    def __init__(self, x, y, width, height, color, text,muteable=True,text_color=(0,0,0)):
+        super().__init__(x, y, width, height, color, text,func=None,args=None) 
         self.active = False
         self.muteable=muteable
+        self.text_color=text_color
+        self.back_pressed=False
     def update(self,event,pos):
+        
         if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
             self.active = not self.active
+            
             super().update(event,pos) #calls button update method
         if not self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
             self.active = False
             self.color = (255,255,255)
+        if self.back_pressed:
+                    self.text = self.text[:-1] if self.text!="Enter Program Name" else ""   
+                    self.active=True
+                    self.back_pressed=False
         if self.active:
-            self.color = (0,0,255)
+            if self.text=="Enter Program Name": 
+                self.text = ""
+            self.color = (150,150,255)
             # checks if meant to be a static textbox
-            if self.muteable:
-                if event.type == pygame.KEYUP:
+            if self.muteable:  
+                if event.type == pygame.KEYDOWN:
+                    print(f"{self.text = }")
+                    if event.key == pygame.K_BACKSPACE:
+                        self.back_pressed=True    
+                        self.active=False          
+                if event.type == pygame.KEYUP: 
                     if pygame.key.name(event.key) in allowed_chars:
                         self.text += pygame.key.name(event.key)
-                if event.type == pygame.KEYUP:
                     if event.key == pygame.K_RETURN:
                         self.active = False
-                    if event.key == pygame.K_BACKSPACE:
-                        self.text = self.text[:-1]
-                        print(f"{self.text =}")   
+                
         elif not self.active:
             self.color = (255,255,255)
             self.image.fill(self.color)
-        self.text_sur = self.font.render(self.text, True, (0,0,0))
+        super().update(event,pos,True) #calls button update method
+        self.text_sur = self.font.render(shorten(self.text,self.rect.width-10), True, self.text_color)
+        self.image.fill(self.color) #thanks copilot
         self.image.blit(self.text_sur, self.text_sur.get_rect(top=self.rect.top-self.y+40))
+        
     # meant for specific textboxes
     def enter(self,text)-> bool:
         global error, error_text
@@ -112,13 +132,17 @@ class Text_Edit(Button):
 
     #condesnses text till it can fit within the given constraints of the surface
 def shorten(text:str,box_width:int)-> str:
-    render=font.render(text,True,(255,255,255))
+    render=font.render(text,True,(0,0,0))
+    if render.get_width()<=box_width:
+        return text
     while render.get_width()>box_width:
         text=text[:-1]
-        render=font.render(text+'...',True,(255,255,255))
+        render=font.render(text+'...',True,(0,0,0))
+    
     text=text.rstrip()
     text=text+'...'
     return text
+
 # takes user into file explorer and parses the executable from the output
 def add_to_blacklist():
     global sent_list
@@ -144,7 +168,6 @@ def save():
     global error,error_text
     valid=time_is_valid()
     if valid:
-        print("save and exit")
         exit()
     else:
         print("Error")
@@ -194,8 +217,8 @@ buttons.add(Button(100, 350, 175, 50, (255,0,0), "Save & Exit",save))
 buttons.add(Button(100, 450, 175, 50, (255,0,0), "Enter",enter))
 
 distraction_input=Text_Edit(133,550,251,50,(255,255,255),"Enter Program Name")
-hour_box=Text_Edit(150,650,75,50,(255,255,255),session_temp['set_hour'])
-minute_box=Text_Edit(45,650,75,50,(255,255,255),session_temp['set_minute'])
+hour_box=Text_Edit(45,650,75,50,(255,255,255),session_temp['set_hour'])
+minute_box=Text_Edit(150,650,75,50,(255,255,255),session_temp['set_minute'])
 text_boxes= pygame.sprite.Group()
 text_boxes.add(distraction_input,hour_box,minute_box)
 
