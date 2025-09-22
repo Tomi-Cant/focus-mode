@@ -36,26 +36,28 @@
 #     text=text+'...'
 #     return text
 # print(shorten(this,200))
-import pygame
+# import pygame
 
-pygame.init()
-screen = pygame.display.set_mode((640, 480))
-clock = pygame.time.Clock()
+# pygame.init()
+# screen = pygame.display.set_mode((640, 480))
+# clock = pygame.time.Clock()
 
-def main():
-   while True:
-      for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-               pygame.quit()
-               return
-            elif event.type == pygame.MOUSEWHEEL:
-               print(event)
-               print(event.x, event.y)
-               print(event.flipped)
+# def main():
+#    while True:
+#       for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                pygame.quit()
+#                return
+#             elif event.type == pygame.MOUSEWHEEL:
+#                print(event)
+#                print(event.x, event.y)
+#                print(event.flipped)
             
-               # can access properties with
-               # proper notation(ex: event.y)
-      clock.tick(60)
+#                # can access properties with
+#                # proper notation(ex: event.y)
+#       clock.tick(60)
 
-# Execute game:
-main()
+# # Execute game:
+# main()
+from datetime import datetime
+datetime.now().replace(hour=17,minute=10)

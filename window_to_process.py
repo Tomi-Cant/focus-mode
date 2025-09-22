@@ -44,8 +44,8 @@ def enum_taskbar_windows():
     return windows
 
 # Example usage
-for w in enum_taskbar_windows():
-    print(f"{w['hwnd']:>10} | PID {w['pid']:>6} | {w['name']:<25} | {w['title']}")
+# for w in enum_taskbar_windows():
+#     print(f"{w['hwnd']:>10} | PID {w['pid']:>6} | {w['name']:<25} | {w['title']}")
    
 def check_windows(window_titles:list[str]):
     windows=enum_taskbar_windows()
