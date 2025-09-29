@@ -51,7 +51,7 @@ def check_windows(window_titles:list[str]):
     windows=enum_taskbar_windows()
     processes=[]
     for w in windows:
-        if w['title'] in window_titles:
+        if w['title'].lower() in window_titles:
             processes.append(w)
     return processes
             

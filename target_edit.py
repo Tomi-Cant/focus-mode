@@ -24,9 +24,9 @@ added_list=sorted(added_list)
 json_blacklist=sorted(json_blacklist)
 sent_list=json_blacklist+added_list
 if len(sent_list)>20:
-    sent_list.append(''*5)
+    sent_list.append(' '*5)
 while len(sent_list)<20:
-    sent_list.append('')
+    sent_list.append(' ')
 
 list_end=15
 
@@ -44,13 +44,13 @@ large_font = pygame.font.SysFont("Arial", 50)
 
 
 class Text_Edit(Button):
-    
     def __init__(self, x, y, width, height, color, text,font,muteable=True,text_color=(0,0,0)):
         super().__init__(x, y, width, height, color,font, text,func=None,args=None) 
         self.active = False
         self.muteable=muteable
         self.text_color=text_color
         self.back_pressed=False
+        self.pressed_keys=[]
     def update(self,event,pos):
         
         if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
@@ -71,17 +71,25 @@ class Text_Edit(Button):
             self.color = (150,150,255)
             # checks if meant to be a static textbox
             if self.muteable:  
+                
                 if event.type == pygame.KEYDOWN:
+                    print(self.pressed_keys)
                     print(f"{self.text = }")
                     if event.key == pygame.K_BACKSPACE:
                         self.back_pressed=True    
                         self.active=False          
-                if event.type == pygame.KEYUP: 
-                    if pygame.key.name(event.key) in allowed_chars:
+                if event.type == pygame.KEYDOWN: 
+                    self.pressed_keys.append(pygame.key.name(event.key))
+                    if pygame.key.name(event.key) in allowed_chars and "left shift" in self.pressed_keys or "right shift" in self.pressed_keys:
+                        if len(pygame.key.name(event.key))==1:
+                            self.text += pygame.key.name(event.key).upper()
+                    elif pygame.key.name(event.key) in allowed_chars and len(pygame.key.name(event.key))==1:
                         self.text += pygame.key.name(event.key)
                     if event.key == pygame.K_RETURN:
                         self.active = False
-                
+                if event.type == pygame.KEYUP: 
+                    self.pressed_keys.remove(pygame.key.name(event.key))
+                    
         elif not self.active:
             self.color = (255,255,255)
             self.image.fill(self.color)
@@ -95,6 +103,8 @@ class Text_Edit(Button):
         global error, error_text
         if text!= "Enter Program Name" or text!="":
             added_list.append(text)
+           
+            
             return True
         else:
             error_text="Error! Please enter a program name."
@@ -244,7 +254,7 @@ minute_box=Text_Edit(150,650,75,50,(255,255,255),font=font,text=session_temp['se
 text_boxes= pygame.sprite.Group()
 text_boxes.add(hour_box,minute_box)
 
-help_window=nw.Popup_Window(250,600,600,150,(0,0,0),"Help")
+help_window=nw.Popup_Window(250,600,600,150,(0,0,0),"How To Use")
 error_window=nw.Popup_Window(250,400,400,150,(0,0,0),"An error has occured!")
 window_exit_btn=Button(100,550,175,50,(255,0,0),font,"Exit",exit_window)
 frames=0
@@ -279,6 +289,12 @@ def draw():
     
 while True:
     draw()
+    added_list=sorted(added_list)
+    sent_list= json_blacklist+added_list
+    if len(sent_list)>20:
+        sent_list.append(' '*5)
+    while len(sent_list)<20:
+        sent_list.append(' ')
     pos=pygame.mouse.get_pos()
     for event in pygame.event.get():
         if time_selected:
@@ -292,7 +308,7 @@ while True:
         
         if event.type == pygame.QUIT:
             save()
-        if event.type == pygame.MOUSEWHEEL:            
+        if event.type == pygame.MOUSEWHEEL and time_selected:            
             if event.y>0 and list_end>15: #going up the list/ up the screen
                 list_end-=event.y # scales with scroll speed
                 list_end=max(list_end,15)

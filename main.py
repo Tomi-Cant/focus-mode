@@ -16,6 +16,8 @@ with open(pathjson, "r",encoding="utf-8") as f: # json data collect
     data=json.load(f)
 no_list=data["blacklist"]
 added=data["added_list"]
+for i,j in enumerate(added):
+    added[i]=j.lower()
 set_hour= data["set_hour"]  
 set_minute= data['set_minute']
 path=join(parent_path,"log.txt")
