@@ -1,13 +1,14 @@
 {
-  "blacklist": [],
   "added_list": [],
-  "removed_list": [],
-  "set_hour": "17",
-  "set_minute": "10",
-  "test": {
-    "17:10": [],
-    "17:11": [],
-    "17:12": []
+  "time_list": {
+    "17:10": {
+      "programs":[],
+      "end_time":"23:59"
+    },
+    "17:11": {"programs":[],
+      "end_time":"23:59"},
+    "17:12": {"programs":[],
+      "end_time":"23:59"}
   },
   "allowed_chars": [
     " ",

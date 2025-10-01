@@ -58,6 +58,13 @@
 #       clock.tick(60)
 
 # # Execute game:
-# main()
-from datetime import datetime
-datetime.now().replace(hour=17,minute=10)
+# # main()
+# from datetime import datetime
+# datetime.now().replace(hour=17,minute=10)
+# foo={
+# }
+# foo['a']
+# print(foo)
+s="9"
+s.capitalize()
+print(s)

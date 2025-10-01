@@ -3,7 +3,7 @@ import pygame
 class Button(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, color,font:pygame.font.Font, text:str='',func=None,args=None,text_color=(0,0,0)):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface([width, height])
+        self.image = pygame.Surface([width, height], pygame.SRCALPHA)
         self.image.fill(color)
         self.rect = self.image.get_rect()
         self.y=y

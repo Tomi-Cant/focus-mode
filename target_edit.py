@@ -1,8 +1,8 @@
-# you were about to...do help and remove
+# you were about to...do help and remove <= forgot this, did: change to the independent start and end times with 2d dicts\
 import pygame
 import sys, os
 import json
-import main
+
 from buttons import Button as Button
 import new_window as nw
 import sprite_gen as sg
@@ -11,22 +11,14 @@ from tkinter import filedialog
 error_text=""
 help_open=False
 time_selected=False
+time_var=''
 parent_path = dirname(abspath(__file__))
 path=join(parent_path,"blacklist.json")
 with open(path, "r",encoding="utf-8") as f:
     session_temp=json.load(f)
-time_group=session_temp['test']
+time_group=session_temp['time_list']
 added_list=session_temp['added_list']
-removed_list=session_temp['removed_list']
 allowed_chars=session_temp['allowed_chars']
-json_blacklist=session_temp['blacklist']
-added_list=sorted(added_list)
-json_blacklist=sorted(json_blacklist)
-sent_list=json_blacklist+added_list
-if len(sent_list)>20:
-    sent_list.append(' '*5)
-while len(sent_list)<20:
-    sent_list.append(' ')
 
 list_end=15
 
@@ -80,6 +72,7 @@ class Text_Edit(Button):
                         self.active=False          
                 if event.type == pygame.KEYDOWN: 
                     self.pressed_keys.append(pygame.key.name(event.key))
+                    #checks if shift is pressed and doesnt print shift with char (need to do number symbols)
                     if pygame.key.name(event.key) in allowed_chars and "left shift" in self.pressed_keys or "right shift" in self.pressed_keys:
                         if len(pygame.key.name(event.key))==1:
                             self.text += pygame.key.name(event.key).upper()
@@ -103,8 +96,8 @@ class Text_Edit(Button):
         global error, error_text
         if text!= "Enter Program Name" or text!="":
             added_list.append(text)
-           
-            
+            session_temp['time_list'][time_var]['programs'].append(text)
+            self.text=""
             return True
         else:
             error_text="Error! Please enter a program name."
@@ -147,8 +140,9 @@ def add_to_blacklist():
             added_list.append(file_path)
     
 def exit_window():
-    global help_open
-    help_open=False   
+    for i in windows.sprites():
+        if i.active:
+            i.active=False
 
 def remove_from_blacklist():
     selected=0
@@ -159,7 +153,7 @@ def remove_from_blacklist():
                 selected+=1
                 sent_list.remove(i.text)
                 sent_list.append('')
-                removed_list.append(i.text)
+                session_temp['time_list'][time_var]['programs'].remove(i.text)
     if selected==0:
         error_text="Error! Please select a program to remove."
         error=True
@@ -198,10 +192,20 @@ def time_is_valid() ->tuple[bool,str]:
     return True,combined
 
 def select():
-    global time_selected,error,error_text
+    global time_selected,error,error_text,sent_list,json_blacklist,added_list,time_var
     for i in gui_timelist.sprites():
         if i.active:
             time_selected=True
+            time_var=i.text
+            json_blacklist=session_temp['time_list'][time_var]['programs']
+            added_list=sorted(added_list)
+            json_blacklist=sorted(json_blacklist)
+            sent_list=json_blacklist+added_list
+            if len(sent_list)>20:
+                sent_list.append(' '*5)
+            while len(sent_list)<20:
+                sent_list.append(' ')
+            gui_blacklist=sg.generate_line(blacklist,Text_Edit,list_end,550,25,350,45,None,46,True,text=sent_list[list_end-15:list_end],color=(255,255,255),muteable=False,font=font)
             break
     if  not time_selected:
         error =True
@@ -210,13 +214,11 @@ def select():
 def back():
     global time_selected
     time_selected=False  
+    session_temp['time_list'][time_var]['end_time']=time_is_valid()[1]    
  
 def exit():
     #no direct links to the program other than through 
     # save to ensure the data doesnt have to be rentered
-    session_temp['added_list']=added_list
-    session_temp['set_hour']=hour_box.text
-    session_temp['set_minute']=minute_box.text
     
     with open(path, "w",encoding="utf-8") as f:
         json.dump(session_temp,f, ensure_ascii=False, indent=2)
@@ -227,17 +229,23 @@ def enter():
     if time_selected:
         if distraction_input.enter(distraction_input.text):
             sent_list.append(distraction_input.text)
+        if time_is_valid()[0]: 
+            if int(time_is_valid()[1][:2]) < int(hour_box.text) and int(time_is_valid()[1][:2]) < int(minute_box.text): # and not less than key time
+                session_temp['time_list'][time_var]['end_time']=time_is_valid()[1]            
     else:
-        if time_is_valid()[0] and time_is_valid()[1] not in time_group:
-            time_group[f'{hour_box.text}:{minute_box.text}']
+        if time_is_valid()[0] and time_is_valid()[1] not in time_group: # is not already a set valid time
+            time_group[f'{hour_box.text}:{minute_box.text}']={
+                "programs":[],
+                "end_time":"23:59"
+                }
 
 gui_timelist=pygame.sprite.Group()
 gui_timelist.add(sg.generate_line(gui_timelist,Text_Edit,len(time_group),550,25,350,45,None,46,True,text=list(time_group.keys()),color=(255,255,255),muteable=False,font=font))
 # generates the right hand list that displays the banned list of programs.
 blacklist=pygame.sprite.Group()
-gui_blacklist=sg.generate_line(blacklist,Text_Edit,list_end,550,25,350,45,None,46,True,text=sent_list[list_end-15:list_end],color=(255,255,255),muteable=False,font=font)
 time_buttons = pygame.sprite.Group()
 blacklist_buttons = pygame.sprite.Group()
+
 add_button=Button(100, 50, 175, 50, (255,0,0),font, "Add To List",add_to_blacklist)
 remove_button=Button(100, 150, 175, 50, (255,0,0),font, "Remove From List",remove_from_blacklist)
 help_button=Button(100, 350, 175, 50, (255,0,0),font, "Help",help)
@@ -249,14 +257,15 @@ blacklist_buttons.add(back_button,enter_button,add_button,remove_button,help_but
 time_buttons.add(select_button,save_button,help_button)
 
 distraction_input=Text_Edit(133,650,251,50,(255,255,255),font=font,text="Enter Program Name")
-hour_box=Text_Edit(45,650,75,50,(255,255,255),font=font,text=session_temp['set_hour'])
-minute_box=Text_Edit(150,650,75,50,(255,255,255),font=font,text=session_temp['set_minute'])
+hour_box=Text_Edit(45,650,75,50,(255,255,255),font=font,text="00")
+minute_box=Text_Edit(150,650,75,50,(255,255,255),font=font,text="00")
 text_boxes= pygame.sprite.Group()
 text_boxes.add(hour_box,minute_box)
-
+windows = pygame.sprite.Group()
 help_window=nw.Popup_Window(250,600,600,150,(0,0,0),"How To Use")
 error_window=nw.Popup_Window(250,400,400,150,(0,0,0),"An error has occured!")
-window_exit_btn=Button(100,550,175,50,(255,0,0),font,"Exit",exit_window)
+windows.add(help_window,error_window)
+window_exit_btn=Button(100,550,175,50,(69,69,69,0),large_font,"X",exit_window)
 frames=0
 
 def draw():
@@ -273,13 +282,13 @@ def draw():
         time_buttons.draw(screen)
         gui_timelist.draw(screen)
         time_sep=large_font.render(":",True,(0,0,0))
-        text_boxes.draw(screen)  
-        screen.blit(time_sep,(87,615))
         
+        screen.blit(time_sep,(87,615))
+    text_boxes.draw(screen)      
     # makes an error popup with a dynamic message that lasts for 3 seconds
     if error and frames<210:
         screen.blit(error_window.image,error_window.rect)
-        error_window.update([error_text])
+        error_window.update([error_text],window_exit_btn)
         frames+=1
     if frames>=210:
         frames=0
@@ -288,13 +297,14 @@ def draw():
     clock.tick(60)
     
 while True:
-    draw()
+   
     added_list=sorted(added_list)
     sent_list= json_blacklist+added_list
     if len(sent_list)>20:
         sent_list.append(' '*5)
     while len(sent_list)<20:
         sent_list.append(' ')
+    draw()
     pos=pygame.mouse.get_pos()
     for event in pygame.event.get():
         if time_selected:
@@ -303,9 +313,8 @@ while True:
             gui_blacklist.update(pos=pos,event=event)
         else:
             time_buttons.update(event=event,pos=pos)
-            text_boxes.update(pos=pos,event=event)
             gui_timelist.update(pos=pos,event=event)
-        
+        text_boxes.update(pos=pos,event=event)
         if event.type == pygame.QUIT:
             save()
         if event.type == pygame.MOUSEWHEEL and time_selected:            
