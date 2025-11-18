@@ -1,5 +1,5 @@
 import pygame
-
+from helper_funcs import shorten
 class Button(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, color,font:pygame.font.Font, text:str='',func=None,args=None,text_color=(0,0,0)):
         pygame.sprite.Sprite.__init__(self)
@@ -16,7 +16,7 @@ class Button(pygame.sprite.Sprite):
         self.func =func
         self.args=args
 
-    def update(self,event,pos,refresh=False):
+    def update(self,event,pos,refresh=False,time_selected=True):
         if not refresh:
             if self.rect.collidepoint(pos):
                 self.color = (150,150,255)
@@ -45,15 +45,4 @@ class Button(pygame.sprite.Sprite):
     def draw(self,screen):
         screen.blit(self.image,self.rect)
         
-def shorten(text:str,box_width:int,font)-> str:
-    
-    render=font.render(text,True,(0,0,0))
-    if render.get_width()<=box_width:
-        return text
-    while render.get_width()>box_width:
-        text=text[:-1]
-        render=font.render(text+'...',True,(0,0,0))
-    
-    text=text.rstrip()
-    text=text+'...'
-    return text
+

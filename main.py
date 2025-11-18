@@ -1,33 +1,34 @@
 # idea: grouping certain apps so they they can be blocked at sperate times
-# need: new buttons - back to time list, double click for text,refactor json to change to dict
+# need: fix shift for special symbols
 
-import win32gui,win32con,win32process
+import win32gui
 import datetime
-import psutil
+import proc_funcs
 import time,sys
 import json
-import window_to_process
+from helper_funcs import time_seperator,cull_times
 from os.path import dirname,abspath,join
+
 
 def main():   
     index=0
     parent_path = dirname(abspath(__file__))
     pathjson=join(parent_path,"blacklist.json")
 
-    def time_seperator(time:str)-> tuple[str,str]:
-        return time[:2],time[3:]
+    
 
     with open(pathjson, "r",encoding="utf-8") as f: # json data collect
         data=json.load(f)
 
     added=data["added_list"]
-    for i,j in enumerate(added):
-        added[i]=j.lower()
+    set_days=data["days"]
+    for i in added:
+        i=i.lower()
     time_list= data["time_list"]
-
 
     path=join(parent_path,"log.txt")
     curr_time=datetime.datetime.now()
+    day_of_week=datetime.date.today().strftime("%A")
     #set_times, loop to collect, check if end time is passed if so remove from list with pair
     set_temp=[list(time_list.keys())[i] for i in range(len(list(time_list.keys())))] #generator for loop makes list of set time
     if set_temp == []:
@@ -39,48 +40,30 @@ def main():
     with open(path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")
         
+    
+    
+                 
+                
     while set_times!=[]: # main loop goes through each time pair
         curr_time=datetime.datetime.now()
         no_list=data['time_list'][set_temp[index]]['programs']
         win =win32gui.GetForegroundWindow()
         window =win32gui.GetWindowText(win)
-        if  curr_time<=set_times[index]:
-            if window in added:# older method for titles
-                win32gui.PostMessage(win, win32con.WM_CLOSE, 0, 0)
-                with open(path, "a") as log:
-                    log.write(f"    Closed {window} {curr_time}\n")
-                time.sleep(.5)
-    
-            for i in window_to_process.check_windows(added): # converts application titles to their .exe counterpart 
-                win32gui.PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
-                with open(path, "a") as log:
-                    log.write(f"    Closed {i['title']} {curr_time}\n")
-                no_list.append(i['name'])
-                added.remove(i['title']) 
-                time_list[set_temp[index]]['programs']=no_list
-                data["added_list"]=added
-                with open(pathjson, "w") as f:
-                    json.dump(data,f, indent=2) # updates json file      
-            if no_list!=[]: #newer process based method
-                for proc in window_to_process.process_search(no_list): #checks if process is banned with error catches (works, high consumption)
-                    try:
-                        proc.kill()
-                        print(f"Process '{proc.info['name']}' terminated successfully.")
-                        with open(path, "a") as log:
-                            log.write(f"    Closed {proc.name()} {curr_time}\n")
-                        continue
-                    except psutil.NoSuchProcess:
-                        print(f"Process '{proc.info['name']}' no longer exists.")
-                    except psutil.AccessDenied:
-                        print(f"Access denied to terminate process '{proc.info['name']}'.")
-                
-            if  curr_time>=end_times[index]: # checks if end time is passed if so remove from list with pair
-                del end_times[index]
-                del set_times[index]
+        if  curr_time<=set_times[index]and day_of_week in set_days: #  checks for time and day of week
+            
+            proc_funcs.close_by_title(added, window, win, path, curr_time)
+            
+            proc_funcs.convert_title_to_exe(added, no_list,path,curr_time,index, set_temp, data, time_list, pathjson)
+            
+            proc_funcs.close_by_process( no_list,path,curr_time) 
+            
+            cull_times(set_times, end_times,index,curr_time)
+            
             index+=1
             index%=len(set_times)   
             
         time.sleep(.75) # checks every .75 seconds
+        
     with open(path, "a") as log:
         log.write(f"|Target Time Reached|\n")
 

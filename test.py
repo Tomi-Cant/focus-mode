@@ -59,8 +59,8 @@
 
 # # Execute game:
 # # main()
-# from datetime import datetime
-# datetime.now().replace(hour=17,minute=10)
+import datetime
+print(datetime.date.today().strftime("%a")) # sends abbrivated version of day of the week. %A for full day name
 # foo={
 # }
 # foo['a']
