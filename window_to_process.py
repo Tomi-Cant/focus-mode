@@ -1,7 +1,11 @@
-import win32gui,win32con,win32process
+import win32gui
+import win32con
+import win32process
 import psutil
 
-# complete vibe code 
+# complete vibe code
+
+
 def get_window_process(hwnd):
     """Return psutil.Process for a given window handle, or None."""
     try:
@@ -9,6 +13,7 @@ def get_window_process(hwnd):
         return psutil.Process(pid)
     except psutil.NoSuchProcess:
         return None
+
 
 def is_taskbar_window(hwnd):
     """Check if a window should appear in the taskbar."""
@@ -24,6 +29,7 @@ def is_taskbar_window(hwnd):
         return False
 
     return True
+
 
 def enum_taskbar_windows():
     windows = []
@@ -43,19 +49,17 @@ def enum_taskbar_windows():
     win32gui.EnumWindows(callback, None)
     return windows
 
-# Example usage
-# for w in enum_taskbar_windows():
-#     print(f"{w['hwnd']:>10} | PID {w['pid']:>6} | {w['name']:<25} | {w['title']}")
-   
-def check_windows(window_titles:list[str]):
-    windows=enum_taskbar_windows()
-    processes=[]
+
+def check_windows(window_titles: list[str]):
+    windows = enum_taskbar_windows()
+    processes = []
     for w in windows:
         if w['title'].lower() in window_titles:
             processes.append(w)
     return processes
-            
-def process_search(executable_file_names:list[str]):
+
+
+def process_search(executable_file_names: list[str]):
     for proc in psutil.process_iter(['name']):
         if proc.info['name'] in executable_file_names:
             yield proc

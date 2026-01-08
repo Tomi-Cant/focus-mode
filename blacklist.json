@@ -1,5 +1,4 @@
 {
-  "added_list": [],
   "time_list": {
     "17:10": {
       "programs": [],
@@ -30,6 +29,58 @@
     "17:12": {
       "programs": [],
       "end_time": "23:59",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "11:01": {
+      "programs": [],
+      "end_time": "00:00",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "20:20": {
+      "programs": [],
+      "end_time": "23:59",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "11:11": {
+      "programs": [],
+      "end_time": "23:59",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "00:00": {
+      "programs": [],
+      "end_time": "00:00",
       "days": [
         "Monday",
         "Tuesday",

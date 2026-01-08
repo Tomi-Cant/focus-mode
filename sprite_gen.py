@@ -21,7 +21,6 @@ def generate_line(group:pygame.sprite.Group,obj,num:int,x,y,width,height,x_step,
         given_text=kwargs['text']
         kwargs.pop('text')
         for sprite in range(num):
-           
             group.add(obj(x,y,width,height,**kwargs,text=" "+given_text[sprite]))
             if up_down:
                 y+=y_step
@@ -36,6 +35,7 @@ def generate_line(group:pygame.sprite.Group,obj,num:int,x,y,width,height,x_step,
                 x+=x_step
     return group
 # make def for text
+
 def generate_text(group:pygame.sprite.Group,surface:pygame.surface.Surface,text:str,x,y,width,height,x_step,y_step,updown:bool=True,**kwargs):
     font = pygame.font.SysFont("Arial", 20)
     for line in text:
