@@ -10,6 +10,7 @@ class Button(pygame.sprite.Sprite):
         self.image.fill(color)
         self.rect = self.image.get_rect()
         self.y = y
+        self.x = x
         self.rect.center = (x, y)
         self.text = text
         self.color = color
@@ -21,7 +22,7 @@ class Button(pygame.sprite.Sprite):
         self.args = args
         self.win = win
 
-    def update(self, event, pos,win:str='main', refresh: bool = False, open: bool = False):
+    def update(self, event, pos, win: str = 'main', refresh: bool = False, open: bool = False):
         if not refresh:
             if self.rect.collidepoint(pos) and win == self.win:
                 self.color = (150, 150, 255)
@@ -30,7 +31,7 @@ class Button(pygame.sprite.Sprite):
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if self.args != None and self.func != None:
                         self.func(self.args)
-                        
+
                     elif self.func != None:
                         self.func()
                     else:

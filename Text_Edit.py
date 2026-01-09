@@ -4,30 +4,30 @@ import vars
 from helper_funcs import shorten
 
 
-
-
 allowed_chars = vars.session_temp['allowed_chars']
 shift_parallel = vars.session_temp['shift_parallel']
 
 
 class Text_Edit(Button.Button):
-    def __init__(self, x, y, width, height, color, text, font, muteable=True, text_color=(0, 0, 0), active=False,win='main'):
-        super().__init__(x, y, width, height, color, font, text, func=None, args=None,win='main')
+    def __init__(self, x, y, width, height, color, text, font, muteable=True, text_color=(0, 0, 0), active=False, win='main'):
+        super().__init__(x, y, width, height, color, font,
+                         text, func=None, args=None, win='main')
         self.active = active
         self.muteable = muteable
         self.text_color = text_color
         self.back_pressed = False
         self.pressed_keys = []
         self.alt_code = []
+        self.win = win
 
-    def update(self, event, pos, win:str = 'main', time_selected=False):
+    def update(self, event, pos, win: str = 'main', time_selected=False) -> None:
 
-        if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
+        if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN and win == self.win:
             self.active = not self.active
 
             super().update(event, pos, win)  # calls button update method
-        if not self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN:
-            if not time_selected and self.muteable:
+        if not self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN and win == self.win:
+            if not time_selected and self.muteable and win == self.win:
                 self.active = False
             super().update(event, pos, win)  # calls button update method
         if self.back_pressed:
@@ -80,7 +80,7 @@ class Text_Edit(Button.Button):
         elif not self.active:
             self.color = (255, 255, 255)
             self.image.fill(self.color)
-        super().update(event, pos,self.win, True)  # calls button update method
+        super().update(event, pos, self.win, True)  # calls button update method
         self.text_sur = self.font.render(
             shorten(self.text, self.rect.width-10, self.font), True, self.text_color)
         self.image.fill(self.color)  # thanks copilot
@@ -92,7 +92,8 @@ class Text_Edit(Button.Button):
 
         if text != "Enter Program Name" or text != "":
             added_list.append(text)
-            vars.session_temp['time_list'][vars.time_var]['programs'].append(text)
+            vars.session_temp['time_list'][vars.time_var]['programs'].append(
+                text)
 
             return True
         else:

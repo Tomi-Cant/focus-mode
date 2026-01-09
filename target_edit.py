@@ -4,11 +4,6 @@
 import pygame
 import sys
 import json
-from Text_Edit import Text_Edit
-from Button import Button
-import new_window as nw
-import sprite_gen as sg
-import webbrowser
 
 from tkinter import filedialog
 import vars
@@ -25,23 +20,29 @@ ban lists have a start time and end time, the start time is part of the openning
 This text box uses the exact title of the program this can be much faster than sifting through files. If this doesn't seem to work double check the title name.
 '''
 
-
-
 pygame.init()
 
 screen = pygame.display.set_mode((800, 700))
+vars.screen=screen
 
 pygame.display.set_caption("Focus Mode")
 
 clock = pygame.time.Clock()
 
-
 font = pygame.font.SysFont("Arial", 20)
+vars.font=font
+
 large_font = pygame.font.SysFont("Arial", 50)
+vars.large_font=large_font
+
+from Text_Edit import Text_Edit
+from Button import Button
+import new_window as nw
+import sprite_gen as sg
+import webbrowser
+
 # takes user into file explorer and parses the executable from the output
-
-
-def add_to_blacklist():
+def add_to_blacklist() -> None:
     file_path = filedialog.askopenfilename(
         initialdir=vars.parent_path[:3],
         title="Select a file",
@@ -59,13 +60,13 @@ def add_to_blacklist():
             vars.sent_list.insert(i+1, file_path)
 
 
-def exit_window():
+def exit_window() -> None:
     for i in windows.sprites():
         if i.active:
             i.active = False
 
 
-def remove_from_blacklist():
+def remove_from_blacklist() -> None:
     selected = 0
     global title_text
     for i in vars.gui_blacklist.sprites():
@@ -81,11 +82,11 @@ def remove_from_blacklist():
         error_window.active = True
 
 
-def help():
+def help() -> None:
     webbrowser.open('https://github.com')
 
 
-def save():
+def save() -> None:
 
     valid = time_is_valid()
     if valid:
@@ -113,7 +114,7 @@ def time_is_valid() -> tuple[bool, str]:
     return True, hour_box.text+':'+minute_box.text
 
 
-def select():
+def select() -> None:
     for i in vars.gui_timelist.sprites():
         if i.active:
             vars.time_selected = True
@@ -128,7 +129,7 @@ def select():
         error_window.title = "Error! Please select a valid box."
 
 
-def fill_list():
+def fill_list() -> None:
     json_blacklist = vars.session_temp['time_list'][vars.time_var]['programs']
     vars.sent_list = sorted(json_blacklist)
     if len(vars.sent_list) > 20:
@@ -137,14 +138,14 @@ def fill_list():
         vars.sent_list.append(' ')
 
 
-def back():
+def back() -> None:
 
     vars.time_selected = False
     vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[
         1]
 
 
-def exit():
+def exit() -> None:
     # no direct links to the program other than through
     # save to ensure the data doesnt have to be rentered
 
@@ -154,24 +155,24 @@ def exit():
     sys.exit()
 
 
-def delete_enteries(gui_list: list):
+def delete_enteries(gui_list: list) -> None:
     for i in range(len(gui_list)):
         if gui_list[i].active:
             gui_list[i].text
             del vars.session_temp['time_list'][vars.time_var]['programs'][i]
 
 
-def enter(days):
+def enter(days) -> None:
 
     if vars.time_selected:
 
         change_end_time()
 
     else:
-        set_new_start_time(days, vars.gui_timelist)
+        set_new_start_time(days)
 
 
-def set_new_start_time(days, gui_timelist):
+def set_new_start_time(days) -> None:
     # is not already a set valid time
     if time_is_valid()[0] and time_is_valid()[1] not in vars.time_group:
         vars.time_group[time_is_valid()[1]] = {
@@ -183,7 +184,7 @@ def set_new_start_time(days, gui_timelist):
         vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
 
 
-def change_end_time():
+def change_end_time() -> None:
     if time_is_valid()[0]:
         # and not less than key time
         if int(time_is_valid()[1][:2]) < int(hour_box.text) and int(time_is_valid()[1][3:]) < int(minute_box.text):
@@ -195,7 +196,7 @@ def change_end_time():
                 vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
 
 
-def append_program():
+def append_program()-> None:
     if distraction_input.enter(distraction_input.text, vars.session_temp['time_list'][vars.time_var]['programs']):
         vars.session_temp['time_list'][vars.time_var]['programs'].append(
             distraction_input.text)
@@ -238,10 +239,10 @@ windows = pygame.sprite.Group()
 error_window = nw.Popup_Window(250, 400, 400, 150, (0, 0, 0),
                                "An error has occured!", window_type="error")
 day_select_window = nw.Popup_Window(
-    75, 150, 650, 400, (200, 30, 30), "Select Days of the week", 'days')
+    75, 150, 400, 450, (200, 30, 30), "Select Days of the week", 'days')
 windows.add(day_select_window, error_window)
 
-days_list = sg.generate_line(days_list, Text_Edit, 7, 450, 250, 150, 50, 0, 51, True,
+days_list = sg.generate_line(days_list, Text_Edit, 7, 190, 70, 150, 50, 0, 51, True,
                              text=vars.selected_days, muteable=False, color=(0, 255, 255), font=font, active=True,win='days')
 
 
@@ -263,6 +264,7 @@ def draw():
     text_boxes.draw(screen)
     if day_select_window.active:
         day_select_window.draw(screen, sprites=days_list.sprites())
+        day_select_window.exit_btn.draw(day_select_window.image)
         vars.active_window = 'days'
     elif error_window.active:
         error_window.draw(screen)
@@ -287,7 +289,7 @@ def main():
             text_boxes.update(event, pos, vars.active_window)
             enter_button.update(event, pos, vars.active_window)
 
-            windows.update(event, pos, screen, sprites=days_list.sprites())
+            windows.update(event, pos, sprites=days_list.sprites())
             if event.type == pygame.QUIT:
                 save()
             if event.type == pygame.MOUSEWHEEL and vars.time_selected:

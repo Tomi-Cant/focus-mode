@@ -2,7 +2,6 @@ from os.path import dirname, abspath, join
 import json
 import pygame
 screen:pygame.surface.Surface
-clock : pygame.time.Clock
 
 selected_days = ["Monday", "Tuesday", "Wednesday",
                  "Thursday", "Friday", "Saturday", "Sunday"]
