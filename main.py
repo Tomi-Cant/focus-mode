@@ -8,15 +8,11 @@ import time
 import sys
 import json
 from helper_funcs import time_seperator, cull_times
-from os.path import dirname, abspath, join
-
+import vars
 
 def main():
     index = 0
-    parent_path = dirname(abspath(__file__))
-    pathjson = join(parent_path, "blacklist.json")
-
-    with open(pathjson, "r", encoding="utf-8") as f:  # json data collect
+    with open(vars.json_path, "r", encoding="utf-8") as f:  # json data collect
         data = json.load(f)
 
     added = data["added_list"]
@@ -25,7 +21,6 @@ def main():
         i = i.lower()
     time_list = data["time_list"]
 
-    path = join(parent_path, "log.txt")
     curr_time = datetime.datetime.now()
     day_of_week = datetime.date.today().strftime("%A")
     # set_times, loop to collect, check if end time is passed if so remove from list with pair
@@ -42,7 +37,7 @@ def main():
         # *
         0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]
 
-    with open(path, "a") as log:
+    with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")
 
     while set_times != []:  # main loop goes through each time pair
@@ -53,21 +48,21 @@ def main():
         # checks for time and day of week
         if curr_time <= set_times[index] and day_of_week in set_days:
 
-            proc_funcs.close_by_process(no_list, path, curr_time)
+            proc_funcs.close_by_process(no_list, curr_time)
 
-            proc_funcs.close_by_title(added, window, win, path, curr_time)
+            proc_funcs.close_by_title(added, window, win, curr_time)
 
             proc_funcs.convert_to_exe(
-                added, no_list, path, curr_time, index, set_temp, data, time_list, pathjson)
+                added, no_list, curr_time, index, set_temp, data, time_list)
 
             cull_times(set_times, end_times, index, curr_time)
 
             index += 1
             index %= len(set_times)
 
-        time.sleep(.75)  # checks every .75 seconds
+        time.sleep(.5)  # checks every .5 seconds
 
-    with open(path, "a") as log:
+    with open(vars.log_path, "a") as log:
         log.write(f"|Target Time Reached|\n")
 
 
