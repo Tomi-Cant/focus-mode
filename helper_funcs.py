@@ -1,39 +1,66 @@
-import pygame
-def shorten(text: str, box_width: int, font) -> str:
-    tries=0
-    # condesnses text till it can fit within the given constraints of the surface
-    render = font.render(text, True, (0, 0, 0))
-    
-    if render.get_width() <= box_width:
-        return text
-    while render.get_width() > box_width and tries < 1000:
-        tries+=1
-        text = text[:-1]
-        render = font.render(text+'...', True, (0, 0, 0))
+import tkinter as tk
 
+
+def shorten(text: str, box_width: int, font_size: int = 10) -> str:
+    """
+    Condense text to fit within given width constraints
+    For tkinter, this is a simplified version - actual rendering depends on font metrics
+    """
+    tries = 0
+    max_width = box_width // (font_size // 2)  # Rough estimate for character width
+    
+    if len(text) <= max_width:
+        return text
+    
+    while len(text) > max_width and tries < 1000:
+        tries += 1
+        text = text[:-1]
+    
     text = text.rstrip()
-    text = text+'...'
+    if len(text) > max_width - 3:
+        text = text[:max_width-3]
+    text = text + '...'
     return text
 
 
 def cull_times(set, end, indx, time):
-    if time >= end[indx]:  # checks if end time is passed if so remove from list with pair
+    """Remove time entries that have passed their end time"""
+    if time >= end[indx]:
         del end[indx]
         del set[indx]
 
 
 def time_seperator(time: str) -> tuple[str, str]:
+    """Separate time string into hours and minutes"""
     return time[:2], time[3:]
 
-def get_active_texts(sprites: pygame.sprite.Group,func) -> list:
-    output=[]
-    if func!=None:
-        for i in sprites.sprites():
-            if i.active:
-                output.append(func(i))
+
+def get_active_texts(widgets, func) -> list:
+    """
+    Get active text from a list of tkinter Entry widgets
+    If func is provided, apply it to each widget
+    """
+    output = []
+    if not isinstance(widgets, list):
+        return output
+    
+    if func is not None:
+        for widget in widgets:
+            if isinstance(widget, tk.Entry) and widget.winfo_exists():
+                try:
+                    result = func(widget)
+                    if result is not None:
+                        output.append(result)
+                except:
+                    pass
     else:
-        for i in sprites.sprites():
-            if i.active:
-                output.append(i.text.strip())
-            
+        for widget in widgets:
+            if isinstance(widget, tk.Entry) and widget.winfo_exists():
+                try:
+                    text = widget.get().strip()
+                    if text:
+                        output.append(text)
+                except:
+                    pass
+    
     return output

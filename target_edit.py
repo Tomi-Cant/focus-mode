@@ -1,305 +1,464 @@
-# you were about to...do help and remove <= forgot to do this / potentially added an inverted tag to invert the timeframe
-# resarch how to open specific files that use a program (like Word)
-# ive decided im doing JS :D ( i dont wanna do JS but it would be nice). [this is for the help tab and documentation if needed].
-# also days of the week window (80%).
-import pygame
-import sys
+"""
+Focus Mode - Program Blacklist Manager
+Tkinter-based UI for managing application blocking schedules
+"""
+
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 import json
-from helper_funcs import get_active_texts
-from tkinter import filedialog
-import vars
+import webbrowser
+import sys
+from datetime import datetime
 
-'''
-This will prompt a file explorer instance to open and ask for a an executeable (a .exe file).
-This is only recomended if you know exactly where the file is located and the file has an odd name.
-There is a way to find the program excutable within task manager... {do tutorial or w.e}
-/ 
-For each seletec program .exe or title it will be removed from the blacklist of programs once saved. (Multiple can be selected at one time).
-/
-ban lists have a start time and end time, the start time is part of the openning list and all programs in that time frame. 15 unique time groups can be made.
-/
-This text box uses the exact title of the program this can be much faster than sifting through files. If this doesn't seem to work double check the title name.
-'''
-
-pygame.init()
-
-screen = pygame.display.set_mode((800, 700))
-vars.screen=screen
-
-pygame.display.set_caption("Focus Mode")
-
-clock = pygame.time.Clock()
-
-font = pygame.font.SysFont("Arial", 20)
-vars.font=font
-
-large_font = pygame.font.SysFont("Arial", 50)
-vars.large_font=large_font
-
+# Import custom modules
 from Text_Edit import Text_Edit
 from Button import Button
-import new_window as nw
-import sprite_gen as sg
-import webbrowser
-
-# takes user into file explorer and parses the executable from the output
-def add_to_blacklist() -> None:
-    file_path = filedialog.askopenfilename(
-        initialdir=vars.parent_path[:3],
-        title="Select a file",
-        filetypes=[("Executeable files", "*.exe"), ("All files", "*.*")]
-    )
-
-    executeable = file_path.split("/")[-1]
-
-    if executeable in vars.session_temp['time_list'][vars.time_var]['programs']:
-        error_window.title = "Error! Please select a file that is already in the list."
-        error_window.active = True
-
-    for i in range(len(vars.sent_list), 0, -1):
-        if vars.sent_list[i] != '' or i == 0:
-            vars.sent_list.insert(i+1, file_path)
+import vars
+from helper_funcs import get_active_texts
 
 
-def exit_window() -> None:
-    for i in windows.sprites():
-        if i.active:
-            i.active = False
-
-def remove_helper(sprite:Text_Edit) -> None:
+class FocusModeUI:
+    """Main UI class for Focus Mode"""
     
-    if sprite.text.strip()=='':
-        return
-    if sprite.active and not sprite.muteable:
-        vars.sent_list.remove(sprite.text)
-        vars.sent_list.append('  ')
-        vars.session_temp['time_list'][vars.time_var]['programs'].remove(
-                        sprite.text)
-        sprite.text = '  '
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Focus Mode")
+        self.root.geometry("800x700")
+        vars.root = root
         
-def remove_from_blacklist() -> None:
+        # Initialize state
+        self.time_buttons_frame = None
+        self.blacklist_buttons_frame = None
+        self.current_view = "main"
+        
+        # Create main UI
+        self.create_main_view()
     
-    global title_text
+    def create_main_view(self):
+        """Create the main blacklist management view"""
+        self.clear_window()
+        self.current_view = "main"
+        
+        # Main container
+        main_container = ttk.Frame(self.root)
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Title
+        title = tk.Label(
+            main_container,
+            text="Focued Up",
+            font=("Arial", 16, "bold"),
+            bg="lightgray"
+        )
+        title.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Content frame
+        content_frame = ttk.Frame(main_container)
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Left panel - Buttons (smaller, fixed width)
+        left_panel = ttk.Frame(content_frame, width=150)
+        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        left_panel.pack_propagate(False)
+        
+        self.blacklist_buttons_frame = ttk.Frame(left_panel)
+        self.blacklist_buttons_frame.pack(fill=tk.X)
+        
+        Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
+               command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 9), width=12) #change to adda new time on other screen
+        Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
+               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 9), width=12)
+        Button(self.blacklist_buttons_frame, x=2, y=0, text="Settings", 
+               command=self.enter_time_settings, bg_color="orange", fg_color="white", font=("Arial", 9), width=12)
+        Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
+               command=self.help, bg_color="blue", fg_color="white", font=("Arial", 9), width=12)
+        Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
+               command=self.exit, bg_color="green", fg_color="white", font=("Arial", 9), width=12)
+        
+        # Right panel - List display (smaller)
+        right_panel = ttk.Frame(content_frame)
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        list_label = tk.Label(right_panel, text="Ban start times", font=("Arial", 11,))
+        list_label.pack(fill=tk.X)
+        
+        # Listbox for blacklist (reduced size)
+        self.blacklist_display = tk.Listbox(right_panel, height=15, width=35, font=("Arial", 9))
+        scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
+        self.blacklist_display.config(yscrollcommand=scrollbar.set)
+        self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.update_blacklist_display()
     
-    if not get_active_texts(vars.gui_blacklist,remove_helper):
-        title_text = "Error! Please select a program to remove."
-        error_window.active = True
-
-
-def help() -> None:
-    webbrowser.open('https://github.com')
-
-
-def save() -> None:
-
-    valid = time_is_valid()
-    if valid:
-        exit()
-    else:
-        error_window.active = True
-        error_window.title = "Error! Please enter a valid time."
-
-
-def time_is_valid() -> tuple[bool, str]:
-    # insures that the input is a number and that is within the range of timedate
-    numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
-    i, l = len(hour_box.text), len(minute_box.text)
-    if 0 == i or 0 == l:
-        return False, ''
-    combined = f'{hour_box.text}{minute_box.text}'
-    for i in combined:
-        if i in numbers:
-            continue
+    def create_time_settings_view(self):
+        """Create the time settings management view"""
+        self.clear_window()
+        self.current_view = "time_settings"
+        
+        main_container = ttk.Frame(self.root)
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Title
+        title = tk.Label(
+            main_container,
+            text="Time Settings",
+            font=("Arial", 16, "bold"),
+            bg="lightgray"
+        )
+        title.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Left panel - Time list (always visible)
+        left_panel = ttk.Frame(main_container)
+        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        tk.Label(left_panel, text="Time Groups", font=("Arial", 12, "bold")).pack(fill=tk.X)
+        
+        # Frame for listbox and scrollbar
+        list_frame = ttk.Frame(left_panel)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=0, pady=5)
+        
+        self.time_listbox = tk.Listbox(list_frame, height=15, width=25)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.time_listbox.yview)
+        self.time_listbox.config(yscrollcommand=scrollbar.set)
+        self.time_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.time_listbox.bind("<<ListboxSelect>>", self.select_time)
+        
+        self.update_time_list()
+        
+        # Button frame for actions
+        button_frame = ttk.Frame(left_panel)
+        button_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        
+        # Right panel - Settings (visible by default)
+        right_panel = ttk.Frame(main_container)
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Name input section
+        name_frame = ttk.LabelFrame(right_panel, text="Name")
+        name_frame.pack(fill=tk.X, padx=5, pady=5)
+        self.name_var = tk.StringVar(value="")
+        ttk.Entry(name_frame, textvariable=self.name_var, width=30).pack(fill=tk.X, padx=5, pady=5)
+        
+        # Time input section
+        time_frame = ttk.LabelFrame(right_panel, text="Time Range")
+        time_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Label(time_frame, text="Start Time (HH:MM):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(time_frame, text="End Time (HH:MM):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        
+        self.hour_var = tk.StringVar(value="00")
+        self.minute_var = tk.StringVar(value="00")
+        self.end_hour_var = tk.StringVar(value="00")
+        self.end_minute_var = tk.StringVar(value="00")
+        
+        ttk.Entry(time_frame, textvariable=self.hour_var, width=5).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(time_frame, text=":").grid(row=0, column=2)
+        ttk.Entry(time_frame, textvariable=self.minute_var, width=5).grid(row=0, column=3, padx=5, pady=5)
+        
+        ttk.Entry(time_frame, textvariable=self.end_hour_var, width=5).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Label(time_frame, text=":").grid(row=1, column=2)
+        ttk.Entry(time_frame, textvariable=self.end_minute_var, width=5).grid(row=1, column=3, padx=5, pady=5)
+        
+        # Day selection
+        days_frame = ttk.LabelFrame(right_panel, text="Active Days")
+        days_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        self.day_vars = {}
+        for i, day in enumerate(vars.selected_days):
+            var = tk.BooleanVar(value=True)
+            self.day_vars[day] = var
+            ttk.Checkbutton(days_frame, text=day, variable=var).grid(row=i//2, column=i%2, sticky=tk.W, padx=5, pady=3)
+        
+        # Program blacklist for this time
+        programs_frame = ttk.LabelFrame(right_panel, text="Programs to Block")
+        programs_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        self.program_listbox = tk.Listbox(programs_frame, height=8)
+        prog_scrollbar = ttk.Scrollbar(programs_frame, orient=tk.VERTICAL, command=self.program_listbox.yview)
+        self.program_listbox.config(yscrollcommand=prog_scrollbar.set)
+        self.program_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        prog_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Program input
+        prog_input_frame = ttk.Frame(right_panel)
+        prog_input_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        self.program_entry = ttk.Entry(prog_input_frame)
+        self.program_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        
+        ttk.Button(prog_input_frame, text="Enter", command=self.add_program).pack(side=tk.LEFT, padx=5)
+        ttk.Button(prog_input_frame, text="Browse...", command=self.add_to_blacklist).pack(side=tk.LEFT, padx=5)
+        ttk.Button(prog_input_frame, text="Remove Selected", command=self.remove_program).pack(side=tk.LEFT, padx=5)
+        
+        # Buttons
+        button_frame = ttk.Frame(main_container)
+        button_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Button(button_frame, text="Save", command=self.save_time_settings).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Back", command=self.create_main_view).pack(side=tk.LEFT, padx=5)
+    
+    
+    def add_to_blacklist(self):
+        """Add a program to the blacklist"""
+        file_path = filedialog.askopenfilename(
+            initialdir="C:\\",
+            title="Select a program executable",
+            filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
+        )
+        
+        if file_path:
+            executable = file_path.split("\\")[-1]
+            if vars.session_temp.get('time_list', {}) and vars.time_var in vars.session_temp['time_list']:
+                programs = vars.session_temp['time_list'][vars.time_var]['programs']
+                if executable not in programs:
+                    programs.append(executable)
+                    self.update_blacklist_display()
+                    messagebox.showinfo("Success", f"Added {executable} to blacklist")
+                else:
+                    messagebox.showwarning("Duplicate", f"{executable} is already in the list")
+   
+    def add_to_time_list(self):
+        self.new_time_group()
+        
+    def remove_from_timelist(self):
+        """Remove selected program from blacklist"""
+        if self.current_view == "main":
+            selection = self.blacklist_display.curselection()
+            if selection:
+                index = selection[0]
+                item = self.blacklist_display.get(index)
+                if vars.session_temp.get('time_list', {}) and vars.time_var in vars.session_temp['time_list']:
+                    times = vars.session_temp['time_list']
+                    if item in times:
+                        times.remove(item)
+                        self.update_blacklist_display()
+                        messagebox.showinfo("Removed", f"Removed {item}")
+    
+    def enter_time_settings(self):
+        """Enter time settings view"""
+        if vars.session_temp.get('time_list'):
+            self.create_time_settings_view()
         else:
-            return False, ''
-    if int(hour_box.text) > 24 and int(minute_box.text) > 60:
-        return False, ''
-
-    return True, hour_box.text+':'+minute_box.text
-
-
-            
-            
-def select() -> None:
-    selected_data=get_active_texts(vars.gui_timelist,None)
-    if selected_data:
-        vars.time_var = selected_data[0]
-        vars.time_selected = True
-        fill_list()
-        vars.gui_blacklist = sg.generate_line(vars.gui_blacklist, Text_Edit, vars.list_end, 550, 25, 350, 45, None, 46,
-                                            True, text=vars.sent_list[vars.list_end-15:vars.list_end], color=(255, 255, 255), muteable=False, font=font)
+            messagebox.showwarning("No Times", "Please add time groups first")
+    
+    def select_time(self, event):
+        """Select a time group"""
+        selection = self.time_listbox.curselection()
+        if selection:
+            time_key = list(vars.session_temp.get('time_list', {}).keys())[selection[0]]
+            vars.time_var = time_key
+            self.update_time_display()
+    
+   
+    def new_time_group(self):
+        """Create a new time group"""
+        # Create a dialog for time and name input
+        dialog = tk.Toplevel(self.root)
+        dialog.title("New Time Group")
+        dialog.geometry("350x220")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-    if not vars.time_selected:
-        error_window.active = True
-        error_window.title = "Error! Please select a valid box."
+        tk.Label(dialog, text="Enter name for this time group:", font=("Arial", 10)).pack(pady=5)
+        name_var = tk.StringVar(value="")
+        ttk.Entry(dialog, textvariable=name_var, width=30).pack(pady=5)
+        
+        tk.Label(dialog, text="Enter start time (HH:MM):", font=("Arial", 10)).pack(pady=5)
+        
+        time_frame = ttk.Frame(dialog)
+        time_frame.pack(pady=10)
+        
+        hour_var = tk.StringVar(value="00")
+        minute_var = tk.StringVar(value="00")
+        
+        ttk.Entry(time_frame, textvariable=hour_var, width=5, justify='center').pack(side=tk.LEFT, padx=5)
+        ttk.Label(time_frame, text=":").pack(side=tk.LEFT)
+        ttk.Entry(time_frame, textvariable=minute_var, width=5, justify='center').pack(side=tk.LEFT, padx=5)
+        
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(pady=10)
+        
+        def add_time():
+            try:
+                hour = int(hour_var.get())
+                minute = int(minute_var.get())
+                
+                if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+                    messagebox.showerror("Invalid", "Hour must be 0-23, minute must be 0-59")
+                    return
+                
+                time_key = f"{hour:02d}:{minute:02d}"
+                
+                if time_key in vars.session_temp['time_list']:
+                    messagebox.showwarning("Duplicate", f"Time {time_key} already exists")
+                    return
+                
+                name = name_var.get().strip() or time_key
+                
+                # Add new time group with default values
+                vars.session_temp['time_list'][time_key] = {
+                    "name": name,
+                    "programs": [],
+                    "end_time": "23:59",
+                    "days": vars.selected_days.copy()
+                }
+                
+                self.update_time_list()
+                dialog.destroy()
+                messagebox.showinfo("Success", f"Created new time group: {time_key}")
+                
+            except ValueError:
+                messagebox.showerror("Invalid", "Please enter valid numbers for time")
+        
+        ttk.Button(button_frame, text="Create", command=add_time).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+    
+    
+    
+    
+    
+    def update_time_display(self):
+        """Update the time and program display"""
+        if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
+            time_data = vars.session_temp['time_list'][vars.time_var]
+            
+            # Update name
+            name = time_data.get('name', vars.time_var)
+            self.name_var.set(name)
+            
+            start_time = time_data.get('start_time', '00:00')
+            end_time = time_data.get('end_time', '00:00')
+            
+            self.hour_var.set(start_time[:2])
+            self.minute_var.set(start_time[3:])
+            self.end_hour_var.set(end_time[:2])
+            self.end_minute_var.set(end_time[3:])
+            
+            # Update program list
+            self.program_listbox.delete(0, tk.END)
+            for program in time_data.get('programs', []):
+                self.program_listbox.insert(tk.END, program)
+    
+    def add_program(self):
+        """Add a program to the current time group"""
+        program = self.program_entry.get().strip()
+        if program and vars.time_var:
+            if vars.time_var in vars.session_temp.get('time_list', {}):
+                programs = vars.session_temp['time_list'][vars.time_var]['programs']
+                if program not in programs:
+                    programs.append(program)
+                    self.program_entry.delete(0, tk.END)
+                    self.update_time_display()
+                    messagebox.showinfo("Success", f"Added {program}")
+    
+    def remove_program(self):
+        """Remove selected program from current time group"""
+        selection = self.program_listbox.curselection()
+        if selection and vars.time_var:
+            index = selection[0]
+            program = self.program_listbox.get(index)
+            programs = vars.session_temp['time_list'][vars.time_var]['programs']
+            if program in programs:
+                programs.remove(program)
+                self.update_time_display()
+                messagebox.showinfo("Removed", f"Removed {program}")
+    
+    def save_time_settings(self):
+        """Save time settings"""
+        try:
+            if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
+                time_data = vars.session_temp['time_list'][vars.time_var]
+                
+                # Save name
+                name = self.name_var.get().strip()
+                if name:
+                    time_data['name'] = name
+                
+                # Validate and save time
+                start_time = f"{self.hour_var.get().zfill(2)}:{self.minute_var.get().zfill(2)}"
+                end_time = f"{self.end_hour_var.get().zfill(2)}:{self.end_minute_var.get().zfill(2)}"
+                
+                time_data['start_time'] = start_time
+                time_data['end_time'] = end_time
+                
+                # Save days
+                selected_days = [day for day, var in self.day_vars.items() if var.get()]
+                vars.session_temp['days'] = selected_days
+                
+                # Save to JSON
+                with open(vars.json_path, "w", encoding="utf-8") as f:
+                    json.dump(vars.session_temp, f, indent=2)
+                
+                messagebox.showinfo("Saved", "Time settings saved successfully")
+                self.create_main_view()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error saving: {str(e)}")
+    
+    def update_blacklist_display(self):
+        """Update the blacklist display"""
+        if self.blacklist_display:
+            self.blacklist_display.delete(0, tk.END)
+            if vars.session_temp.get('time_list'):
+                for time_key, time_data in vars.session_temp['time_list'].items():
+                    # Get name and programs
+                    name = time_data.get('name')
+                    end_time = time_data.get('end_time', '23:59')
+                    programs = time_data.get('programs', [])
+                    
+                    # Display nickname if given, otherwise show time_key
+                    if name:
+                        self.blacklist_display.insert(tk.END, f"{name} ({time_key} - {end_time})")
 
+                    # Always show time range
+                    else:
+                        self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}")
+                    
+                    # Show only first 3 programs
+                    for i, program in enumerate(programs[:2]):
+                        self.blacklist_display.insert(tk.END, f"  - {program}")
+                    
+                    # Add ellipsis if there are more than 3 programs
+                    if len(programs) > 3:
+                        self.blacklist_display.insert(tk.END, f"  ...")
+                    
+                    # Add blank line between time groups
+                    self.blacklist_display.insert(tk.END, "")
+    
+    def update_time_list(self):
+        """Update time list display"""
+        if self.time_listbox:
+            self.time_listbox.delete(0, tk.END)
+            for time_key in vars.session_temp.get('time_list', {}).keys():
+                self.time_listbox.insert(tk.END, time_key)
+    
+    def help(self):
+        """Open help"""
+        webbrowser.open('https://github.com/Tomi-Cant/focus_mode')
+    
+    def clear_window(self):
+        """Clear all widgets from window"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+    
+    def exit(self):
+        """Save and exit"""
+        try:
+            with open(vars.json_path, "w", encoding="utf-8") as f:
+                json.dump(vars.session_temp, f, indent=2)
+            self.root.quit()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error saving: {str(e)}")
 
-def fill_list() -> None:
-    json_blacklist = vars.session_temp['time_list'][vars.time_var]['programs']
-    vars.sent_list = sorted(json_blacklist)
-    if len(vars.sent_list) > 20:
-        vars.sent_list.append(' '*5)
-    while len(vars.sent_list) < 20:
-        vars.sent_list.append(' ')
-
-
-def back() -> None:
-
-    vars.time_selected = False
-    vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[1]
-
-
-def exit() -> None:
-    # no direct links to the program other than through
-    # save to ensure the data doesnt have to be rentered
-
-    with open(vars.json_path, "w", encoding="utf-8") as f:
-        json.dump(vars.session_temp, f, ensure_ascii=False, indent=2)
-    pygame.quit()
-    sys.exit()
-
-
-def enter(days) -> None:
-    if vars.time_selected:
-        change_end_time()
-    else:
-        set_new_start_time(days)
-
-
-def set_new_start_time(days) -> None:
-    # is not already a set valid time
-    if time_is_valid()[0] and time_is_valid()[1] not in vars.time_group:
-        vars.time_group[time_is_valid()[1]] = {
-            "programs": [],
-            "end_time": "23:59",
-            "days": days
-        }
-    vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=list(
-        vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
-
-
-def change_end_time() -> None:
-    if time_is_valid()[0]:
-        # and not less than key time
-        if int(time_is_valid()[1][:2]) < int(hour_box.text) and int(time_is_valid()[1][3:]) < int(minute_box.text):
-            vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[1]
-
-            vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=list(
-                vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
-
-
-def append_program()-> None:
-    if distraction_input.enter(distraction_input.text, vars.session_temp['time_list'][vars.time_var]['programs']):
-        vars.session_temp['time_list'][vars.time_var]['programs'].append(
-            distraction_input.text)
-        distraction_input.text = ''
-        vars.gui_blacklist = sg.generate_line(vars.gui_blacklist, Text_Edit, 15, 550, 25, 350, 45, None, 46, True,
-                                         text=vars.sent_list[vars.list_end-15:vars.list_end], color=(255, 255, 255), muteable=False, font=font)
-
-
-vars.gui_timelist.add(sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45,
-                 None, 46, True, text=list(vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font))
-# generates the right hand list that displays the banned list of programs.
-
-time_buttons = pygame.sprite.Group()
-blacklist_buttons = pygame.sprite.Group()
-days_list = pygame.sprite.Group()
-
-add_button = Button(100, 50, 175, 50, (255, 0, 0), font,
-                    "Add To List", add_to_blacklist)
-remove_button = Button(100, 150, 175, 50, (255, 0, 0),
-                       font, "Remove From List", remove_from_blacklist)
-help_button = Button(100, 350, 175, 50, (255, 0, 0), font, "Help", help)
-save_button = Button(100, 450, 175, 50, (255, 0, 0), font, "Save & Exit", save)
-enter_button = Button(100, 250, 175, 50, (255, 0, 0),
-                      font, "Enter", enter, args=vars.selected_days)
-back_button = Button(100, 550, 175, 50, (255, 0, 0), font, "Back", back)
-select_button = Button(100, 550, 175, 50, (255, 0, 0), font, "Select", select)
-days_button = Button(100, 625, 175, 50, (255, 0, 0),
-                     font, "Choose Days")  # returns true
-blacklist_buttons.add(back_button, add_button,
-                      remove_button, help_button, save_button)
-time_buttons.add(select_button, save_button, help_button)
-
-distraction_input = Text_Edit(
-    133, 595, 251, 50, (255, 255, 255), font=font, text="Enter Program Name")
-hour_box = Text_Edit(45, 650, 75, 50, (255, 255, 255), font=font, text="00")
-minute_box = Text_Edit(150, 650, 75, 50, (255, 255, 255), font=font, text="00")
-text_boxes = pygame.sprite.Group()
-text_boxes.add(hour_box, minute_box)
-windows = pygame.sprite.Group()
-error_window = nw.Popup_Window(250, 400, 400, 150, (0, 0, 0),
-                               "An error has occured!", window_type="error")
-day_select_window = nw.Popup_Window(
-    75, 150, 400, 450, (200, 30, 30), "Select Days of the week", 'days')
-windows.add(day_select_window, error_window)
-
-days_list = sg.generate_line(days_list, Text_Edit, 7, 190, 70, 150, 50, 0, 51, True,
-                             text=vars.selected_days, muteable=False, color=(0, 255, 255), font=font, active=True,win='days')
-
-
-def draw():
-    screen.fill((75, 75, 75))
-    # resposible for separating the time and the blacklist to avoid overlap/ clutter
-    if vars.time_selected == True:
-        distraction_input.draw(screen)
-        blacklist_buttons.draw(screen)
-        vars.gui_blacklist.draw(screen)
-        back_button.draw(screen)
-        days_button.draw(screen)
-    else:
-        time_buttons.draw(screen)
-        vars.gui_timelist.draw(screen)
-        time_sep = large_font.render(":", True, (0, 0, 0))
-        screen.blit(time_sep, (87, 615))
-    enter_button.draw(screen)
-    text_boxes.draw(screen)
-    if day_select_window.active:
-        day_select_window.draw(screen, sprites=days_list.sprites())
-        day_select_window.exit_btn.draw(day_select_window.image)
-        vars.active_window = 'days'
-    elif error_window.active:
-        error_window.draw(screen)
-        vars.active_window = 'error'
-    else:
-        if get_active_texts(days_list, None)!=vars.selected_days:
-            vars.selected_days=get_active_texts(days_list, None)
-        vars.active_window = 'main'
 
 def main():
-    while True:
-        draw()
-        pos = pygame.mouse.get_pos()
-        for event in pygame.event.get():
-            if vars.time_selected:
-                blacklist_buttons.update(event, pos, vars.active_window)
-                distraction_input.update(event, pos, vars.active_window)
-                vars.gui_blacklist.update(event, pos, vars.active_window)
-                day_select_window.active = days_button.update(
-                    event, pos, vars.active_window, open=day_select_window.active)
-            else:
-                time_buttons.update(event, pos, vars.active_window)
-                vars.gui_timelist.update(event, pos, vars.active_window)
-            text_boxes.update(event, pos, vars.active_window)
-            enter_button.update(event, pos, vars.active_window)
-
-            windows.update(event, pos, sprites=days_list.sprites())
-            if event.type == pygame.QUIT:
-                save()
-            if event.type == pygame.MOUSEWHEEL and vars.time_selected:
-                if event.y > 0 and vars.list_end > 15:  # going up the list/ up the screen
-                    vars.list_end -= event.y  # scales with scroll speed
-                    vars.list_end = max(vars.list_end, 15)
-                # going down the list/ down the screen
-                elif event.y < 0 and vars.list_end < len(vars.sent_list):
-                    vars.list_end -= event.y  # scales with scroll speed
-                    vars.list_end = min(len(vars.sent_list), vars.list_end)
-                vars.gui_blacklist.update(event, pos)
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    save()
-        pygame.display.update()
-        clock.tick(60)
+    """Main entry point"""
+    root = tk.Tk()
+    app = FocusModeUI(root)
+    root.mainloop()
 
 
 if __name__ == "__main__":

@@ -1,102 +1,91 @@
-import Button
-import pygame
+import tkinter as tk
+from tkinter import ttk
 import vars
-from helper_funcs import shorten
 
 
-allowed_chars = vars.session_temp['allowed_chars']
-shift_parallel = vars.session_temp['shift_parallel']
+allowed_chars = vars.session_temp.get('allowed_chars', 
+    "abcdefghijklmnopqrstuvwxyz0123456789")
 
 
-class Text_Edit(Button.Button):
-    def __init__(self, x, y, width, height, color, text, font, muteable=True, text_color=(0, 0, 0), active=False, win='main'):
-        super().__init__(x, y, width, height, color, font,
-                         text, func=None, args=None, win='main')
+class Text_Edit(tk.Entry):
+    """Custom Entry widget for Focus Mode"""
+    def __init__(self, parent, x=0, y=0, width=20, text="Enter text", 
+                 muteable=True, text_color="black", active=False, win='main', font=None, **kwargs):
+        
+        if font is None:
+            font = ("Arial", 10)
+        
+        if isinstance(font, tuple):
+            font_config = (font[0], int(font[1]))
+        else:
+            font_config = ("Arial", 10)
+        
+        super().__init__(
+            parent,
+            font=font_config,
+            width=width,
+            **kwargs
+        )
+        
+        self.placeholder = text
+        self.default_text = text
         self.active = active
         self.muteable = muteable
         self.text_color = text_color
-        self.back_pressed = False
-        self.pressed_keys = []
-        self.alt_code = []
         self.win = win
-
-    def update(self, event, pos, win: str = 'main', time_selected=False) -> None:
-
-        if self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN and win == self.win:
-            self.active = not self.active
-
-            super().update(event, pos, win)  # calls button update method
-        if not self.rect.collidepoint(pos) and event.type == pygame.MOUSEBUTTONDOWN and win == self.win:
-            if not time_selected and self.muteable and win == self.win:
-                self.active = False
-            super().update(event, pos, win)  # calls button update method
-        if self.back_pressed:
-            self.text = self.text[:-
-                                  1] if self.text != "Enter Program Name" else ""
-            self.active = True
-            self.back_pressed = False
-        if self.active:
-            if self.text == "Enter Program Name" or self.text == '00':
-                self.text = ""
-            self.color = (150, 150, 255)
-            # checks if meant to be a static textbox
-            if self.muteable:
-
-                if event.type == pygame.KEYDOWN:
-
-                    if event.key == pygame.K_BACKSPACE:
-                        self.back_pressed = True
-                        self.active = False
-                if event.type == pygame.KEYDOWN:
-                    self.pressed_keys.append(pygame.key.name(event.key))
-                    # checks if shift is pressed and doesnt print shift with char (need to do number symbols)
-                    if "left alt" in self.pressed_keys or "right alt" in self.pressed_keys:
-                        if (pygame.key.name(event.key).isdigit()):
-                            self.alt_code.append(pygame.key.name(event.key))
-                    elif pygame.key.name(event.key) in allowed_chars and "left shift" in self.pressed_keys or "right shift" in self.pressed_keys:
-                        if len(pygame.key.name(event.key)) == 1:
-                            self.text += shift_parallel[pygame.key.name(
-                                event.key)]
-                    # and "left alt" in self.pressed_keys or "right alt" in self.pressed_keys :
-                    elif pygame.key.name(event.key) in allowed_chars and len(pygame.key.name(event.key)) == 1:
-                        self.text += pygame.key.name(event.key)
-                    if event.key == pygame.K_RETURN:
-                        self.active = False
-                if event.type == pygame.KEYUP:
-                    self.pressed_keys.remove(pygame.key.name(event.key))
-                    if event.key == pygame.K_LALT or event.key == pygame.K_RALT:
-                        temp_str = ''
-
-                        for i in self.alt_code:
-                            temp_str += i
-                        try:
-                            self.text += chr(int(temp_str, 16))
-
-                        except (ValueError):
-                            pass
-                        self.alt_code = []
-                        # altcode doesnt exist error message
-
-        elif not self.active:
-            self.color = (255, 255, 255)
-            self.image.fill(self.color)
-        super().update(event, pos, self.win, True)  # calls button update method
-        self.text_sur = self.font.render(
-            shorten(self.text, self.rect.width-10, self.font), True, self.text_color)
-        self.image.fill(self.color)  # thanks copilot
-        self.image.blit(self.text_sur, self.text_sur.get_rect(
-            top=self.rect.top-self.y+40))
-
-    # meant for specific textboxes
+        self.x = x
+        self.y = y
+        
+        # Set default text
+        self.insert(0, text)
+        
+        # Bind events
+        self.bind("<FocusIn>", self._on_focus_in)
+        self.bind("<FocusOut>", self._on_focus_out)
+        self.bind("<Return>", self._on_return)
+        
+        self.grid(row=x, column=y, padx=5, pady=5, sticky="ew")
+    
+    def _on_focus_in(self, event):
+        """Handle focus in event"""
+        if self.get() == self.placeholder or self.get() == "00":
+            self.delete(0, tk.END)
+            self.config(fg="black")
+        self.active = True
+    
+    def _on_focus_out(self, event):
+        """Handle focus out event"""
+        if self.get() == "":
+            self.insert(0, self.placeholder)
+            self.config(fg="gray")
+        self.active = False
+    
+    def _on_return(self, event):
+        """Handle return key press"""
+        self.active = False
+    
+    @property
+    def text(self):
+        """Get the text value"""
+        content = self.get()
+        if content == self.placeholder or content == "00":
+            return ""
+        return content
+    
+    @text.setter
+    def text(self, value):
+        """Set the text value"""
+        self.delete(0, tk.END)
+        self.insert(0, value)
+    
     def enter(self, text, added_list) -> bool:
-
-        if text != "Enter Program Name" or text != "":
+        """Add text to a list if valid"""
+        if text != self.placeholder and text != "":
             added_list.append(text)
-            vars.session_temp['time_list'][vars.time_var]['programs'].append(
-                text)
-
+            if 'time_list' in vars.session_temp and vars.time_var in vars.session_temp['time_list']:
+                vars.session_temp['time_list'][vars.time_var]['programs'].append(text)
             return True
-        else:
-            error_text = "Error! Please enter a program name."
-            error = True
-            return False
+        
+
+        error = True
+        return False
