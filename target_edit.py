@@ -46,7 +46,7 @@ class FocusModeUI:
         # Title
         title = tk.Label(
             main_container,
-            text="Focued Up",
+            text="Focused Up",
             font=("Arial", 16, "bold"),
             bg="lightgray"
         )
@@ -87,6 +87,8 @@ class FocusModeUI:
         scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.blacklist_display.bind("<<ListboxSelect>>", self.select)
+
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         self.update_blacklist_display()
@@ -149,7 +151,7 @@ class FocusModeUI:
         
         ttk.Label(time_frame, text="Start Time (HH:MM):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         ttk.Label(time_frame, text="End Time (HH:MM):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        
+        time_key = vars.time_group.get(vars.time_var, {})
         self.hour_var = tk.StringVar(value="00")
         self.minute_var = tk.StringVar(value="00")
         self.end_hour_var = tk.StringVar(value="00")
@@ -224,6 +226,12 @@ class FocusModeUI:
     def add_to_time_list(self):
         self.new_time_group()
         
+    def parse_selected_time(self, time_str:str) -> str:
+        """Parse time string to extract key"""
+        if " (" in time_str:
+            return time_str.split(" (")[1].split(" - ")[0]
+        return time_str.split(" - ")[0]
+    
     def remove_from_timelist(self):
         """Remove selected program from blacklist"""
         if self.current_view == "main":
@@ -233,6 +241,7 @@ class FocusModeUI:
                 item = self.blacklist_display.get(index)
                 if vars.session_temp.get('time_list', {}) and vars.time_var in vars.session_temp['time_list']:
                     times = vars.session_temp['time_list']
+                    item = self.parse_selected_time(item)
                     if item in times:
                         times.remove(item)
                         self.update_blacklist_display()
@@ -244,13 +253,25 @@ class FocusModeUI:
             self.create_time_settings_view()
         else:
             messagebox.showwarning("No Times", "Please add time groups first")
+            
+    def select(self,event):
+        """Select a time group"""
+        selection = self.blacklist_display.curselection()
     
+        if selection:
+            selection :str = self.blacklist_display.get(selection[0])
+            selection =self.parse_selected_time(selection)
+            vars.time_var = selection
+            self.update_blacklist_display()
+            
     def select_time(self, event):
         """Select a time group"""
         selection = self.time_listbox.curselection()
+    
         if selection:
-            time_key = list(vars.session_temp.get('time_list', {}).keys())[selection[0]]
-            vars.time_var = time_key
+            selection :str = self.time_listbox.get(selection[0])
+            selection =self.parse_selected_time(selection)
+            vars.time_var = selection
             self.update_time_display()
     
    
@@ -330,11 +351,11 @@ class FocusModeUI:
             name = time_data.get('name', vars.time_var)
             self.name_var.set(name)
             
-            start_time = time_data.get('start_time', '00:00')
+            # start_time = time_data.get('start_time', '00:00')
             end_time = time_data.get('end_time', '00:00')
             
-            self.hour_var.set(start_time[:2])
-            self.minute_var.set(start_time[3:])
+            self.hour_var.set(vars.time_var[:2])
+            self.minute_var.set(vars.time_var[3:])
             self.end_hour_var.set(end_time[:2])
             self.end_minute_var.set(end_time[3:])
             
@@ -417,12 +438,12 @@ class FocusModeUI:
                     else:
                         self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}")
                     
-                    # Show only first 3 programs
+                    # Show only first 2 programs
                     for i, program in enumerate(programs[:2]):
                         self.blacklist_display.insert(tk.END, f"  - {program}")
                     
-                    # Add ellipsis if there are more than 3 programs
-                    if len(programs) > 3:
+                    # Add ellipsis if there are more than 2 programs
+                    if len(programs) > 2:
                         self.blacklist_display.insert(tk.END, f"  ...")
                     
                     # Add blank line between time groups
@@ -432,8 +453,14 @@ class FocusModeUI:
         """Update time list display"""
         if self.time_listbox:
             self.time_listbox.delete(0, tk.END)
-            for time_key in vars.session_temp.get('time_list', {}).keys():
-                self.time_listbox.insert(tk.END, time_key)
+            for time_key in vars.time_group:
+                end = vars.time_group[time_key].get('end_time', '23:59')
+                if vars.time_group[time_key].get('name'):
+                    display_name = vars.time_group[time_key]['name']
+                    
+                    self.time_listbox.insert(tk.END, f"{display_name} ({time_key} - {end})")
+                else:
+                    self.time_listbox.insert(tk.END, f"{time_key} - {end}")
     
     def help(self):
         """Open help"""
