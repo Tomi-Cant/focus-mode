@@ -51,6 +51,16 @@ def close_by_title(added, window, win, curr_time):
         time.sleep(.5)
         
 def productive_open(added, curr_time):
-    # placeholder for opening productive applications
+    output=''
+    prod_type =vars.time_group[curr_time]["productive type"]
+    if prod_type== '':
+        
+        output = (f"    No productive application for this time slot")
+    if prod_type == "website":
+        # put in web open thing
+        pass
+    if prod_type == "executable":
+        # ShellExecute()  work this out
+        pass
     with open(vars.log_path, "a") as log:
         log.write(f"    Opened productive application for {added} {curr_time}\n")
