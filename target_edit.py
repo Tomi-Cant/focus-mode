@@ -110,17 +110,16 @@ class FocusModeUI:
         )
         title.pack(fill=tk.X, padx=5, pady=5)
         
-        # Left panel - Time list (always visible)
         left_panel = ttk.Frame(main_container)
-        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        left_panel.pack(side=tk.LEFT, fill=tk.Y, expand=True, padx=5, pady=5, anchor=tk.NW)
         
         tk.Label(left_panel, text="Time Groups", font=("Arial", 12, "bold")).pack(fill=tk.X)
         
         # Frame for listbox and scrollbar
         list_frame = ttk.Frame(left_panel)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=0, pady=5)
+        list_frame.pack(fill=tk.Y, expand=False, padx=0, pady=5)
         
-        self.time_listbox = tk.Listbox(list_frame, height=15, width=25)
+        self.time_listbox = tk.Listbox(list_frame, height=30, width=30)
         scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.time_listbox.yview)
         self.time_listbox.config(yscrollcommand=scrollbar.set)
         self.time_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -132,18 +131,18 @@ class FocusModeUI:
         # Button frame for actions
         button_frame = ttk.Frame(left_panel)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        ttk.Button(button_frame, text= "Set Replacement Program/Site",command= self.change_replacement).pack( padx=2, fill=tk.X,side= 'top')
+        ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, padx=2, fill=tk.X)
         
         # Right panel - Settings (visible by default)
-        right_panel = ttk.Frame(main_container)
-        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        right_panel = ttk.Frame(main_container,width=10)
+        right_panel.pack(side=tk.RIGHT,  padx=5, pady=5, anchor =tk.N)
         
         # Name input section
         name_frame = ttk.LabelFrame(right_panel, text="Name")
         name_frame.pack(fill=tk.X, padx=5, pady=5)
         self.name_var = tk.StringVar(value="")
-        ttk.Entry(name_frame, textvariable=self.name_var, width=30).pack(fill=tk.X, padx=5, pady=5)
+        ttk.Entry(name_frame, textvariable=self.name_var, width=20).pack(fill=tk.X, padx=5, pady=5)
         
         # Time input section
         time_frame = ttk.LabelFrame(right_panel, text="Time Range")
@@ -151,7 +150,6 @@ class FocusModeUI:
         
         ttk.Label(time_frame, text="Start Time (HH:MM):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         ttk.Label(time_frame, text="End Time (HH:MM):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        time_key = vars.time_group.get(vars.time_var, {})
         self.hour_var = tk.StringVar(value="00")
         self.minute_var = tk.StringVar(value="00")
         self.end_hour_var = tk.StringVar(value="00")
@@ -190,11 +188,11 @@ class FocusModeUI:
         prog_input_frame.pack(fill=tk.X, padx=5, pady=5)
         
         self.program_entry = ttk.Entry(prog_input_frame)
-        self.program_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        self.program_entry.grid(row=1, column=1, padx=5)
         
-        ttk.Button(prog_input_frame, text="Enter", command=self.add_program).pack(side=tk.LEFT, padx=5)
-        ttk.Button(prog_input_frame, text="Browse...", command=self.add_to_blacklist).pack(side=tk.LEFT, padx=5)
-        ttk.Button(prog_input_frame, text="Remove Selected", command=self.remove_program).pack(side=tk.LEFT, padx=5)
+        ttk.Button(prog_input_frame, text="Enter", command=self.add_program).grid(row=1, column=2, padx=5)
+        ttk.Button(prog_input_frame, text="Browse...", command=self.add_to_blacklist).grid(row=1, column=3, padx=5)
+        ttk.Button(prog_input_frame, text="Remove Selected", command=self.remove_program).grid(row=0, column=0, columnspan=4, padx=5, pady=5)
         
         # Buttons
         button_frame = ttk.Frame(main_container)
@@ -235,13 +233,10 @@ class FocusModeUI:
     def remove_from_timelist(self):
         """Remove selected program from blacklist"""
         if self.current_view == "main":
-            selection = self.blacklist_display.curselection()
-            if selection:
-                index = selection[0]
-                item = self.blacklist_display.get(index)
+            if self.select(None)!=False: #test this
+                item = self.select(None)
                 if vars.session_temp.get('time_list', {}) and vars.time_var in vars.session_temp['time_list']:
                     times = vars.session_temp['time_list']
-                    item = self.parse_selected_time(item)
                     if item in times:
                         times.remove(item)
                         self.update_blacklist_display()
@@ -262,7 +257,8 @@ class FocusModeUI:
             selection :str = self.blacklist_display.get(selection[0])
             selection =self.parse_selected_time(selection)
             vars.time_var = selection
-            self.update_blacklist_display()
+            return selection
+        return False
             
     def select_time(self, event):
         """Select a time group"""
@@ -273,6 +269,8 @@ class FocusModeUI:
             selection =self.parse_selected_time(selection)
             vars.time_var = selection
             self.update_time_display()
+            return selection
+        return False
     
    
     def new_time_group(self):
@@ -338,8 +336,8 @@ class FocusModeUI:
         ttk.Button(button_frame, text="Create", command=add_time).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
-    
-    
+    def change_replacement(self):
+        pass
     
     
     def update_time_display(self):
@@ -378,10 +376,8 @@ class FocusModeUI:
     
     def remove_program(self):
         """Remove selected program from current time group"""
-        selection = self.program_listbox.curselection()
-        if selection and vars.time_var:
-            index = selection[0]
-            program = self.program_listbox.get(index)
+        if self.select_time(None):
+            program = self.select_time(None)
             programs = vars.session_temp['time_list'][vars.time_var]['programs']
             if program in programs:
                 programs.remove(program)
@@ -400,10 +396,8 @@ class FocusModeUI:
                     time_data['name'] = name
                 
                 # Validate and save time
-                start_time = f"{self.hour_var.get().zfill(2)}:{self.minute_var.get().zfill(2)}"
                 end_time = f"{self.end_hour_var.get().zfill(2)}:{self.end_minute_var.get().zfill(2)}"
                 
-                time_data['start_time'] = start_time
                 time_data['end_time'] = end_time
                 
                 # Save days
@@ -464,7 +458,7 @@ class FocusModeUI:
     
     def help(self):
         """Open help"""
-        webbrowser.open('https://github.com/Tomi-Cant/focus_mode')
+        webbrowser.open('https://github.com/Tomi-Cant/focus_mode') # remember to change it
     
     def clear_window(self):
         """Clear all widgets from window"""
