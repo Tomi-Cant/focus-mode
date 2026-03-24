@@ -18,137 +18,30 @@
         "Sunday"
       ],
       "name": "This",
-      "start_time": "00:00"
+      "start_time": "00:00",
+      "productive type":"",
+      "productive productive": ""
     },
-    "17:11": {
-      "programs": [],
-      "end_time": "20:10",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ]
-    },
-    "17:12": {
-      "programs": [],
-      "end_time": "23:59",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
+   "13:10": {
+      "programs": [
+        "Marvel Rivals",
+        "Fortnite",
+        "Epic Games Launcher",
+        "Discord"
       ],
-      "start_time": "00:00"
-    },
-    "11:01": {
-      "programs": [],
-      "end_time": "00:00",
+      "end_time": "13:50",
       "days": [
         "Monday",
         "Tuesday",
-        "Wednesday",
         "Thursday",
         "Friday",
-        "Saturday",
-        "Sunday"
-      ]
-    },
-    "20:20": {
-      "programs": [],
-      "end_time": "23:59",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ]
-    },
-    "11:11": {
-      "programs": [],
-      "end_time": "23:59",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ]
-    },
-    "00:00": {
-      "programs": [],
-      "end_time": "00:00",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ]
+        "Saturday"
+      ],
+      "productive type":"",
+      "productive productive": ""
     }
   },
-  "shift_parallel": {
-    "1": "!",
-    "2": "@",
-    "3": "#",
-    "4": "$",
-    "5": "%",
-    "6": "^",
-    "7": "&",
-    "8": "*",
-    "9": "(",
-    "0": ")",
-    "-": "_",
-    "=": "+",
-    "[": "{",
-    "]": "}",
-    "\\": "|",
-    ";": ":",
-    "'": "\"",
-    ",": "<",
-    ".": ">",
-    "/": "?",
-    "`": "~",
-    "a": "A",
-    "b": "B",
-    "c": "C",
-    "d": "D",
-    "e": "E",
-    "f": "F",
-    "g": "G",
-    "h": "H",
-    "i": "I",
-    "j": "J",
-    "k": "K",
-    "l": "L",
-    "m": "M",
-    "n": "N",
-    "o": "O",
-    "p": "P",
-    "q": "Q",
-    "r": "R",
-    "s": "S",
-    "t": "T",
-    "u": "U",
-    "v": "V",
-    "w": "W",
-    "x": "X",
-    "y": "Y",
-    "z": "Z"
-  },
+
   "allowed_chars": [
     " ",
     "!",

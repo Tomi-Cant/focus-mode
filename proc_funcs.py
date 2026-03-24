@@ -6,7 +6,7 @@ import time
 import psutil
 import json
 import vars
-
+import webbrowser
 
 
 def convert_to_exe(added, no_list, curr_time, index, set_temp, data, time_list, ):
@@ -50,17 +50,17 @@ def close_by_title(added, window, win, curr_time):
             log.write(f"    Closed {window} {curr_time}\n")
         time.sleep(.5)
         
-def productive_open(added, curr_time):
+def productive_open(added, curr_time): # maybe add randomizer with multi later
     output=''
     prod_type =vars.time_group[curr_time]["productive type"]
     if prod_type== '':
         
-        output = (f"    No productive application for this time slot")
+        output = (f"    No productive application/website for this time slot")
     if prod_type == "website":
-        # put in web open thing
-        pass
+        webbrowser.open(vars.time_group[curr_time]["productive"])
+        output = (f"    Opened productive website for {added} at {curr_time}\n") 
     if prod_type == "executable":
-        # ShellExecute()  work this out
-        pass
+        ShellExecute(0, 'open',vars.time_group[curr_time]["productive"],'','',1) 
+        output = (f"    Opened productive application for {added} at {curr_time}\n") 
     with open(vars.log_path, "a") as log:
-        log.write(f"    Opened productive application for {added} {curr_time}\n")
+        log.write(output)
