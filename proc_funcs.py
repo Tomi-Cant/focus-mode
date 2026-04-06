@@ -52,7 +52,7 @@ def close_by_title(added, window, win, curr_time):
         
 def productive_open(added, curr_time): # maybe add randomizer with multi later
     output=''
-    prod_type =vars.time_group[curr_time]["productive type"]
+    prod_type =vars.time_group[curr_time]["productive_type"]
     if prod_type== '':
         
         output = (f"    No productive application/website for this time slot")

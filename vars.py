@@ -12,6 +12,7 @@ help_open = False
 time_selected = False
 time_var = ''
 parent_path = dirname(abspath(__file__))
+rootdir= parent_path[:parent_path.find("\\")+1]
 log_path = join(parent_path, "log.txt")
 json_path = join(parent_path, "blacklist.json")
 with open(json_path, "r", encoding="utf-8") as f:

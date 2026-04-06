@@ -2,7 +2,7 @@
 Focus Mode - Program Blacklist Manager
 Tkinter-based UI for managing application blocking schedules
 """
-
+# -Command "& {C:\Scripts\MyScript.ps1; if ($LASTEXITCODE -ne 0) { throw 'Task Failed' }}" add this to task scheduler
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import json
@@ -205,7 +205,7 @@ class FocusModeUI:
     def add_to_blacklist(self):
         """Add a program to the blacklist"""
         file_path = filedialog.askopenfilename(
-            initialdir="C:\\",
+            initialdir= vars.rootdir,   
             title="Select a program executable",
             filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
         )
@@ -316,15 +316,19 @@ class FocusModeUI:
                     messagebox.showwarning("Duplicate", f"Time {time_key} already exists")
                     return
                 
-                name = name_var.get().strip() or time_key
+                name = name_var.get().strip() or None
                 
                 # Add new time group with default values
                 vars.session_temp['time_list'][time_key] = {
                     "name": name,
                     "programs": [],
                     "end_time": "23:59",
-                    "days": vars.selected_days.copy()
+                    "days": vars.selected_days.copy(),
+                    "productive":"",
+                    "productive_type":""
                 }
+                if vars.session_temp['time_list'][time_key]["name"]== None:
+                    del vars.session_temp['time_list'][time_key]["name"]
                 
                 self.update_time_list()
                 dialog.destroy()
@@ -337,9 +341,61 @@ class FocusModeUI:
         ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
     def change_replacement(self):
-        pass
+        if not self.select_time(None):
+            messagebox.showerror("Error","A time slot must be selected to use this option")
+            return False
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Change Replacement App/Site")
+        dialog.geometry("350x220")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        app_frame= tk.Frame(dialog, name= 'app')
+        web_frame= tk.Frame(dialog, name= 'web')
+        button_frame= tk.Frame(dialog, name= "button")
+        web_url= tk.StringVar(value='Enter Website')
+        
+        app_label=tk.Label(app_frame, text= "Replacement Type: App",justify="center",font=("Arial", 14, "bold"))
+        browse_applications=tk.Button(app_frame, text="Browse Files/Apps/Docs", justify= "center", command=lambda:self.select_file(dialog))
+        app_label.pack()
+        browse_applications.pack()
+        app_frame.pack()
+        web_label=tk.Label(web_frame, text="Replacement Type: Website",justify="center",font=("Arial", 14, "bold"))
+        website=tk.Entry(web_frame,textvariable=web_url,justify='center')
+        web_label.pack()
+        website.pack()
+        
+        change_type= tk.Button(button_frame, text="Change Type", justify="center", command=lambda:self.change_replace_type(app_frame,web_frame, button_frame) )
+        submit_entry=tk.Button(web_frame, text="Enter", justify= 'center',command = lambda:self.enter_replacement(web_url.get(),dialog))
+        change_type.pack()
+        submit_entry.pack()    
     
+    def change_replace_type(self,frame1: tk.Frame,frame2:tk.Frame,frame3:tk.Frame):
+        if frame1.winfo_ismapped():
+            frame2.pack()
+            frame1.pack_forget()
+        else:
+            frame1.pack()
+            frame2.pack_forget()
+        frame3.pack_forget()
+        frame3.pack()
+            
+    def enter_replacement(self, entry:str, dialog:tk.Toplevel):
+        vars.session_temp[vars.time_var]["productive_type"]= "website"
+        vars.session_temp[vars.time_var]["productive"]= entry
+        # on success
+        dialog.destroy()
     
+    def select_file(self, dialog):
+        file_path = filedialog.askopenfilename(
+            initialdir=vars.rootdir,
+            title="Select a program executable",
+            filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
+        )
+        vars.session_temp[vars.time_var]["productive_type"] ="executable"
+        vars.session_temp[vars.time_var]["productive"] =file_path
+        # on success
+        dialog.destroy()
+        
     def update_time_display(self):
         """Update the time and program display"""
         if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):

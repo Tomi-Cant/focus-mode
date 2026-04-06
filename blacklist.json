@@ -19,10 +19,10 @@
       ],
       "name": "This",
       "start_time": "00:00",
-      "productive type":"",
-      "productive productive": ""
+      "productive_type":"",
+      "productive": ""
     },
-   "13:10": {
+   "13:25": {
       "programs": [
         "Marvel Rivals",
         "Fortnite",
@@ -37,8 +37,8 @@
         "Friday",
         "Saturday"
       ],
-      "productive type":"",
-      "productive productive": ""
+      "productive_type":"",
+      "productive": ""
     }
   },
 
