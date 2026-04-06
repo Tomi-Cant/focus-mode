@@ -16,8 +16,6 @@ class Popup_Window(pygame.sprite.Sprite):
         self.active = False
         self.exit_btn =  Button(
     width-35, 35, 40, 40, (0, 69, 69, 0), vars.font, "X", self.close_win)
-        
-        
         self.txt_lines = txt_lines
         self.font = pygame.font.SysFont("Arial", 20)
         self.title = title

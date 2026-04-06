@@ -1,10 +1,11 @@
 # you were about to...do help and remove <= forgot to do this / potentially added an inverted tag to invert the timeframe
+# resarch how to open specific files that use a program (like Word)
 # ive decided im doing JS :D ( i dont wanna do JS but it would be nice). [this is for the help tab and documentation if needed].
-# also days of the week window (30%).
+# also days of the week window (80%).
 import pygame
 import sys
 import json
-
+from helper_funcs import get_active_texts
 from tkinter import filedialog
 import vars
 
@@ -65,19 +66,22 @@ def exit_window() -> None:
         if i.active:
             i.active = False
 
-
+def remove_helper(sprite:Text_Edit) -> None:
+    
+    if sprite.text.strip()=='':
+        return
+    if sprite.active and not sprite.muteable:
+        vars.sent_list.remove(sprite.text)
+        vars.sent_list.append('  ')
+        vars.session_temp['time_list'][vars.time_var]['programs'].remove(
+                        sprite.text)
+        sprite.text = '  '
+        
 def remove_from_blacklist() -> None:
-    selected = 0
+    
     global title_text
-    for i in vars.gui_blacklist.sprites():
-        if i.active and not i.muteable:
-            if i.text != '  ':
-                selected += 1
-                vars.sent_list.remove(i.text)
-                vars.sent_list.append('  ')
-                vars.session_temp['time_list'][vars.time_var]['programs'].remove(
-                    i.text)
-    if selected == 0:
+    
+    if not get_active_texts(vars.gui_blacklist,remove_helper):
         title_text = "Error! Please select a program to remove."
         error_window.active = True
 
@@ -114,16 +118,17 @@ def time_is_valid() -> tuple[bool, str]:
     return True, hour_box.text+':'+minute_box.text
 
 
+            
+            
 def select() -> None:
-    for i in vars.gui_timelist.sprites():
-        if i.active:
-            vars.time_selected = True
-            vars.time_var = i.text.strip()
-
-            fill_list()
-            vars.gui_blacklist = sg.generate_line(vars.gui_blacklist, Text_Edit, vars.list_end, 550, 25, 350, 45, None, 46,
-                                             True, text=vars.sent_list[vars.list_end-15:vars.list_end], color=(255, 255, 255), muteable=False, font=font)
-            break
+    selected_data=get_active_texts(vars.gui_timelist,None)
+    if selected_data:
+        vars.time_var = selected_data[0]
+        vars.time_selected = True
+        fill_list()
+        vars.gui_blacklist = sg.generate_line(vars.gui_blacklist, Text_Edit, vars.list_end, 550, 25, 350, 45, None, 46,
+                                            True, text=vars.sent_list[vars.list_end-15:vars.list_end], color=(255, 255, 255), muteable=False, font=font)
+        
     if not vars.time_selected:
         error_window.active = True
         error_window.title = "Error! Please select a valid box."
@@ -141,33 +146,22 @@ def fill_list() -> None:
 def back() -> None:
 
     vars.time_selected = False
-    vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[
-        1]
+    vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[1]
 
 
 def exit() -> None:
     # no direct links to the program other than through
     # save to ensure the data doesnt have to be rentered
 
-    with open(vars.path, "w", encoding="utf-8") as f:
+    with open(vars.json_path, "w", encoding="utf-8") as f:
         json.dump(vars.session_temp, f, ensure_ascii=False, indent=2)
     pygame.quit()
     sys.exit()
 
 
-def delete_enteries(gui_list: list) -> None:
-    for i in range(len(gui_list)):
-        if gui_list[i].active:
-            gui_list[i].text
-            del vars.session_temp['time_list'][vars.time_var]['programs'][i]
-
-
 def enter(days) -> None:
-
     if vars.time_selected:
-
         change_end_time()
-
     else:
         set_new_start_time(days)
 
@@ -188,9 +182,7 @@ def change_end_time() -> None:
     if time_is_valid()[0]:
         # and not less than key time
         if int(time_is_valid()[1][:2]) < int(hour_box.text) and int(time_is_valid()[1][3:]) < int(minute_box.text):
-            vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[
-                1]
-            vars.time_group[time_is_valid()[1]] = {}
+            vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[1]
 
             vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=list(
                 vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
@@ -270,6 +262,8 @@ def draw():
         error_window.draw(screen)
         vars.active_window = 'error'
     else:
+        if get_active_texts(days_list, None)!=vars.selected_days:
+            vars.selected_days=get_active_texts(days_list, None)
         vars.active_window = 'main'
 
 def main():

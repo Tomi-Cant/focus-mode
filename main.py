@@ -53,12 +53,12 @@ def main():
         # checks for time and day of week
         if curr_time <= set_times[index] and day_of_week in set_days:
 
-            proc_funcs.close_by_process(no_list, path, curr_time)
+            proc_funcs.close_by_process(no_list, curr_time)
 
-            proc_funcs.close_by_title(added, window, win, path, curr_time)
+            proc_funcs.close_by_title(added, window, win, curr_time)
 
             proc_funcs.convert_to_exe(
-                added, no_list, path, curr_time, index, set_temp, data, time_list, pathjson)
+                added, no_list, curr_time, index, set_temp, data, time_list)
 
             
 
