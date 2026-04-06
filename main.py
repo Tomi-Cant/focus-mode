@@ -60,11 +60,12 @@ def main():
             proc_funcs.convert_to_exe(
                 added, no_list, path, curr_time, index, set_temp, data, time_list, pathjson)
 
-            cull_times(set_times, end_times, index, curr_time)
+            
 
             index += 1
             index %= len(set_times)
-
+        else:
+            set_times, end_times = cull_times(set_times, end_times, index, curr_time)
         time.sleep(.75)  # checks every .75 seconds
 
     with open(path, "a") as log:

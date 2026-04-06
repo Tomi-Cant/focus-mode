@@ -15,11 +15,11 @@ def shorten(text: str, box_width: int, font) -> str:
     return text
 
 
-def cull_times(set, end, indx, time):
+def cull_times(start, end, indx, time):
     if time >= end[indx]:  # checks if end time is passed if so remove from list with pair
         del end[indx]
-        del set[indx]
-
+        del start[indx]
+    return start, end
 
 def time_seperator(time: str) -> tuple[str, str]:
     return time[:2], time[3:]

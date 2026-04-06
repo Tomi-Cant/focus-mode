@@ -2,6 +2,7 @@
   "time_list": {
     "17:10": {
       "programs": [],
+      "to_open": "",
       "end_time": "23:59",
       "days": [
         "Monday",
@@ -15,6 +16,7 @@
     },
     "17:11": {
       "programs": [],
+      "to_open": "",
       "end_time": "",
       "days": [
         "Monday",
@@ -28,6 +30,7 @@
     },
     "17:12": {
       "programs": [],
+      "to_open": "",
       "end_time": "23:59",
       "days": [
         "Monday",
@@ -41,6 +44,7 @@
     },
     "11:01": {
       "programs": [],
+      "to_open": "",
       "end_time": "00:00",
       "days": [
         "Monday",
@@ -67,6 +71,7 @@
     },
     "11:11": {
       "programs": [],
+      "to_open": "",
       "end_time": "23:59",
       "days": [
         "Monday",

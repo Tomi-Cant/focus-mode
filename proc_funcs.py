@@ -1,5 +1,7 @@
+
 import window_to_process
 import win32gui
+import win32api
 import win32con
 import time
 import psutil
@@ -8,6 +10,7 @@ import json
 
 def close_by_title(added, window, win, path, curr_time):
     if window in added:  # method for titles
+        time.sleep(.5)
         win32gui.PostMessage(win, win32con.WM_CLOSE, 0, 0)
         with open(path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
@@ -38,9 +41,23 @@ def close_by_process(no_list, path, curr_time):
                     f"Process '{proc.info['name']}' terminated successfully.")
                 with open(path, "a") as log:
                     log.write(f"    Closed {proc.name()} {curr_time}\n")
-                continue
+                return True
             except psutil.NoSuchProcess:
                 print(f"Process '{proc.info['name']}' no longer exists.")
             except psutil.AccessDenied:
                 print(
                     f"Access denied to terminate process '{proc.info['name']}'.")
+                
+def start_program(path,to_open,curr_time):
+    try:
+        win32api.ShellExecute(0, 'open', to_open, '', '', 1)
+        with open(path, "a") as log:
+            log.write(f"        Started {to_open} {curr_time}\n")
+    except Exception as e:
+        print(f"Failed to start {to_open}: {e}")
+    
+if __name__ == "__main__":
+    import datetime
+    start_program(r"C:\Banjoko\Python\focus_mode\log.txt", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", datetime.datetime.now())   
+    close_by_title(["Google Chrome"], "Google Chrome", 29100966, r"C:\Banjoko\Python\focus_mode\log.txt", datetime.datetime.now())
+                   
