@@ -1,25 +1,17 @@
-"""
-Focus Mode - Program Blacklist Manager
-Tkinter-based UI for managing application blocking schedules
-"""
-# -Command "& {C:\Scripts\MyScript.ps1; if ($LASTEXITCODE -ne 0) { throw 'Task Failed' }}" add this to task scheduler
+
+
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import json
 import webbrowser
-import sys
-from datetime import datetime
 
 # Import custom modules
-from Text_Edit import Text_Edit
 from Button import Button
 import vars
-from helper_funcs import get_active_texts
 
 
 class FocusModeUI:
-    """Main UI class for Focus Mode"""
-    
+
     def __init__(self, root):
         self.root = root
         self.root.title("Focus Mode")
@@ -35,7 +27,6 @@ class FocusModeUI:
         self.create_main_view()
     
     def create_main_view(self):
-        """Create the main blacklist management view"""
         self.clear_window()
         self.current_view = "main"
         
@@ -65,15 +56,15 @@ class FocusModeUI:
         self.blacklist_buttons_frame.pack(fill=tk.X)
         
         Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
-               command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 9), width=12) #change to adda new time on other screen
+               command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 11), width=12) #change to adda new time on other screen
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
-               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 9), width=12)
-        Button(self.blacklist_buttons_frame, x=2, y=0, text="Settings", 
-               command=self.enter_time_settings, bg_color="orange", fg_color="white", font=("Arial", 9), width=12)
+               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Time Settings", 
+               command=self.enter_time_settings, bg_color="orange", fg_color="white", font=("Arial", 11), width=12, wraplength=70)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
-               command=self.help, bg_color="blue", fg_color="white", font=("Arial", 9), width=12)
+               command=self.help, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
-               command=self.exit, bg_color="green", fg_color="white", font=("Arial", 9), width=12)
+               command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12)
         
         # Right panel - List display (smaller)
         right_panel = ttk.Frame(content_frame)
@@ -94,7 +85,7 @@ class FocusModeUI:
         self.update_blacklist_display()
     
     def create_time_settings_view(self):
-        """Create the time settings management view"""
+        
         self.clear_window()
         self.current_view = "time_settings"
         
@@ -203,7 +194,6 @@ class FocusModeUI:
     
     
     def add_to_blacklist(self):
-        """Add a program to the blacklist"""
         file_path = filedialog.askopenfilename(
             initialdir= vars.rootdir,   
             title="Select a program executable",
@@ -225,13 +215,11 @@ class FocusModeUI:
         self.new_time_group()
         
     def parse_selected_time(self, time_str:str) -> str:
-        """Parse time string to extract key"""
         if " (" in time_str:
             return time_str.split(" (")[1].split(" - ")[0]
         return time_str.split(" - ")[0]
     
     def remove_from_timelist(self):
-        """Remove selected program from blacklist"""
         if self.current_view == "main":
             if self.select(None)!=False: #test this
                 item = self.select(None)
@@ -243,14 +231,12 @@ class FocusModeUI:
                         messagebox.showinfo("Removed", f"Removed {item}")
     
     def enter_time_settings(self):
-        """Enter time settings view"""
         if vars.session_temp.get('time_list'):
             self.create_time_settings_view()
         else:
             messagebox.showwarning("No Times", "Please add time groups first")
             
     def select(self,event):
-        """Select a time group"""
         selection = self.blacklist_display.curselection()
     
         if selection:
@@ -261,7 +247,6 @@ class FocusModeUI:
         return False
             
     def select_time(self, event):
-        """Select a time group"""
         selection = self.time_listbox.curselection()
     
         if selection:
@@ -271,10 +256,15 @@ class FocusModeUI:
             self.update_time_display()
             return selection
         return False
+    def select_program(self,event):
+        selection = self.program_listbox.curselection()
     
+        if selection:
+            selection :str = self.program_listbox.get(selection[0])
+            return selection
+        return False
    
     def new_time_group(self):
-        """Create a new time group"""
         # Create a dialog for time and name input
         dialog = tk.Toplevel(self.root)
         dialog.title("New Time Group")
@@ -325,7 +315,8 @@ class FocusModeUI:
                     "end_time": "23:59",
                     "days": vars.selected_days.copy(),
                     "productive":"",
-                    "productive_type":""
+                    "productive_type":"",
+                    "select_type":"Queue"
                 }
                 if vars.session_temp['time_list'][time_key]["name"]== None:
                     del vars.session_temp['time_list'][time_key]["name"]
@@ -340,7 +331,7 @@ class FocusModeUI:
         ttk.Button(button_frame, text="Create", command=add_time).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
-    def change_replacement(self):
+    def change_replacement(self): #need to add option for queue or random 
         if not self.select_time(None):
             messagebox.showerror("Error","A time slot must be selected to use this option")
             return False
@@ -397,7 +388,6 @@ class FocusModeUI:
         dialog.destroy()
         
     def update_time_display(self):
-        """Update the time and program display"""
         if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
             time_data = vars.session_temp['time_list'][vars.time_var]
             
@@ -419,7 +409,6 @@ class FocusModeUI:
                 self.program_listbox.insert(tk.END, program)
     
     def add_program(self):
-        """Add a program to the current time group"""
         program = self.program_entry.get().strip()
         if program and vars.time_var:
             if vars.time_var in vars.session_temp.get('time_list', {}):
@@ -431,17 +420,14 @@ class FocusModeUI:
                     messagebox.showinfo("Success", f"Added {program}")
     
     def remove_program(self):
-        """Remove selected program from current time group"""
-        if self.select_time(None):
-            program = self.select_time(None)
-            programs = vars.session_temp['time_list'][vars.time_var]['programs']
-            if program in programs:
-                programs.remove(program)
-                self.update_time_display()
-                messagebox.showinfo("Removed", f"Removed {program}")
-    
+        program = self.select_program(None)
+        programs = vars.session_temp['time_list'][vars.time_var]['programs']
+        if program in programs:
+            programs.remove(program)
+            self.update_time_display()
+            messagebox.showinfo("Removed", f"Removed {program}")
+
     def save_time_settings(self):
-        """Save time settings"""
         try:
             if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
                 time_data = vars.session_temp['time_list'][vars.time_var]
@@ -470,7 +456,6 @@ class FocusModeUI:
             messagebox.showerror("Error", f"Error saving: {str(e)}")
     
     def update_blacklist_display(self):
-        """Update the blacklist display"""
         if self.blacklist_display:
             self.blacklist_display.delete(0, tk.END)
             if vars.session_temp.get('time_list'):
@@ -500,7 +485,6 @@ class FocusModeUI:
                     self.blacklist_display.insert(tk.END, "")
     
     def update_time_list(self):
-        """Update time list display"""
         if self.time_listbox:
             self.time_listbox.delete(0, tk.END)
             for time_key in vars.time_group:
@@ -513,16 +497,13 @@ class FocusModeUI:
                     self.time_listbox.insert(tk.END, f"{time_key} - {end}")
     
     def help(self):
-        """Open help"""
         webbrowser.open('https://github.com/Tomi-Cant/focus_mode') # remember to change it
     
     def clear_window(self):
-        """Clear all widgets from window"""
         for widget in self.root.winfo_children():
             widget.destroy()
     
     def exit(self):
-        """Save and exit"""
         try:
             with open(vars.json_path, "w", encoding="utf-8") as f:
                 json.dump(vars.session_temp, f, indent=2)
@@ -532,7 +513,6 @@ class FocusModeUI:
 
 
 def main():
-    """Main entry point"""
     root = tk.Tk()
     app = FocusModeUI(root)
     root.mainloop()

@@ -50,17 +50,24 @@ def close_by_title(added, window, win, curr_time):
             log.write(f"    Closed {window} {curr_time}\n")
         time.sleep(.5)
         
-def productive_open(added, curr_time): # maybe add randomizer with multi later
+def productive_open(added, curr_time): # maybe add randomizer with multi later or queue system
+    import random
     output=''
     prod_type =vars.time_group[curr_time]["productive_type"]
-    if prod_type== '':
-        
+    select_type=vars.time_group[curr_time]["select_type"]
+    if vars.time_group[curr_time]["productive"] == "":
+         # write a window message that says no productive target for this time slot
         output = (f"    No productive application/website for this time slot")
+    if select_type == "Random":
+        productive = vars.time_group[curr_time]["productive"][random.randint(0, len(vars.time_group[curr_time]["productive"])-1)]
+    if select_type == "Queue":
+        productive = vars.time_group[curr_time]["productive"][0] 
+        
     if prod_type == "website":
-        webbrowser.open(vars.time_group[curr_time]["productive"])
+        webbrowser.open(productive)
         output = (f"    Opened productive website for {added} at {curr_time}\n") 
     if prod_type == "executable":
-        ShellExecute(0, 'open',vars.time_group[curr_time]["productive"],'','',1) 
+        ShellExecute(0, 'open',productive,'','',1) 
         output = (f"    Opened productive application for {added} at {curr_time}\n") 
     with open(vars.log_path, "a") as log:
         log.write(output)
