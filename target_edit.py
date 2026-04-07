@@ -68,7 +68,7 @@ class FocusModeUI:
                command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 9), width=12) #change to adda new time on other screen
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
                command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 9), width=12)
-        Button(self.blacklist_buttons_frame, x=2, y=0, text="Settings", 
+        Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
                command=self.enter_time_settings, bg_color="orange", fg_color="white", font=("Arial", 9), width=12)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
                command=self.help, bg_color="blue", fg_color="white", font=("Arial", 9), width=12)
@@ -145,15 +145,17 @@ class FocusModeUI:
         ttk.Entry(name_frame, textvariable=self.name_var, width=20).pack(fill=tk.X, padx=5, pady=5)
         
         # Time input section
-        time_frame = ttk.LabelFrame(right_panel, text="Time Range")
+        time_frame = ttk.LabelFrame(right_panel, text="Time Range (00:00-23:59)")
         time_frame.pack(fill=tk.X, padx=5, pady=5)
         
         ttk.Label(time_frame, text="Start Time (HH:MM):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         ttk.Label(time_frame, text="End Time (HH:MM):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(time_frame, text= "Allowed Hours").grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
         self.hour_var = tk.StringVar(value="00")
         self.minute_var = tk.StringVar(value="00")
         self.end_hour_var = tk.StringVar(value="00")
         self.end_minute_var = tk.StringVar(value="00")
+        self.allowed_hours= tk.StringVar(value="0") #still need to implement into json
         
         ttk.Entry(time_frame, textvariable=self.hour_var, width=5).grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(time_frame, text=":").grid(row=0, column=2)
@@ -163,6 +165,7 @@ class FocusModeUI:
         ttk.Label(time_frame, text=":").grid(row=1, column=2)
         ttk.Entry(time_frame, textvariable=self.end_minute_var, width=5).grid(row=1, column=3, padx=5, pady=5)
         
+        ttk.Entry(time_frame,textvariable=self.allowed_hours,width=5).grid(row=2,column=1)
         # Day selection
         days_frame = ttk.LabelFrame(right_panel, text="Active Days")
         days_frame.pack(fill=tk.X, padx=5, pady=5)
