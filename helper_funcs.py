@@ -2,10 +2,7 @@ import tkinter as tk
 
 
 def shorten(text: str, box_width: int, font_size: int = 10) -> str:
-    """
-    Condense text to fit within given width constraints
-    For tkinter, this is a simplified version - actual rendering depends on font metrics
-    """
+
     tries = 0
     max_width = box_width // (font_size // 2)  # Rough estimate for character width
     
