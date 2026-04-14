@@ -19,8 +19,8 @@
       ],
       "name": "This",
       "start_time": "00:00",
-      "productive_type": "",
-      "productive": ""
+      "productive": ["www.a", "docs.exe"],
+      "select_type":""
     },
     "13:25": {
       "programs": [
@@ -37,9 +37,9 @@
         "Friday",
         "Saturday"
       ],
-      "productive_type": "",
-      "productive": "",
-      "name": "13:25"
+      "productive": [],
+      "select_type":""
+      
     }
   }
 }

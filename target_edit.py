@@ -205,8 +205,8 @@ class FocusModeUI:
         
         if file_path:
             executable = file_path.split("\\")[-1]
-            if vars.session_temp.get('time_list', {}) and vars.time_var in vars.session_temp['time_list']:
-                programs = vars.session_temp['time_list'][vars.time_var]['programs']
+            if vars.session_temp.get('time_list', {}) and vars.time_var in vars.time_group:
+                programs = vars.time_group[vars.time_var]['programs']
                 if executable not in programs:
                     programs.append(executable)
                     self.update_blacklist_display()
@@ -226,7 +226,7 @@ class FocusModeUI:
         if self.current_view == "main":
             if self.select(None)!=False: #test this
                 item = self.select(None)
-                if vars.session_temp.get('time_list', {}) and vars.time_var in vars.session_temp['time_list']:
+                if vars.time_group and vars.time_var in vars.time_group:
                     times = vars.session_temp['time_list']
                     if item in times:
                         times.remove(item)
@@ -259,6 +259,7 @@ class FocusModeUI:
             self.update_time_display()
             return selection
         return False
+    
     def select_program(self,event):
         selection = self.program_listbox.curselection()
     
@@ -305,14 +306,14 @@ class FocusModeUI:
                 
                 time_key = f"{hour:02d}:{minute:02d}"
                 
-                if time_key in vars.session_temp['time_list']:
+                if time_key in vars.time_group:
                     messagebox.showwarning("Duplicate", f"Time {time_key} already exists")
                     return
                 
                 name = name_var.get().strip() or None
                 
                 # Add new time group with default values
-                vars.session_temp['time_list'][time_key] = {
+                vars.time_group[time_key] = {
                     "name": name,
                     "programs": [],
                     "end_time": "23:59",
@@ -321,8 +322,8 @@ class FocusModeUI:
                     "productive_type":"",
                     "select_type":"Queue"
                 }
-                if vars.session_temp['time_list'][time_key]["name"]== None:
-                    del vars.session_temp['time_list'][time_key]["name"]
+                if vars.time_group[time_key]["name"]== None:
+                    del vars.time_group[time_key]["name"]
                 
                 self.update_time_list()
                 dialog.destroy()
@@ -340,65 +341,114 @@ class FocusModeUI:
             return False
         dialog = tk.Toplevel(self.root)
         dialog.title("Change Replacement App/Site")
-        dialog.geometry("350x220")
+        dialog.geometry("350x275")
         dialog.transient(self.root)
         dialog.grab_set()
         app_frame= tk.Frame(dialog, name= 'app')
         web_frame= tk.Frame(dialog, name= 'web')
-        button_frame= tk.Frame(dialog, name= "button")
+        button_frame= tk.Frame(dialog, name= "button",height=15)
+        button_frame.pack_configure()
+        self.list_frame= tk.Frame(dialog, name='list')
         web_url= tk.StringVar(value='Enter Website')
-        
-        app_label=tk.Label(app_frame, text= "Replacement Type: App",justify="center",font=("Arial", 14, "bold"))
-        browse_applications=tk.Button(app_frame, text="Browse Files/Apps/Docs", justify= "center", command=lambda:self.select_file(dialog))
-        app_label.pack()
-        browse_applications.pack()
+        button_frame.pack_configure(padx=4)
+        tk.Label(app_frame, text= "Replacement Type: App",justify="center",font=("Arial", 14, "bold")).pack()
+        tk.Button(app_frame, text="Browse Files/Apps/Docs", justify= "center", command=lambda:self.select_file()).pack()
+
         app_frame.pack()
-        web_label=tk.Label(web_frame, text="Replacement Type: Website",justify="center",font=("Arial", 14, "bold"))
-        website=tk.Entry(web_frame,textvariable=web_url,justify='center')
-        web_label.pack()
-        website.pack()
         
-        change_type= tk.Button(button_frame, text="Change Type", justify="center", command=lambda:self.change_replace_type(app_frame,web_frame, button_frame) )
-        submit_entry=tk.Button(web_frame, text="Enter", justify= 'center',command = lambda:self.enter_replacement(web_url.get(),dialog))
-        change_type.pack()
+        tk.Label(web_frame, text="Replacement Type: Website",justify="center",font=("Arial", 14, "bold")).pack()
+        tk.Entry(web_frame,textvariable=web_url,justify='center').pack()
+        submit_entry=tk.Button(web_frame, text="Enter", justify= 'center',
+                               command = lambda:self.enter_replacement(web_url.get()))
+        
+        self.replacement_list= tk.Listbox(self.list_frame, height=15, width =50)
+        scrollbar = ttk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.replacement_list.yview)
+        self.replacement_list.config(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right",fill='y')
+        self.update_replacement_listbox()
+        tk.Button(button_frame, text="Change Type", justify="center", 
+                  command=lambda:self.swap_out_widgets(app_frame,web_frame,self.list_frame,side='top')).pack(side="left")
+        tk.Button(button_frame,text='Remove Selected', justify="center",command=self.remove_replacement).pack(side="left")
+        self.shuffle_select=tk.Button(button_frame, text='Change to Queue', justify= 'center',
+                                      command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
+        queue_select= tk.Button(button_frame, text='Change to Shuffle', justify= 'center',
+                                command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
+        queue_select.pack(side="left")
+
+        tk.Button(button_frame, text='Exit', command=lambda:dialog.destroy()).pack(side="right")
+        self.replacement_list.pack(side="left")
+        
         submit_entry.pack()    
+        button_frame.pack(side="bottom")
+        
+        self.list_frame.pack()
+        
+    def remove_replacement(self):
+            selection = self.replacement_list.curselection()
+            if selection in vars.time_group[vars.time_var]["productive"]:
+                vars.time_group[vars.time_var]["productive"].remove(selection)
+                self.update_replacement_listbox()
+            else:
+                messagebox.showerror("Error!", "The selected item does not exist or there was no selection",icon='error')
     
-    def change_replace_type(self,frame1: tk.Frame,frame2:tk.Frame,frame3:tk.Frame):
-        if frame1.winfo_ismapped():
-            frame2.pack()
-            frame1.pack_forget()
+    def swap_out_widgets(self, obj1, obj2, obj3=None,**kwargs):
+        if obj1.winfo_ismapped():
+            obj2.pack(**kwargs)
+            obj1.pack_forget()
         else:
-            frame1.pack()
-            frame2.pack_forget()
-        frame3.pack_forget()
-        frame3.pack()
+            obj1.pack(**kwargs)
+            obj2.pack_forget()
+        if obj3 != None:
+            obj3.pack_forget()
+            obj3.pack(side='bottom')
             
-    def enter_replacement(self, entry:str, dialog:tk.Toplevel):
-        vars.session_temp[vars.time_var]["productive_type"]= "website"
-        vars.session_temp[vars.time_var]["productive"]= entry
-        # on success
-        dialog.destroy()
+    def enter_replacement(self, entry:str):
+        if entry!= "Enter Website" or entry !=''or ' ' in entry:
+            entry= entry if entry.startswith("www.") else "www." + entry
+            if messagebox.askokcancel("Testing", "Opening Website for confirmation...\n OK to open website. Cancel to skip this step."):
+                webbrowser.open(entry)
+                
+            if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):
+                vars.time_group[vars.time_var]["productive"].append(entry)
+                vars.time_group[vars.time_var]["select_type"]= 'Queue'  if not self.shuffle_select.winfo_ismapped() else "Random"
+                
+                self.update_replacement_listbox()
+            
+        else:
+            messagebox.showwarning("Error!", "The input must be non-empty without spaces",icon='error')
     
-    def select_file(self, dialog):
+    def select_file(self):
         file_path = filedialog.askopenfilename(
             initialdir=vars.rootdir,
             title="Select a program executable",
             filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
         )
-        vars.session_temp[vars.time_var]["productive_type"] ="executable"
-        vars.session_temp[vars.time_var]["productive"] =file_path
-        # on success
-        dialog.destroy()
-        
+        if file_path!='':
+            if messagebox.askokcancel("Testing", "Opening Website for confirmation..."):
+                from win32api import ShellExecute
+                ShellExecute(0, 'open',file_path,'','',1) 
+            if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):                
+                vars.time_group[vars.time_var]["productive"].append(file_path)
+                vars.time_group[vars.time_var]["select_type"]= 'Queue' if not self.shuffle_select.winfo_ismapped() else "Random"
+
+                self.update_replacement_listbox()
+        else:
+            messagebox.showwarning("Error!", "There was no file given or it could be found",icon='error')
+            
+    def update_replacement_listbox(self):
+        if self.replacement_list:
+            self.replacement_list.delete(0,tk.END)
+            # for replacement in vars.time_group[vars.time_var]['productive']:
+            self.replacement_list.insert(tk.END,*vars.time_group[vars.time_var]['productive'])
+            
     def update_time_display(self):
         if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
-            time_data = vars.session_temp['time_list'][vars.time_var]
+            time_data = vars.time_group[vars.time_var]
             
             # Update name
             name = time_data.get('name', vars.time_var)
             self.name_var.set(name)
             
-            # start_time = time_data.get('start_time', '00:00')
             end_time = time_data.get('end_time', '00:00')
             
             self.hour_var.set(vars.time_var[:2])
@@ -415,7 +465,7 @@ class FocusModeUI:
         program = self.program_entry.get().strip()
         if program and vars.time_var:
             if vars.time_var in vars.session_temp.get('time_list', {}):
-                programs = vars.session_temp['time_list'][vars.time_var]['programs']
+                programs = vars.time_group[vars.time_var]['programs']
                 if program not in programs:
                     programs.append(program)
                     self.program_entry.delete(0, tk.END)
@@ -424,7 +474,7 @@ class FocusModeUI:
     
     def remove_program(self):
         program = self.select_program(None)
-        programs = vars.session_temp['time_list'][vars.time_var]['programs']
+        programs = vars.time_group[vars.time_var]['programs']
         if program in programs:
             programs.remove(program)
             self.update_time_display()
@@ -433,7 +483,7 @@ class FocusModeUI:
     def save_time_settings(self):
         try:
             if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
-                time_data = vars.session_temp['time_list'][vars.time_var]
+                time_data = vars.time_group[vars.time_var]
                 
                 # Save name
                 name = self.name_var.get().strip()
@@ -462,7 +512,7 @@ class FocusModeUI:
         if self.blacklist_display:
             self.blacklist_display.delete(0, tk.END)
             if vars.session_temp.get('time_list'):
-                for time_key, time_data in vars.session_temp['time_list'].items():
+                for time_key, time_data in vars.time_group.items():
                     # Get name and programs
                     name = time_data.get('name')
                     end_time = time_data.get('end_time', '23:59')

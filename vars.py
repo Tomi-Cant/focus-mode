@@ -1,7 +1,6 @@
 from os.path import dirname, abspath, join
 import json
 import tkinter as tk
-from tkinter import ttk
 
 root: tk.Tk = None #type:ignore
 
