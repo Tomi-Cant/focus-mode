@@ -17,13 +17,11 @@ json_path = join(parent_path, "blacklist.json")
 with open(json_path, "r", encoding="utf-8") as f:
     session_temp :dict = json.load(f)
 time_group : dict = session_temp.get('time_list', {})
-sent_list = []
 gui_blacklist_widgets = []  # List of tkinter Entry widgets
 gui_timelist_widgets = []   # List of tkinter widgets for time list
 active_window = "main"
 font = ("Arial", 10)
 large_font = ("Arial", 20)
 
-list_end = 15
 
 

@@ -65,6 +65,14 @@ print(datetime.date.today().strftime("%a")) # sends abbrivated version of day of
 # }
 # foo['a']
 # print(foo)
-s="9"
-s.capitalize()
-print(s)
+# s="9"
+# s.capitalize()
+# print(s)
+# now=str(datetime.datetime.now())
+# now=now.split(' ')[0]
+# print(now)
+
+
+# import webbrowser,webob
+# from urllib import parse
+# parse.

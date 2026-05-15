@@ -122,8 +122,12 @@ class FocusModeUI:
         # Button frame for actions
         button_frame = ttk.Frame(left_panel)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
-        ttk.Button(button_frame, text= "Set Replacement Program/Site",command= self.change_replacement).pack( padx=2, fill=tk.X,side= 'top')
+        temp = ttk.Button(button_frame, text= "Set Replacement Program/Site",command= self.change_replacement,default="disabled")
+        temp.pack( padx=2, fill=tk.X,side= 'top')
         ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, padx=2, fill=tk.X)
+        temp.configure(default='disabled')
+        temp.pack_forget()
+        temp.pack( padx=2, fill=tk.X,side= 'top')
         
         # Right panel - Settings (visible by default)
         right_panel = ttk.Frame(main_container,width=10)
@@ -146,7 +150,8 @@ class FocusModeUI:
         self.minute_var = tk.StringVar(value="00")
         self.end_hour_var = tk.StringVar(value="00")
         self.end_minute_var = tk.StringVar(value="00")
-        self.allowed_hours= tk.StringVar(value="0") #still need to implement into json
+        self.allowed_hours= tk.DoubleVar(value=0.0) #converted to seconds in json
+        
         
         ttk.Entry(time_frame, textvariable=self.hour_var, width=5).grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(time_frame, text=":").grid(row=0, column=2)
@@ -215,6 +220,7 @@ class FocusModeUI:
                     messagebox.showwarning("Duplicate", f"{executable} is already in the list")
    
     def add_to_time_list(self):
+        self.enter_time_settings()
         self.new_time_group()
         
     def parse_selected_time(self, time_str:str) -> str:
@@ -224,7 +230,7 @@ class FocusModeUI:
     
     def remove_from_timelist(self):
         if self.current_view == "main":
-            if self.select(None)!=False: #test this
+            if self.select(None)!=False: 
                 item = self.select(None)
                 if vars.time_group and vars.time_var in vars.time_group:
                     times = vars.session_temp['time_list']
@@ -409,7 +415,7 @@ class FocusModeUI:
                 webbrowser.open(entry)
                 
             if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):
-                vars.time_group[vars.time_var]["productive"].append(entry)
+                vars.time_group[vars.time_var]["productive"].append(entry+ " #website")
                 vars.time_group[vars.time_var]["select_type"]= 'Queue'  if not self.shuffle_select.winfo_ismapped() else "Random"
                 
                 self.update_replacement_listbox()
@@ -438,7 +444,6 @@ class FocusModeUI:
     def update_replacement_listbox(self):
         if self.replacement_list:
             self.replacement_list.delete(0,tk.END)
-            # for replacement in vars.time_group[vars.time_var]['productive']:
             self.replacement_list.insert(tk.END,*vars.time_group[vars.time_var]['productive'])
             
     def update_time_display(self):
@@ -499,6 +504,10 @@ class FocusModeUI:
                 selected_days = [day for day, var in self.day_vars.items() if var.get()]
                 vars.session_temp['days'] = selected_days
                 
+                # Save allowed time
+                allowed_time = self.allowed_hours.get()
+                time_data['allowed_time'] = float(allowed_time)*360
+
                 # Save to JSON
                 with open(vars.json_path, "w", encoding="utf-8") as f:
                     json.dump(vars.session_temp, f, indent=2)
@@ -550,7 +559,7 @@ class FocusModeUI:
                     self.time_listbox.insert(tk.END, f"{time_key} - {end}")
     
     def help(self):
-        webbrowser.open('https://github.com/Tomi-Cant/focus_mode') # remember to change it
+        webbrowser.open('https://github.com/Tomi-Cant/focus_mode') # remember to change it to interactive tutorial no website
     
     def clear_window(self):
         for widget in self.root.winfo_children():

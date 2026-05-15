@@ -61,3 +61,15 @@ def get_active_texts(widgets, func) -> list:
                     pass
     
     return output
+
+def read_last_x_lines(path, lines) -> list[str]:
+    with open(path, 'r') as f:
+        return f.readlines()[len(f.readlines())-lines-1:]
+           
+def find_last_run(curr_time, ):
+    for line in read_last_x_lines(vars.log_path,5):
+        if str(curr_time).split(" ")[0] in line:
+            found =True
+    if not found:
+        for time in vars.time_group:
+            time["time_left"] = time["allowed_time"]

@@ -20,7 +20,9 @@
       "name": "This",
       "start_time": "00:00",
       "productive": ["www.a", "docs.exe"],
-      "select_type":""
+      "select_type":"",
+      "allowed_time":360,
+      "time_left": 360
     },
     "13:25": {
       "programs": [
@@ -38,7 +40,9 @@
         "Saturday"
       ],
       "productive": [],
-      "select_type":""
+      "select_type":"",
+      "allowed_time":360,
+      "time_left": 360
       
     }
   }
