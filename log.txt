@@ -186,3 +186,19 @@ Script started at 2026-05-15 04:06:13.894064
 Script started at 2026-05-15 04:06:58.764004
 Script started at 2026-05-15 04:11:36.908398
 Script started at 2026-05-15 04:11:48.860713
+Script started at 2026-05-22 17:18:40.705872
+Script started at 2026-05-22 17:20:19.190174
+Script started at 2026-05-22 17:22:08.508201
+Script started at 2026-05-22 17:22:26.307052
+Script started at 2026-05-22 17:24:40.809098
+Script started at 2026-05-22 17:29:13.252563
+Script started at 2026-05-22 17:31:43.814381
+Script started at 2026-05-22 17:32:05.218703
+Script started at 2026-05-22 17:32:34.216786
+Script started at 2026-05-22 17:33:35.128272
+Script started at 2026-05-22 17:34:36.545388
+Script started at 2026-05-22 17:36:20.353142
+    Closed Epic Games Launcher 2026-05-22 17:36:21.418002
+    Closed Steam 2026-05-22 17:36:54.215121
+    Closed Epic Games Launcher 2026-05-22 17:37:20.417384
+    Closed Epic Games Launcher 2026-05-22 17:37:24.518687

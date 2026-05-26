@@ -2,14 +2,13 @@ import window_to_process
 from win32gui import PostMessage
 from win32api import ShellExecute
 import win32con
-import datetime
 import psutil
 import json
 import vars
 import webbrowser
 from tkinter import messagebox
-
-
+from scapy.layers.dns import  DNSQR
+import pygetwindow as gw
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
     # converts application titles to their .exe counterpart
@@ -42,7 +41,7 @@ def close_by_process(no_list, curr_time,time_index):
             with open(vars.log_path, "a") as log:
                 try:
                     proc.kill()
-                    productive_open(proc.info['name'], curr_time)
+                    productive_open(proc.info['name'], curr_time, time_index)
                     log.write(f"    Closed {proc.name()} {curr_time}\n")
                     continue
                 except psutil.NoSuchProcess:
@@ -54,30 +53,41 @@ def close_by_process(no_list, curr_time,time_index):
                     log.write(
                         f"An unexpected error occurred while trying to terminate process '{proc.info['name']}': {e}\n")
 
-def close_by_title(added, window, win, curr_time):
+def close_by_title(added, window, win, time_index,curr_time):
     if window in added: 
-    
-        allowed_time = vars.time_group[curr_time]["time_left"]
-        if allowed_time >= 0:
-            allowed_time-=.5
-            return 
+        # if vars.time_group[time_index]["time_left"] >= 0:
+        #     vars.time_group[time_index]["time_left"]-=.5
+        #     return 
         PostMessage(win, win32con.WM_CLOSE, 0, 0)
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
         
-   
-def productive_open(added, curr_time): # maybe add randomizer with multi later or queue system
+def close_by_website(curr_time, packet):
+    if not packet.haslayer(DNSQR):
+        return
+    domain = packet[DNSQR].qname.decode()
+    for site in vars.web_target:
+        if site in domain:
+            print(f"Detected {domain}, closing...")
+            for window in gw.getAllWindows():
+                if site in window.title:
+                    window.close() 
+                    with open(vars.log_path, "a") as log:
+                        log.write(f"    Closed {window.title} {curr_time}\n")
+
+
+def productive_open(added, curr_time, time_index): # maybe add randomizer with multi later or queue system
     import random
     output=''
-    select_type=vars.time_group[curr_time]["select_type"]
-    if vars.time_group[curr_time]["productive"] == "":
+    select_type=vars.time_group[time_index]["select_type"]
+    if vars.time_group[time_index]["productive"] == "":
          # write a window message that says no productive target for this time slot
         messagebox.showwarning("No productive app set!", "You did not set up an app to open when the last one was closed.",icon='warning')
         output = (f"    No productive application/website for this time slot")
     if select_type == "Random":
-        productive = vars.time_group[curr_time]["productive"][random.randint(0, len(vars.time_group[curr_time]["productive"])-1)]
+        productive = vars.time_group[time_index]["productive"][random.randint(0, len(vars.time_group[time_index]["productive"])-1)]
     if select_type == "Queue":
-        productive = vars.time_group[curr_time]["productive"][0] 
+        productive = vars.time_group[time_index]["productive"][0] 
         
     if productive.endswith(" #website"):
         webbrowser.open(productive.strip(" #website"))

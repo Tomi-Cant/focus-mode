@@ -1,5 +1,5 @@
 import tkinter as tk
-
+import vars
 
 def shorten(text: str, box_width: int, font_size: int = 10) -> str:
 
@@ -67,9 +67,10 @@ def read_last_x_lines(path, lines) -> list[str]:
         return f.readlines()[len(f.readlines())-lines-1:]
            
 def find_last_run(curr_time, ):
+    found = False
     for line in read_last_x_lines(vars.log_path,5):
         if str(curr_time).split(" ")[0] in line:
             found =True
     if not found:
-        for time in vars.time_group:
+        for time in vars.time_group.values():
             time["time_left"] = time["allowed_time"]

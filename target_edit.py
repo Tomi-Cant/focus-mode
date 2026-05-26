@@ -50,7 +50,7 @@ class FocusModeUI:
         # Left panel - Buttons (smaller, fixed width)
         left_panel = ttk.Frame(content_frame, width=150)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
-        left_panel.pack_propagate(False)
+        # left_panel.pack_propagate(False)
         
         self.blacklist_buttons_frame = ttk.Frame(left_panel)
         self.blacklist_buttons_frame.pack(fill=tk.BOTH)
@@ -58,9 +58,9 @@ class FocusModeUI:
         Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
                command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 11), width=12) #change to adda new time on other screen
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
-               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 9), width=12)
+               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
-               command=self.enter_time_settings, bg_color="orange", fg_color="white", font=("Arial", 9), width=12)
+               command=self.create_time_settings_view, bg_color="orange", fg_color="white", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
                command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
@@ -104,19 +104,22 @@ class FocusModeUI:
         left_panel = ttk.Frame(main_container)
         left_panel.pack(side=tk.LEFT, padx=5, pady=5, anchor=tk.NW)
         
-        tk.Label(left_panel, text="Time Groups", font=("Arial", 12, "bold")).pack(fill=tk.X)
+        tk.Label(left_panel, text="Time Groups", font=("Arial", 12, "bold")).pack(fill=tk.BOTH)
         
         # Frame for listbox and scrollbar
         list_frame = ttk.Frame(left_panel)
-        list_frame.pack( padx=0, pady=5)
+        list_frame.pack( fill=tk.X, padx=0, pady=5)
         
         self.time_listbox = tk.Listbox(list_frame, height=10, width=30)
         scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.time_listbox.yview)
         self.time_listbox.config(yscrollcommand=scrollbar.set)
-        self.time_listbox.pack(side=tk.LEFT)
+        self.time_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT,fill=tk.Y)
         self.time_listbox.bind("<<ListboxSelect>>", self.select_time)
         
+        
+        # self.time_listbox.select_set(0)
+        # self.time_listbox.event_generate("<<ListboxSelect>>")
         self.update_time_list()
         
         # Button frame for actions
@@ -237,7 +240,7 @@ class FocusModeUI:
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
                command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
-               command=self.enter_time_settings, bg_color="orange", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
+               command=self.create_time_settings_view, bg_color="orange", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
                command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
@@ -281,7 +284,7 @@ class FocusModeUI:
                     messagebox.showwarning("Duplicate", f"{executable} is already in the list")
    
     def add_to_time_list(self):
-        self.enter_time_settings()
+        self.create_time_settings_view()
         self.new_time_group()
         
     def parse_selected_time(self, time_str:str) -> str:
@@ -300,11 +303,7 @@ class FocusModeUI:
                         self.update_blacklist_display()
                         messagebox.showinfo("Removed", f"Removed {item}")
     
-    def enter_time_settings(self):
-        if vars.session_temp.get('time_list'):
-            self.create_time_settings_view()
-        else:
-            messagebox.showwarning("No Times", "Please add time groups first")
+
             
     def select(self,event):
         selection = self.blacklist_display.curselection()
@@ -514,15 +513,18 @@ class FocusModeUI:
             time_data = vars.time_group[vars.time_var]
             
             # Update name
-            name = time_data.get('name', vars.time_var)
+            name = time_data.get('name', '')
             self.name_var.set(name)
             
             end_time = time_data.get('end_time', '00:00')
+            allowed_time = time_data.get('allowed_time', 0)/360
             
             self.hour_var.set(vars.time_var[:2])
             self.minute_var.set(vars.time_var[3:])
             self.end_hour_var.set(end_time[:2])
             self.end_minute_var.set(end_time[3:])
+            self.allowed_hours.set(allowed_time)
+            
             
             # Update program list
             self.program_listbox.delete(0, tk.END)
