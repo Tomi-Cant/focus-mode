@@ -7,8 +7,6 @@ import json
 import vars
 import webbrowser
 from tkinter import messagebox
-from scapy.layers.dns import  DNSQR
-import pygetwindow as gw
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
     # converts application titles to their .exe counterpart
@@ -62,18 +60,6 @@ def close_by_title(added, window, win, time_index,curr_time):
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
         
-def close_by_website(curr_time, packet):
-    if not packet.haslayer(DNSQR):
-        return
-    domain = packet[DNSQR].qname.decode()
-    for site in vars.web_target:
-        if site in domain:
-            print(f"Detected {domain}, closing...")
-            for window in gw.getAllWindows():
-                if site in window.title:
-                    window.close() 
-                    with open(vars.log_path, "a") as log:
-                        log.write(f"    Closed {window.title} {curr_time}\n")
 
 
 def productive_open(added, curr_time, time_index): # maybe add randomizer with multi later or queue system

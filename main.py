@@ -5,7 +5,6 @@ import proc_funcs
 import time
 import sys
 import json
-from scapy.all import AsyncSniffer
 from helper_funcs import time_seperator, cull_times, find_last_run
 import vars
 
@@ -13,8 +12,8 @@ def main():
     index = 0
     
     time_list = vars.time_group
-    sniffer = AsyncSniffer(filter="udp port 53", prn=lambda packet: proc_funcs.close_by_website(datetime.datetime.now(), packet), store=0)
-    sniffer.start()
+
+   
     curr_time = datetime.datetime.now()
     find_last_run(curr_time)
     day_of_week = datetime.date.today().strftime("%A")
@@ -38,9 +37,7 @@ def main():
         vars.time_var= vars.time_group[set_temp[index]]
         win = win32gui.GetForegroundWindow()
         window = win32gui.GetWindowText(win)
-        vars.web_target = vars.time_group[set_temp[index]].get('programs', '')
-        vars.web_target = list(filter(lambda x: x.startswith("www.") or x.startswith("http"), vars.web_target))
-        # checks for time and day of week
+        
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
 
             proc_funcs.close_by_process(no_list, curr_time,set_temp[index])

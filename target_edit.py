@@ -3,6 +3,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import json
+from tkinter import dialog
+from tkinter import dialog
 import webbrowser
 
 # Import custom modules
@@ -15,7 +17,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focus Mode")
-        self.root.geometry("600x600")
+        self.root.geometry("600x600+600+100")
         vars.root = root
         
         # Initialize state
@@ -202,6 +204,10 @@ class FocusModeUI:
         
         ttk.Button(button_frame, text="Save", command=self.save_time_settings).pack(side=tk.LEFT, padx=5,pady=20)
         ttk.Button(button_frame, text="Back", command=self.create_main_view).pack(side=tk.LEFT, padx=5,pady=20)
+        if vars.time_group:
+            self.time_listbox.select_set(0)
+            vars.time_var=list(vars.time_group.keys())[0]
+            self.update_time_display()
     
     def create_tutorial_view(self):
         self.clear_window()
@@ -236,15 +242,15 @@ class FocusModeUI:
         self.blacklist_buttons_frame.pack(fill=tk.X)
         
         Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
-               command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL) #change to adda new time on other screen
+               command=self.tutorial_add, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL) #change to adda new time on other screen
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
-               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
+               command=self.remove_from_timelist, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
-               command=self.create_time_settings_view, bg_color="orange", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
+               command=self.create_time_settings_view, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
-               command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
+               command=self.create_tutorial_view, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
-               command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
+               command=self.exit, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
         
         # Right panel - List display (smaller)
         right_panel = ttk.Frame(content_frame)
@@ -264,7 +270,45 @@ class FocusModeUI:
         
         self.update_blacklist_display()
        
+    def tutorial_add(self):
+        self.add_to_time_list()
+        tutorial= tk.Toplevel(self.root)
+        tutorial.geometry("300x200+725+100")
+        tutorial.title("Tutorial Add Function")
+        tutorial.transient(self.root)
+        dialogs=['This is the screen where you can add a new time group. A time group is an alotted time when certain programs  will be blocked.',
+                 'Here you can set the name and when you would like it to start, by default it will end at 11:59 pm but you can change that as well.',
+                 'Now that you have initialized a time group, you can change around the time it ends, what days of the week its active and what programs  it blocks',
+                 'When you try to open a blocked program  during an active time group, it will either be closed or redirected to a productive replacement depending on its settings.',
+                 'Lets try adding a program to block for this time group. You can either enter the title of the program or browse for it on your computer for the executable.',
+                 'Now we need to set a replacement program or website for this time group to see the full functionality of the program, try setting one now! (Reminder: Don\'t forget to include the ".com", ".org" etc. for websites)',
+                 ]
+        self.index=0
+        self.label=ttk.Label(tutorial, text=dialogs[self.index], wraplength=280, font=("Arial", 12))
+        self.label.pack(pady=10)
+        self.next_button = ttk.Button(tutorial, text="Next", command=lambda:self.next_dialog(dialogs))
+        self.next_button.pack(pady=10)
+        # tutorial.grab_set()
         
+        
+    def next_dialog(self,dialogs):
+        self.index+=1
+        if self.index<len(dialogs):
+            self.label.config(text=dialogs[self.index])   
+        if self.time_listbox.size()==0 and self.index==2:
+            self.label.config(text="Try adding a time group to continue the tutorial!")
+            self.index-=1
+        if self.time_listbox.size()>0:
+            if vars.time_group[vars.time_var]['programs']==[] and self.index==5:
+                self.label.config(text="Try adding a program to block for this time group to continue the tutorial!")
+                self.index-=1
+            if vars.time_group[vars.time_var]['productive']==[] and self.index==6:
+                self.label.config(text="Try setting a replacement program or website for this time group to continue the tutorial!")
+                self.index-=1
+        if self.index == len(dialogs):
+            self.next_button.config(state=tk.DISABLED)
+            self.label.config(text="This concludes the tutorial, feel free to explore the settings and add time groups to your liking! Remember to save your settings before exiting, each one must be saved individually. Now it's your time to lock in!")
+    
     def add_to_blacklist(self):
         file_path = filedialog.askopenfilename(
             initialdir= vars.rootdir,   
@@ -338,9 +382,9 @@ class FocusModeUI:
         # Create a dialog for time and name input
         dialog = tk.Toplevel(self.root)
         dialog.title("New Time Group")
-        dialog.geometry("350x220")
+        dialog.geometry("350x220+700+400")
         dialog.transient(self.root)
-        dialog.grab_set()
+        # dialog.grab_set()
         
         tk.Label(dialog, text="Enter name for this time group:", font=("Arial", 10)).pack(pady=5)
         name_var = tk.StringVar(value="")
@@ -384,9 +428,10 @@ class FocusModeUI:
                     "programs": [],
                     "end_time": "23:59",
                     "days": vars.selected_days.copy(),
-                    "productive":"",
-                    "productive_type":"",
-                    "select_type":"Queue"
+                    "productive":[],
+                    "select_type":"Queue",
+                    'allowed_hours': 0.0,
+                    'time_left': 0.0
                 }
                 if vars.time_group[time_key]["name"]== None:
                     del vars.time_group[time_key]["name"]
@@ -409,9 +454,9 @@ class FocusModeUI:
             return False
         dialog = tk.Toplevel(self.root)
         dialog.title("Change Replacement App/Site")
-        dialog.geometry("350x275")
+        dialog.geometry("350x275+700+400")
         dialog.transient(self.root)
-        dialog.grab_set()
+        # dialog.grab_set()
         app_frame= tk.Frame(dialog, name= 'app')
         web_frame= tk.Frame(dialog, name= 'web')
         button_frame= tk.Frame(dialog, name= "button",height=15)
@@ -420,13 +465,13 @@ class FocusModeUI:
         web_url= tk.StringVar(value='Enter Website')
         button_frame.pack_configure(padx=4)
         tk.Label(app_frame, text= "Replacement Type: App",justify="center",font=("Arial", 14, "bold")).pack()
-        tk.Button(app_frame, text="Browse Files/Apps/Docs", justify= "center", command=lambda:self.select_file()).pack()
+        ttk.Button(app_frame, text="Browse Files/Apps/Docs", command=lambda:self.select_file()).pack()
 
         app_frame.pack()
         
         tk.Label(web_frame, text="Replacement Type: Website",justify="center",font=("Arial", 14, "bold")).pack()
         tk.Entry(web_frame,textvariable=web_url,justify='center').pack()
-        submit_entry=tk.Button(web_frame, text="Enter", justify= 'center',
+        submit_entry=ttk.Button(web_frame, text="Enter", 
                                command = lambda:self.enter_replacement(web_url.get()))
         
         self.replacement_list= tk.Listbox(self.list_frame, height=15, width =50)
@@ -434,16 +479,16 @@ class FocusModeUI:
         self.replacement_list.config(yscrollcommand=scrollbar.set)
         scrollbar.pack(side="right",fill='y')
         self.update_replacement_listbox()
-        tk.Button(button_frame, text="Change Type", justify="center", 
+        ttk.Button(button_frame, text="Change Type", 
                   command=lambda:self.swap_out_widgets(app_frame,web_frame,self.list_frame,side='top')).pack(side="left")
-        tk.Button(button_frame,text='Remove Selected', justify="center",command=self.remove_replacement).pack(side="left")
-        self.shuffle_select=tk.Button(button_frame, text='Change to Queue', justify= 'center',
+        ttk.Button(button_frame,text='Remove Selected',command=self.remove_replacement).pack(side="left")
+        self.shuffle_select=ttk.Button(button_frame, text='Change to Queue', 
                                       command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
-        queue_select= tk.Button(button_frame, text='Change to Shuffle', justify= 'center',
+        queue_select= ttk.Button(button_frame, text='Change to Shuffle',
                                 command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
         queue_select.pack(side="left")
 
-        tk.Button(button_frame, text='Exit', command=lambda:dialog.destroy()).pack(side="right")
+        ttk.Button(button_frame, text='Exit', command=lambda:dialog.destroy(), width= 7).pack(side="right")
         self.replacement_list.pack(side="left")
         
         submit_entry.pack()    
@@ -453,6 +498,7 @@ class FocusModeUI:
         
     def remove_replacement(self):
             selection = self.replacement_list.curselection()
+            selection: str= self.replacement_list.get(selection[0])
             if selection in vars.time_group[vars.time_var]["productive"]:
                 vars.time_group[vars.time_var]["productive"].remove(selection)
                 self.update_replacement_listbox()
@@ -472,12 +518,14 @@ class FocusModeUI:
             
     def enter_replacement(self, entry:str):
         if entry!= "Enter Website" or entry !=''or ' ' in entry:
-            entry= entry if entry.startswith("www.") else "www." + entry
+            domain= entry.split('/')[:min(2,len(entry.split('/')))]
+            entry= ''.join(domain)
+            entry= entry if entry.startswith("www.") else "www." + entry+'.'
             if messagebox.askokcancel("Testing", "Opening Website for confirmation...\n OK to open website. Cancel to skip this step."):
                 webbrowser.open(entry)
-                
             if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):
-                vars.time_group[vars.time_var]["productive"].append(entry+ " #website")
+                
+                vars.time_group[vars.time_var]["productive"].append(entry)
                 vars.time_group[vars.time_var]["select_type"]= 'Queue'  if not self.shuffle_select.winfo_ismapped() else "Random"
                 
                 self.update_replacement_listbox()
@@ -533,6 +581,14 @@ class FocusModeUI:
     
     def add_program(self):
         program = self.program_entry.get().strip()
+        if program == "":
+            messagebox.showwarning("Input Error", "Program name cannot be empty")
+            return
+        # if program.startswith("http://") or program.startswith("https://"):
+        #     program = program.split("://")[1]  # Remove protocol for consistency
+        # if program.startswith("www."): 
+        #     program= program.split('/')[0]+'.'
+            
         if program and vars.time_var:
             if vars.time_var in vars.session_temp.get('time_list', {}):
                 programs = vars.time_group[vars.time_var]['programs']
@@ -578,7 +634,6 @@ class FocusModeUI:
                     json.dump(vars.session_temp, f, indent=2)
                 
                 messagebox.showinfo("Saved", "Time settings saved successfully")
-                self.create_main_view()
         except Exception as e:
             messagebox.showerror("Error", f"Error saving: {str(e)}")
     
@@ -639,6 +694,7 @@ class FocusModeUI:
 
 
 def main():
+    
     root = tk.Tk()
     app = FocusModeUI(root)
     root.mainloop()

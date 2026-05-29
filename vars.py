@@ -22,6 +22,6 @@ gui_timelist_widgets = []   # List of tkinter widgets for time list
 active_window = "main"
 font = ("Arial", 10)
 large_font = ("Arial", 20)
-web_target=[]
+
 
 

@@ -59,6 +59,7 @@
 
 # # Execute game:
 # # main()
+
 import datetime
 print(datetime.date.today().strftime("%a")) # sends abbrivated version of day of the week. %A for full day name
 # foo={
@@ -76,3 +77,26 @@ print(datetime.date.today().strftime("%a")) # sends abbrivated version of day of
 # import webbrowser,webob
 # from urllib import parse
 # parse.
+# import pyautogui,time
+# while True:
+    
+#     print(pyautogui.position())
+#     time.sleep(.5)
+
+# import psutil
+
+# for conn in psutil.net_connections():
+#     for proc in psutil.process_iter(['pid', 'name']):
+#         if proc.info['pid'] == conn.pid:
+#             if 'opera' in proc.info['name'].lower():
+#                 print(f"Port: {conn.laddr} → {conn.raddr} Status: {conn.status}")
+                
+                
+# import urllib.request
+# import subprocess
+# url = "https://npcap.com/dist/npcap-1.79.exe"
+# def download_npcap():
+#     url = "https://npcap.com/dist/npcap-1.79.exe"
+#     urllib.request.urlretrieve(url, "npcap-installer.exe")
+#     subprocess.run(["npcap-installer.exe", "/S", "/winpcap_mode=yes"])
+# print(url.split('z'))

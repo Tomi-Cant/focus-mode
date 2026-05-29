@@ -202,3 +202,43 @@ Script started at 2026-05-22 17:36:20.353142
     Closed Steam 2026-05-22 17:36:54.215121
     Closed Epic Games Launcher 2026-05-22 17:37:20.417384
     Closed Epic Games Launcher 2026-05-22 17:37:24.518687
+Script started at 2026-05-28 15:44:15.575034
+Script started at 2026-05-28 15:46:20.705110
+    Closed Epic Games Launcher 2026-05-28 15:46:53.488209
+Script started at 2026-05-28 15:47:35.076114
+Script started at 2026-05-28 15:49:29.970538
+Script started at 2026-05-28 15:51:53.253434
+Script started at 2026-05-28 15:52:51.730257
+Script started at 2026-05-28 15:53:23.437885
+Script started at 2026-05-28 16:29:23.955638
+Script started at 2026-05-28 16:30:41.978925
+Script started at 2026-05-28 16:31:18.678832
+Script started at 2026-05-28 16:31:45.882661
+Script started at 2026-05-28 16:32:58.173698
+Script started at 2026-05-28 16:34:22.583642
+Script started at 2026-05-28 16:36:15.701791
+Script started at 2026-05-28 16:38:13.928707
+Script started at 2026-05-28 16:42:51.297179
+Script started at 2026-05-28 16:46:21.763098
+    Closed Steam 2026-05-28 17:15:42.246307
+Script started at 2026-05-28 17:17:05.262839
+Script started at 2026-05-28 17:17:55.166903
+Script started at 2026-05-28 17:19:07.237942
+Script started at 2026-05-28 17:19:50.093360
+Script started at 2026-05-28 17:22:31.378672
+Script started at 2026-05-28 17:23:20.985317
+Script started at 2026-05-28 17:24:18.440433
+Script started at 2026-05-28 17:27:38.763293
+Script started at 2026-05-28 17:30:40.279361
+Script started at 2026-05-28 17:35:53.484553
+Script started at 2026-05-28 17:36:30.720255
+Script started at 2026-05-28 17:39:08.129046
+Script started at 2026-05-28 17:39:36.444169
+Script started at 2026-05-28 17:40:04.056665
+    Closed  2026-05-28 17:40:07.829019
+    Closed  2026-05-28 17:40:07.829019
+    Closed  2026-05-28 17:40:07.829019
+    Closed  2026-05-28 17:40:07.829019
+    Closed Netflix Canada - Watch TV Shows Online, Watch Movies Online - Google Chrome 2026-05-28 17:40:07.829019
+    Closed main.py - focus_mode - Visual Studio Code 2026-05-28 17:40:07.829019
+    Closed DNS sniffer tracking advertisers - Claude - Opera 2026-05-28 17:40:07.829019

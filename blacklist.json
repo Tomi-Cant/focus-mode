@@ -19,10 +19,13 @@
         "Sunday"
       ],
       "name": "This",
-      "start_time": "00:00",
-      "productive": ["www.a", "docs.exe"],
-      "select_type":"",
-      "allowed_time":360,
+      
+      "productive": [
+        "www.a",
+        "docs.exe"
+      ],
+      "select_type": "",
+      "allowed_time": 360.0,
       "time_left": 360
     },
     "13:25": {
@@ -32,7 +35,7 @@
         "Epic Games Launcher",
         "Discord"
       ],
-      "end_time": "13:50",
+      "end_time": "23:50",
       "days": [
         "Monday",
         "Tuesday",
@@ -41,10 +44,18 @@
         "Saturday"
       ],
       "productive": [],
-      "select_type":"",
-      "allowed_time":360,
+      "select_type": "",
+      "allowed_time": 360,
       "time_left": 360
-      
     }
-  }
+  },
+  "days": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+  ]
 }
