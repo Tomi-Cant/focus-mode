@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import json
 from tkinter import dialog
-from tkinter import dialog
+import helper_funcs
 import webbrowser
 
 # Import custom modules
@@ -197,6 +197,10 @@ class FocusModeUI:
         ttk.Button(prog_input_frame, text="Enter", command=self.add_program).grid(row=1, column=2, padx=5)
         ttk.Button(prog_input_frame, text="Browse...", command=self.add_to_blacklist).grid(row=1, column=3, padx=5)
         ttk.Button(prog_input_frame, text="Remove Selected", command=self.remove_program).grid(row=0, column=0, columnspan=4, padx=5, pady=5)
+        find_steam_button= ttk.Button(prog_input_frame, text="Search Steam", command=self.find_steam_games_helper)
+        find_steam_button.grid(row=2, column=0, columnspan=2, padx=5, pady=15)
+        find_epic_button= ttk.Button(prog_input_frame, text="Search Epic Games", command=self.find_epic_games_helper)
+        find_epic_button.grid(row=2, column=2, columnspan=2, padx=5, pady=15)
         
         # Buttons
         button_frame = ttk.Frame(right_panel)
@@ -212,9 +216,7 @@ class FocusModeUI:
     def create_tutorial_view(self):
         self.clear_window()
         self.current_view = "tutorial"
-        # ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).grid(row=1, column=0, pady=10,sticky=tk.NW)
-        # tutorial_label = tk.Label(self.root, text="Tutorial Coming Soon!", font=("Arial", 16, "bold"))
-        # tutorial_label.grid(pady=20,sticky=tk.NSEW)
+    
        
         # Main container
         main_container = ttk.Frame(self.root)
@@ -265,6 +267,7 @@ class FocusModeUI:
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
+        ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).pack()
 
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
@@ -288,6 +291,7 @@ class FocusModeUI:
         self.label.pack(pady=10)
         self.next_button = ttk.Button(tutorial, text="Next", command=lambda:self.next_dialog(dialogs))
         self.next_button.pack(pady=10)
+         
         # tutorial.grab_set()
         
         
@@ -496,6 +500,75 @@ class FocusModeUI:
         
         self.list_frame.pack()
         
+        
+    def find_steam_games_helper(self):  
+        steam_games= helper_funcs.find_steam_games()
+        if steam_games:
+            dialog = tk.Toplevel(self.root)
+            dialog.title("Select Steam Games")
+            dialog.geometry("400x300+700+400")
+            dialog.transient(self.root)
+            
+            listbox = tk.Listbox(dialog, selectmode=tk.MULTIPLE)
+            scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=listbox.yview)
+            listbox.config(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            
+            for game in steam_games:
+                listbox.insert(tk.END, game)
+            
+            def add_selected_games():
+                selected_indices = listbox.curselection()
+                for index in selected_indices:
+                    game_path = steam_games[index]
+                    if game_path not in vars.time_group[vars.time_var]['programs']:
+                        vars.time_group[vars.time_var]['programs'].append(game_path)
+                
+                self.update_time_display()
+                dialog.destroy()
+                messagebox.showinfo("Added", "Selected games have been added to the blocklist")
+            
+            ttk.Button(dialog, text="Add Selected Games", command=add_selected_games).pack(pady=10)
+            ttk.Button(dialog, text="Cancel", command=dialog.destroy).pack(pady=5)
+            ttk.Button(dialog, text="Select All", command=lambda: listbox.select_set(0, tk.END)).pack(pady=5)
+        else:
+            messagebox.showinfo("No Games Found", "No Steam games were found on this computer.")
+            
+    def find_epic_games_helper(self):
+        epic_games= helper_funcs.find_epic_games()
+        if epic_games:
+            dialog = tk.Toplevel(self.root)
+            dialog.title("Select Epic Games")
+            dialog.geometry("400x300+700+400")
+            dialog.transient(self.root)
+            
+            listbox = tk.Listbox(dialog, selectmode=tk.MULTIPLE)
+            scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=listbox.yview)
+            listbox.config(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            
+            for game in epic_games:
+                listbox.insert(tk.END, game)
+            
+            def add_selected_games():
+                selected_indices = listbox.curselection()
+                for index in selected_indices:
+                    game_path = epic_games[index]
+                    if game_path not in vars.time_group[vars.time_var]['programs']:
+                        vars.time_group[vars.time_var]['programs'].append(game_path)
+                
+                self.update_time_display()
+                dialog.destroy()
+                messagebox.showinfo("Added", "Selected games have been added to the blocklist")
+            
+            ttk.Button(dialog, text="Add Selected Games", command=add_selected_games).pack(pady=10)
+            ttk.Button(dialog, text="Cancel", command=dialog.destroy).pack(pady=5)
+            ttk.Button(dialog, text="Select All", command=lambda: listbox.select_set(0, tk.END)).pack(pady=5)
+        else:
+            messagebox.showinfo("No Games Found", "No Epic games were found on this computer.")      
+             
     def remove_replacement(self):
             selection = self.replacement_list.curselection()
             selection: str= self.replacement_list.get(selection[0])

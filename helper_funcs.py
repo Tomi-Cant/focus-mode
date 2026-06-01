@@ -1,7 +1,9 @@
 import tkinter as tk
 import vars
 
+import os
 def shorten(text: str, box_width: int, font_size: int = 10) -> str:
+    
 
     tries = 0
     max_width = box_width // (font_size // 2)  # Rough estimate for character width
@@ -74,3 +76,53 @@ def find_last_run(curr_time, ):
     if not found:
         for time in vars.time_group.values():
             time["time_left"] = time["allowed_time"]
+
+def find_steam_games():
+    import vdf, winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
+            steam_path, _ = winreg.QueryValueEx(key, "InstallPath")
+            
+    except FileNotFoundError:
+        return None
+    
+    steam_path= steam_path + r"\steamapps"
+    paths=[steam_path]
+    try:
+        with open(steam_path+r"\libraryfolders.vdf", 'r', encoding='utf-8') as f:
+            for line in f:
+                if '"path"' in line:
+                    path = line.split('"')[3]
+                    path = path.replace("\\\\", "\\")
+                    path = path + r"\steamapps"
+                    if path not in paths:
+                        paths.append(path)
+                        
+        
+    except FileNotFoundError:
+        pass
+    games =[]
+    for path in paths:
+        for file in os.listdir(path):
+            if file.endswith(".acf"):
+                with open(os.path.join(path, file), 'r', encoding='utf-8') as f:
+                    data = vdf.load(f)
+                    name = data.get('AppState', {}).get('name')
+                    if name and name not in games:
+                        games.append(name)
+    return games
+def find_epic_games():
+    import json
+    path= r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
+    games = []
+    if not os.path.exists(path):
+        return None
+    for file in os.listdir(path):
+        if file.endswith(".item"):
+            with open(os.path.join(path, file), 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                name = data.get('DisplayName')
+                if name and name not in games:
+                    games.append(name)
+    return games
+print(find_epic_games())
