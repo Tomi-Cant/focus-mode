@@ -657,11 +657,6 @@ class FocusModeUI:
         if program == "":
             messagebox.showwarning("Input Error", "Program name cannot be empty")
             return
-        # if program.startswith("http://") or program.startswith("https://"):
-        #     program = program.split("://")[1]  # Remove protocol for consistency
-        # if program.startswith("www."): 
-        #     program= program.split('/')[0]+'.'
-            
         if program and vars.time_var:
             if vars.time_var in vars.session_temp.get('time_list', {}):
                 programs = vars.time_group[vars.time_var]['programs']

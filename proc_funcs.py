@@ -1,3 +1,5 @@
+import re
+
 import window_to_process
 from win32gui import PostMessage
 from win32api import ShellExecute
@@ -52,17 +54,24 @@ def close_by_process(no_list, curr_time,time_index):
                         f"An unexpected error occurred while trying to terminate process '{proc.info['name']}': {e}\n")
 
 def close_by_title(added, window, win, time_index,curr_time):
-    if window in added: 
+    if window in added or find_minecraft(window,added) != []: 
         # if vars.time_group[time_index]["time_left"] >= 0:
         #     vars.time_group[time_index]["time_left"]-=.5
         #     return 
+        
         PostMessage(win, win32con.WM_CLOSE, 0, 0)
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
         
 
+def find_minecraft(title, added):
+    if  'minecraft' in added or "Minecraft" in added:
+        if("minecraft" in title.lower() or "Minecraft" in title):
+            pattern = r"Minecraft\*?\s\d+\.\d+\.?\d+?"
+            return re.findall(pattern, title)
+    return []
 
-def productive_open(added, curr_time, time_index): # maybe add randomizer with multi later or queue system
+def productive_open(added, curr_time, time_index): 
     import random
     output=''
     select_type=vars.time_group[time_index]["select_type"]
