@@ -251,3 +251,15 @@ Script started at 2026-06-03 12:32:28.112372
 Script started at 2026-06-03 12:33:31.165920
     Closed Minecraft 26.1.2 2026-06-03 12:33:36.258960
     Closed Minecraft 26.1.2 2026-06-03 12:34:08.526451
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:44:26.239264
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:52:50.194690
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:57:08.351649
+    Closed Google Chrome 2026-02-23 22:57:08.403835
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:58:02.088233
+    Closed Google Chrome 2026-02-23 22:58:02.139240
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:58:52.544882
+    Closed Google Chrome 2026-02-23 22:58:53.099857
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:59:59.459042
+    Closed Google Chrome 2026-02-23 22:59:59.511128
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 23:05:16.654222
+        Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 23:22:52.742754

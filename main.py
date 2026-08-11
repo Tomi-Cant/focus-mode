@@ -50,17 +50,18 @@ def main():
             proc_funcs.convert_to_exe(
                  no_list, curr_time, index, set_temp)
 
-            cull_times(set_times, end_times, index, curr_time)
+         cull_times(set_times, end_times, index, curr_time)   
 
         index += 1
         index %= len(set_times)
-
-        time.sleep(.5)  # checks every .5 seconds
-
-    with open(vars.log_path, "a") as log:
+        
+        time.sleep(.5)
+        
+    with open(path, "a") as log:
         log.write(f"|Target Time Reached|\n")
     with open(vars.json_path, "w") as f:
         json.dump({"time_list": vars.time_group}, f, indent=2)  # updates json file
+        
     on_finish = [sys.exit,proc_funcs.shutdown_pc, proc_funcs.sleep_pc]
     on_finish[vars.time_group['on_finish']](curr_time)
 if __name__ == "__main__":

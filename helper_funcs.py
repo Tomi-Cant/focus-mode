@@ -26,8 +26,8 @@ def cull_times(set, end, indx, time):
     """Remove time entries that have passed their end time"""
     if time >= end[indx]:
         del end[indx]
-        del set[indx]
-
+        del start[indx]
+    return start, end
 
 def time_seperator(time: str) -> tuple[str, str]:
     """Separate time string into hours and minutes"""
