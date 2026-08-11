@@ -61,6 +61,7 @@ def main():
         log.write(f"|Target Time Reached|\n")
     with open(vars.json_path, "w") as f:
         json.dump({"time_list": vars.time_group}, f, indent=2)  # updates json file
-
+    on_finish = [sys.exit,proc_funcs.shutdown_pc, proc_funcs.sleep_pc]
+    on_finish[vars.time_group['on_finish']](curr_time)
 if __name__ == "__main__":
     main()

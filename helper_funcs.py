@@ -125,4 +125,3 @@ def find_epic_games():
                 if name and name not in games:
                     games.append(name)
     return games
-print(find_epic_games())

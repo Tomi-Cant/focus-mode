@@ -1,5 +1,5 @@
 import re
-
+import subprocess
 import window_to_process
 from win32gui import PostMessage
 from win32api import ShellExecute
@@ -9,7 +9,8 @@ import json
 import vars
 import webbrowser
 from tkinter import messagebox
-
+subprocess.run(["rundll32.exe", "user32.dll,LockWorkStation"])
+subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"])
 def convert_to_exe( no_list, curr_time, index, set_temp):
     # converts application titles to their .exe counterpart
     added = []
@@ -63,7 +64,16 @@ def close_by_title(added, window, win, time_index,curr_time):
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
         
-
+def sleep_pc(curr_time):
+    subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"])
+    with open(vars.log_path, "a") as log:
+                log.write(f"    PC slept {curr_time}\n")
+                
+def shutdown_pc(curr_time):
+    subprocess.run(["shutdown", "/s", "/t", "0"])
+    with open(vars.log_path, "a") as log:
+                log.write(f"    PC shutdown {curr_time}\n")      
+                         
 def find_minecraft(title, added):
     if  'minecraft' in added or "Minecraft" in added:
         if("minecraft" in title.lower() or "Minecraft" in title):
@@ -83,9 +93,13 @@ def productive_open(added, curr_time, time_index):
         productive = vars.time_group[time_index]["productive"][random.randint(0, len(vars.time_group[time_index]["productive"])-1)]
     if select_type == "Queue":
         productive = vars.time_group[time_index]["productive"][0] 
-        
-    if productive.endswith(" #website"):
-        webbrowser.open(productive.strip(" #website"))
+    if productive == "#sleep pc":
+        sleep_pc(curr_time)
+    if productive == "#shutdown pc":
+       shutdown_pc(curr_time)
+    
+    if productive.startswith("www."):
+        webbrowser.open(productive.strip("www."))
         output = (f"    Opened productive website for {added} at {curr_time}\n") 
     else:
         ShellExecute(0, 'open',productive,'','',1) 

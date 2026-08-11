@@ -435,7 +435,8 @@ class FocusModeUI:
                     "productive":[],
                     "select_type":"Queue",
                     'allowed_hours': 0.0,
-                    'time_left': 0.0
+                    'time_left': 0.0, 
+                    'on_finish': 0  #either 0: nothing, 1: shutdown, 2: sleep 
                 }
                 if vars.time_group[time_key]["name"]== None:
                     del vars.time_group[time_key]["name"]
