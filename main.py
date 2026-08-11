@@ -29,12 +29,11 @@ def main():
     curr_time = datetime.datetime.now()
     day_of_week = datetime.date.today().strftime("%A")
     # set_times, loop to collect, check if end time is passed if so remove from list with pair
-    set_temp = [list(time_list.keys())[i] for i in range(
-        # generator for loop makes list of set time
-        len(list(time_list.keys())))]
+    # Only include enabled time groups (default to enabled if not present)
+    set_temp = [k for k, v in time_list.items() if v.get('enabled', True)]
     if set_temp == []:
         sys.exit()
-    end_temp = [time_list[i]['end_time'] for i in set_temp]
+    end_temp = [time_list[i].get('end_time', '') for i in set_temp]
     set_times = [datetime.datetime.now().replace(hour=int(time_seperator(set_temp[i])[0]), minute=int(
         # *makes list of datetime objects for set times
         time_seperator(set_temp[i])[1])) for i in range(len(set_temp))]

@@ -1,6 +1,6 @@
 # you were about to...do help and remove <= forgot to do this / potentially added an inverted tag to invert the timeframe
 # resarch how to open specific files that use a program (like Word)
-# ive decided im doing JS :D ( i dont wanna do JS but it would be nice). [this is for the help tab and documentation if needed].
+# 
 # also days of the week window (80%).
 import pygame
 import sys
@@ -121,14 +121,24 @@ def time_is_valid() -> tuple[bool, str]:
             
             
 def select() -> None:
-    selected_data=get_active_texts(vars.gui_timelist,None)
+    selected_data = get_active_texts(vars.gui_timelist, None)
     if selected_data:
-        vars.time_var = selected_data[0]
+        # strip any display suffix like ' (disabled)'
+        sel = selected_data[0]
+        if sel.endswith('(disabled)'):
+            sel = sel.replace('(disabled)', '').strip()
+        vars.time_var = sel
         vars.time_selected = True
         fill_list()
+        vars.gui_blacklist.empty()
         vars.gui_blacklist = sg.generate_line(vars.gui_blacklist, Text_Edit, vars.list_end, 550, 25, 350, 45, None, 46,
                                             True, text=vars.sent_list[vars.list_end-15:vars.list_end], color=(255, 255, 255), muteable=False, font=font)
-        
+        # update the toggle button label to reflect current enabled state
+        enabled = vars.session_temp['time_list'].get(vars.time_var, {}).get('enabled', True)
+        try:
+            toggle_enabled_button.text = f"Enabled: {str(enabled)}"
+        except NameError:
+            pass
     if not vars.time_selected:
         error_window.active = True
         error_window.title = "Error! Please select a valid box."
@@ -166,16 +176,32 @@ def enter(days) -> None:
         set_new_start_time(days)
 
 
+def format_time_keys():
+    """Return display labels for the time list, appending ' (disabled)' to disabled groups."""
+    keys = []
+    for k in list(vars.time_group.keys()):
+        enabled = vars.session_temp['time_list'].get(k, {}).get('enabled', True)
+        if enabled:
+            keys.append(k)
+        else:
+            keys.append(f"{k} (disabled)")
+    return keys
+
+
 def set_new_start_time(days) -> None:
     # is not already a set valid time
     if time_is_valid()[0] and time_is_valid()[1] not in vars.time_group:
         vars.time_group[time_is_valid()[1]] = {
             "programs": [],
             "end_time": "23:59",
-            "days": days
+            "days": days,
+            "enabled": True
         }
-    vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=list(
-        vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
+        # ensure session temp also gets the enabled flag
+        vars.session_temp['time_list'][time_is_valid()[1]] = vars.time_group[time_is_valid()[1]]
+    # regenerate gui timelist using display labels that indicate disabled groups
+    vars.gui_timelist.empty()
+    vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=format_time_keys(), color=(255, 255, 255), muteable=False, font=font)
 
 
 def change_end_time() -> None:
@@ -184,8 +210,9 @@ def change_end_time() -> None:
         if int(time_is_valid()[1][:2]) < int(hour_box.text) and int(time_is_valid()[1][3:]) < int(minute_box.text):
             vars.session_temp['time_list'][vars.time_var]['end_time'] = time_is_valid()[1]
 
-            vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=list(
-                vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font)
+            # regenerate list with enabled/disabled indicator
+            vars.gui_timelist.empty()
+            vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=format_time_keys(), color=(255, 255, 255), muteable=False, font=font)
 
 
 def append_program()-> None:
@@ -193,13 +220,35 @@ def append_program()-> None:
         vars.session_temp['time_list'][vars.time_var]['programs'].append(
             distraction_input.text)
         distraction_input.text = ''
+        vars.gui_blacklist.empty()
         vars.gui_blacklist = sg.generate_line(vars.gui_blacklist, Text_Edit, 15, 550, 25, 350, 45, None, 46, True,
                                          text=vars.sent_list[vars.list_end-15:vars.list_end], color=(255, 255, 255), muteable=False, font=font)
 
 
-vars.gui_timelist.add(sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45,
-                 None, 46, True, text=list(vars.time_group.keys()), color=(255, 255, 255), muteable=False, font=font))
+# generate gui timelist with enabled/disabled indicator
+vars.gui_timelist.empty()
+vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=format_time_keys(), color=(255, 255, 255), muteable=False, font=font)
 # generates the right hand list that displays the banned list of programs.
+
+# toggle function for enabling/disabling the currently selected time group
+def toggle_enabled():
+    if not vars.time_selected:
+        return
+    key = vars.time_var
+    # flip enabled flag (default True)
+    current = vars.session_temp['time_list'].get(key, {}).get('enabled', True)
+    vars.session_temp['time_list'].setdefault(key, {})['enabled'] = not current
+    # reflect change in local time_group and UI
+    vars.time_group[key] = vars.session_temp['time_list'][key]
+    # regenerate display labels
+    vars.gui_timelist.empty()
+    vars.gui_timelist = sg.generate_line(vars.gui_timelist, Text_Edit, len(vars.time_group), 550, 25, 350, 45, None, 46, True, text=format_time_keys(), color=(255, 255, 255), muteable=False, font=font)
+    # update toggle button text
+    try:
+        toggle_enabled_button.text = f"Enabled: {str(not current)}"
+    except NameError:
+        pass
+
 
 time_buttons = pygame.sprite.Group()
 blacklist_buttons = pygame.sprite.Group()
@@ -217,8 +266,10 @@ back_button = Button(100, 550, 175, 50, (255, 0, 0), font, "Back", back)
 select_button = Button(100, 550, 175, 50, (255, 0, 0), font, "Select", select)
 days_button = Button(100, 625, 175, 50, (255, 0, 0),
                      font, "Choose Days")  # returns true
+# toggle button (appears on the time settings screen / when a time group selected)
+toggle_enabled_button = Button(300, 50, 175, 50, (255, 0, 0), font, "Enabled: True", toggle_enabled)
 blacklist_buttons.add(back_button, add_button,
-                      remove_button, help_button, save_button)
+                      remove_button, help_button, save_button, toggle_enabled_button)
 time_buttons.add(select_button, save_button, help_button)
 
 distraction_input = Text_Edit(
