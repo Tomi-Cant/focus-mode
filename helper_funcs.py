@@ -22,7 +22,7 @@ def shorten(text: str, box_width: int, font_size: int = 10) -> str:
     return text
 
 
-def cull_times(set, end, indx, time):
+def cull_times(start, end, indx, time):
     """Remove time entries that have passed their end time"""
     if time >= end[indx]:
         del end[indx]
