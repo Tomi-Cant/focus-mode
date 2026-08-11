@@ -181,6 +181,76 @@ Script started at 2025-09-24 13:38:05.516042
 Script started at 2025-09-24 13:38:46.919158
 Script started at 2025-09-24 13:39:26.424502
 Script started at 2025-10-01 13:22:04.397042
+Script started at 2026-05-10 14:35:01.689501
+Script started at 2026-05-15 04:06:13.894064
+Script started at 2026-05-15 04:06:58.764004
+Script started at 2026-05-15 04:11:36.908398
+Script started at 2026-05-15 04:11:48.860713
+Script started at 2026-05-22 17:18:40.705872
+Script started at 2026-05-22 17:20:19.190174
+Script started at 2026-05-22 17:22:08.508201
+Script started at 2026-05-22 17:22:26.307052
+Script started at 2026-05-22 17:24:40.809098
+Script started at 2026-05-22 17:29:13.252563
+Script started at 2026-05-22 17:31:43.814381
+Script started at 2026-05-22 17:32:05.218703
+Script started at 2026-05-22 17:32:34.216786
+Script started at 2026-05-22 17:33:35.128272
+Script started at 2026-05-22 17:34:36.545388
+Script started at 2026-05-22 17:36:20.353142
+    Closed Epic Games Launcher 2026-05-22 17:36:21.418002
+    Closed Steam 2026-05-22 17:36:54.215121
+    Closed Epic Games Launcher 2026-05-22 17:37:20.417384
+    Closed Epic Games Launcher 2026-05-22 17:37:24.518687
+Script started at 2026-05-28 15:44:15.575034
+Script started at 2026-05-28 15:46:20.705110
+    Closed Epic Games Launcher 2026-05-28 15:46:53.488209
+Script started at 2026-05-28 15:47:35.076114
+Script started at 2026-05-28 15:49:29.970538
+Script started at 2026-05-28 15:51:53.253434
+Script started at 2026-05-28 15:52:51.730257
+Script started at 2026-05-28 15:53:23.437885
+Script started at 2026-05-28 16:29:23.955638
+Script started at 2026-05-28 16:30:41.978925
+Script started at 2026-05-28 16:31:18.678832
+Script started at 2026-05-28 16:31:45.882661
+Script started at 2026-05-28 16:32:58.173698
+Script started at 2026-05-28 16:34:22.583642
+Script started at 2026-05-28 16:36:15.701791
+Script started at 2026-05-28 16:38:13.928707
+Script started at 2026-05-28 16:42:51.297179
+Script started at 2026-05-28 16:46:21.763098
+    Closed Steam 2026-05-28 17:15:42.246307
+Script started at 2026-05-28 17:17:05.262839
+Script started at 2026-05-28 17:17:55.166903
+Script started at 2026-05-28 17:19:07.237942
+Script started at 2026-05-28 17:19:50.093360
+Script started at 2026-05-28 17:22:31.378672
+Script started at 2026-05-28 17:23:20.985317
+Script started at 2026-05-28 17:24:18.440433
+Script started at 2026-05-28 17:27:38.763293
+Script started at 2026-05-28 17:30:40.279361
+Script started at 2026-05-28 17:35:53.484553
+Script started at 2026-05-28 17:36:30.720255
+Script started at 2026-05-28 17:39:08.129046
+Script started at 2026-05-28 17:39:36.444169
+Script started at 2026-05-28 17:40:04.056665
+    Closed  2026-05-28 17:40:07.829019
+    Closed  2026-05-28 17:40:07.829019
+    Closed  2026-05-28 17:40:07.829019
+    Closed  2026-05-28 17:40:07.829019
+    Closed Netflix Canada - Watch TV Shows Online, Watch Movies Online - Google Chrome 2026-05-28 17:40:07.829019
+    Closed main.py - focus_mode - Visual Studio Code 2026-05-28 17:40:07.829019
+    Closed DNS sniffer tracking advertisers - Claude - Opera 2026-05-28 17:40:07.829019
+Script started at 2026-06-03 12:30:21.058046
+Script started at 2026-06-03 12:30:34.518669
+Script started at 2026-06-03 12:31:25.344610
+Script started at 2026-06-03 12:31:53.127345
+Script started at 2026-06-03 12:32:28.112372
+    Closed proc_funcs.py - focus_mode - Visual Studio Code 2026-06-03 12:32:28.113380
+Script started at 2026-06-03 12:33:31.165920
+    Closed Minecraft 26.1.2 2026-06-03 12:33:36.258960
+    Closed Minecraft 26.1.2 2026-06-03 12:34:08.526451
         Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:44:26.239264
         Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:52:50.194690
         Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 22:57:08.351649
