@@ -81,9 +81,16 @@ class FocusModeUI:
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.Y, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
-
+ 
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+         
+        self.status_var = tk.StringVar(value="")
+        self.status_label = tk.Label(right_panel, textvariable=self.status_var, font=("Arial", 10, "italic"), fg="red", anchor="w")
+        self.status_label.pack(fill=tk.X, pady=(5, 0))
+ 
+        self.toggle_enabled_button = Button(self.blacklist_buttons_frame, x=5, y=0, text="Disable", command=self.toggle_time_group_enabled, bg_color="purple", fg_color="white", font=("Arial", 11), width=12)
+        self.toggle_enabled_button.grid_remove()
+ 
         self.update_blacklist_display()
     
     def create_time_settings_view(self):
@@ -143,6 +150,8 @@ class FocusModeUI:
         name_frame.pack(fill=tk.X, padx=5, pady=5)
         self.name_var = tk.StringVar(value="")
         ttk.Entry(name_frame, textvariable=self.name_var, width=20).pack(fill=tk.X, padx=5, pady=5)
+        self.enabled_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(name_frame, text="Enabled", variable=self.enabled_var).pack(anchor=tk.W, padx=5, pady=(0,5))
         
         # Time input section
         time_frame = ttk.LabelFrame(right_panel, text="Time Range (00:00-23:59)")
@@ -349,19 +358,57 @@ class FocusModeUI:
                     if item in times:
                         times.remove(item)
                         self.update_blacklist_display()
+                        self.update_main_selection_state()
                         messagebox.showinfo("Removed", f"Removed {item}")
-    
-
-            
+ 
+ 
     def select(self,event):
         selection = self.blacklist_display.curselection()
-    
-        if selection:
-            selection :str = self.blacklist_display.get(selection[0])
-            selection =self.parse_selected_time(selection)
+     
+        if not selection:
+            self.update_main_selection_state()
+            return False
+ 
+        selection_index = selection[0]
+        selection_text = self.blacklist_display.get(selection_index).strip()
+        if selection_text == "" or selection_text.startswith("-"):
+            # If a program or blank line is selected, find the nearest group header above it
+            while selection_index > 0:
+                selection_index -= 1
+                selection_text = self.blacklist_display.get(selection_index).strip()
+                if selection_text and not selection_text.startswith("-"):
+                    break
+            else:
+                self.update_main_selection_state()
+                return False
+ 
+        selection = self.parse_selected_time(selection_text)
+        if selection in vars.time_group:
             vars.time_var = selection
+            self.update_main_selection_state()
             return selection
+ 
+        self.update_main_selection_state()
         return False
+ 
+    def update_main_selection_state(self):
+        if vars.time_var and vars.time_var in vars.time_group:
+            enabled = vars.time_group[vars.time_var].get('enabled', True)
+            self.status_var.set("Selected time group is disabled" if not enabled else "")
+            self.toggle_enabled_button.configure(text="Enable" if not enabled else "Disable")
+            self.toggle_enabled_button.grid()
+        else:
+            self.status_var.set("")
+            self.toggle_enabled_button.grid_remove()
+ 
+    def toggle_time_group_enabled(self):
+        if vars.time_var and vars.time_var in vars.time_group:
+            time_data = vars.time_group[vars.time_var]
+            time_data['enabled'] = not time_data.get('enabled', True)
+            self.update_blacklist_display()
+            self.update_main_selection_state()
+            if self.current_view == "time_settings" and vars.time_var in vars.session_temp.get('time_list', {}):
+                self.enabled_var.set(time_data['enabled'])
             
     def select_time(self, event):
         selection = self.time_listbox.curselection()
@@ -436,7 +483,8 @@ class FocusModeUI:
                     "select_type":"Queue",
                     'allowed_hours': 0.0,
                     'time_left': 0.0, 
-                    'on_finish': 0  #either 0: nothing, 1: shutdown, 2: sleep 
+                    'on_finish': 0,  #either 0: nothing, 1: shutdown, 2: sleep 
+                    'enabled': True
                 }
                 if vars.time_group[time_key]["name"]== None:
                     del vars.time_group[time_key]["name"]
@@ -633,14 +681,15 @@ class FocusModeUI:
     def update_time_display(self):
         if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
             time_data = vars.time_group[vars.time_var]
-            
+             
             # Update name
             name = time_data.get('name', '')
             self.name_var.set(name)
-            
+            self.enabled_var.set(time_data.get('enabled', True))
+             
             end_time = time_data.get('end_time', '00:00')
             allowed_time = time_data.get('allowed_time', 0)/360
-            
+             
             self.hour_var.set(vars.time_var[:2])
             self.minute_var.set(vars.time_var[3:])
             self.end_hour_var.set(end_time[:2])
@@ -690,10 +739,13 @@ class FocusModeUI:
                 
                 time_data['end_time'] = end_time
                 
+                # Save enabled state
+                time_data['enabled'] = self.enabled_var.get()
+
                 # Save days
                 selected_days = [day for day, var in self.day_vars.items() if var.get()]
                 vars.session_temp['days'] = selected_days
-                
+                 
                 # Save allowed time
                 allowed_time = self.allowed_hours.get()
                 time_data['allowed_time'] = float(allowed_time)*360
@@ -717,12 +769,13 @@ class FocusModeUI:
                     programs = time_data.get('programs', [])
                     
                     # Display nickname if given, otherwise show time_key
+                    status = " [DISABLED]" if not time_data.get('enabled', True) else ""
                     if name:
-                        self.blacklist_display.insert(tk.END, f"{name} ({time_key} - {end_time})")
-
+                        self.blacklist_display.insert(tk.END, f"{name} ({time_key} - {end_time}){status}")
+ 
                     # Always show time range
                     else:
-                        self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}")
+                        self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}{status}")
                     
                     # Show only first 2 programs
                     for i, program in enumerate(programs[:2]):
@@ -740,12 +793,12 @@ class FocusModeUI:
             self.time_listbox.delete(0, tk.END)
             for time_key in vars.time_group:
                 end = vars.time_group[time_key].get('end_time', '23:59')
+                status = " [DISABLED]" if not vars.time_group[time_key].get('enabled', True) else ""
                 if vars.time_group[time_key].get('name'):
                     display_name = vars.time_group[time_key]['name']
-                    
-                    self.time_listbox.insert(tk.END, f"{display_name} ({time_key} - {end})")
+                    self.time_listbox.insert(tk.END, f"{display_name} ({time_key} - {end}){status}")
                 else:
-                    self.time_listbox.insert(tk.END, f"{time_key} - {end}")
+                    self.time_listbox.insert(tk.END, f"{time_key} - {end}{status}")
     
    
     

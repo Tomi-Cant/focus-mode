@@ -21,8 +21,7 @@ def main():
     find_last_run(curr_time)
     day_of_week = datetime.date.today().strftime("%A")
     # set_times, loop to collect, check if end time is passed if so remove from list with pair
-    set_temp = [list(time_list.keys())[i] for i in range(
-        len(list(time_list.keys())))] # generator for loop makes list of set time
+    set_temp = [key for key, data in time_list.items() if data.get('enabled', True)]
     if set_temp == []:
         sys.exit()
     end_temp = [time_list[i]['end_time'] for i in set_temp]
