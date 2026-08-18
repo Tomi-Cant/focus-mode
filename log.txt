@@ -263,3 +263,36 @@ Script started at 2026-06-03 12:33:31.165920
     Closed Google Chrome 2026-02-23 22:59:59.511128
         Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 23:05:16.654222
         Started C:\Program Files\Google\Chrome\Application\chrome.exe 2026-02-23 23:22:52.742754
+Script started at 2026-08-18 11:52:44.226585
+    Closed Microsoft 365 Copilot 2026-08-18 11:53:14.488434
+Script started at 2026-08-18 11:56:12.072599
+Script started at 2026-08-18 11:57:42.652393
+    Closed Microsoft 365 Copilot 2026-08-18 11:57:46.693948
+Script started at 2026-08-18 12:05:40.754385
+Script started at 2026-08-18 12:06:26.745602
+    Closed Microsoft 365 Copilot 2026-08-18 12:06:31.788263
+Script started at 2026-08-18 12:12:37.387478
+    Closed Microsoft 365 Copilot 2026-08-18 12:12:49.451648
+Script started at 2026-08-18 12:13:16.696210
+    Closed Microsoft 365 Copilot 2026-08-18 12:13:22.737138
+Script started at 2026-08-18 12:13:44.225272
+Script started at 2026-08-18 12:13:54.042404
+    Closed Microsoft 365 Copilot 2026-08-18 12:13:59.078589
+Script started at 2026-08-18 12:30:20.513268
+    Closed Microsoft 365 Copilot 2026-08-18 12:30:23.551714
+Script started at 2026-08-18 12:30:42.567841
+    Closed Microsoft 365 Copilot 2026-08-18 12:30:49.654660
+Script started at 2026-08-18 12:31:38.357566
+    Closed Microsoft 365 Copilot 2026-08-18 12:31:42.872216
+Script started at 2026-08-18 12:32:13.770425
+Script started at 2026-08-18 12:51:06.661304
+    Closed Microsoft 365 Copilot 2026-08-18 12:51:06.661304
+Script started at 2026-08-18 12:58:45.316814
+    Closed Microsoft 365 Copilot 2026-08-18 12:58:45.316814
+Script started at 2026-08-18 14:00:01.384917
+Script started at 2026-08-18 14:01:20.207576
+Script started at 2026-08-18 14:03:48.920695
+Script started at 2026-08-18 14:04:49.006167
+Script started at 2026-08-18 14:06:34.084686
+Script started at 2026-08-18 14:15:05.015995
+    Closed Microsoft 365 Copilot 2026-08-18 14:15:05.015995

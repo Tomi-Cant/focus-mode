@@ -1,61 +1,55 @@
 {
-  "time_list": {
-    "11:10": {
-      "programs": [
-        "Minecraft",
-        "Valorant",
-        "Epic Games Launcher",
-        "Discord",
-        "Steam"
-      ],
-      "end_time": "23:59",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-      ],
-      "name": "This",
-      
-      "productive": [
-        "www.a",
-        "docs.exe"
-      ],
-      "select_type": "",
-      "allowed_time": 360.0,
-      "time_left": 360
-    },
-    "13:25": {
-      "programs": [
-        "Marvel Rivals",
-        "Fortnite",
-        "Epic Games Launcher",
-        "Discord"
-      ],
-      "end_time": "23:50",
-      "days": [
-        "Monday",
-        "Tuesday",
-        "Thursday",
-        "Friday",
-        "Saturday"
-      ],
-      "productive": [],
-      "select_type": "",
-      "allowed_time": 360,
-      "time_left": 360
-    }
+  "11:10": {
+    "programs": [
+      "Minecraft",
+      "Valorant",
+      "Epic Games Launcher",
+      "Discord",
+      "Steam",
+      "Microsoft 365 Copilot"
+    ],
+    "end_time": "23:59",
+    "days": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday"
+    ],
+    "name": "This",
+    "productive": [
+      "www.a",
+      "docs.exe"
+    ],
+    "select_type": "",
+    "allowed_time": 360.0,
+    "time_left": 360,
+    "enabled": true,
+    "on_finish": 0,
+    "converted": [
+      "M365Copilot.exe"
+    ]
   },
-  "days": [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday"
-  ]
+  "13:25": {
+    "programs": [
+      "Marvel Rivals",
+      "Fortnite",
+      "Epic Games Launcher",
+      "Discord"
+    ],
+    "end_time": "23:50",
+    "days": [
+      "Monday",
+      "Tuesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "productive": [],
+    "select_type": "",
+    "allowed_time": 360,
+    "time_left": 360
+  }
 }

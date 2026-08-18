@@ -41,13 +41,14 @@ def main():
         window = win32gui.GetWindowText(win)
         
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
-
-            proc_funcs.close_by_process(no_list, curr_time,set_temp[index])
-
-            proc_funcs.close_by_title(no_list, window, win, set_temp[index], curr_time)
-
             proc_funcs.convert_to_exe(
-                 no_list, curr_time, index, set_temp)
+                             no_list, curr_time, index, set_temp)
+
+            # proc_funcs.close_by_process(no_list, curr_time,set_temp[index])
+
+            # proc_funcs.close_by_title(no_list, window, win, set_temp[index], curr_time)
+
+            
 
         set_times, end_times = cull_times(set_times, end_times, index, curr_time)
 

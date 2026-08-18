@@ -147,11 +147,17 @@ class FocusModeUI:
         
         # Name input section
         name_frame = ttk.LabelFrame(right_panel, text="Name")
-        name_frame.pack(fill=tk.X, padx=5, pady=5)
+        name_frame.pack(fill=tk.X, padx=5, pady=5,ipady=3)
         self.name_var = tk.StringVar(value="")
         ttk.Entry(name_frame, textvariable=self.name_var, width=20).pack(fill=tk.X, padx=5, pady=5)
         self.enabled_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(name_frame, text="Enabled", variable=self.enabled_var).pack(anchor=tk.W, padx=5, pady=(0,5))
+        ttk.Checkbutton(right_panel, text="Enabled", variable=self.enabled_var,command= lambda: self.toggle_time_group_enabled()).pack(anchor=tk.W, padx=5, pady=(0,5))
+        finish_frame= ttk.Frame(right_panel)
+        self.finish_var= tk.StringVar(value="Nothing")
+        ttk.Label(finish_frame,text="When Finished:").grid(row=0,column=0)
+        self.finish_options= ["Nothing", "Shutdown PC", "Sleep PC"]
+        ttk.OptionMenu(finish_frame, self.finish_var,"Nothing", *self.finish_options).grid(row=0, column=1)
+        finish_frame.pack(fill=tk.X, padx=5, pady=5)
         
         # Time input section
         time_frame = ttk.LabelFrame(right_panel, text="Time Range (00:00-23:59)")
@@ -211,6 +217,7 @@ class FocusModeUI:
         find_epic_button= ttk.Button(prog_input_frame, text="Search Epic Games", command=self.find_epic_games_helper)
         find_epic_button.grid(row=2, column=2, columnspan=2, padx=5, pady=15)
         
+        
         # Buttons
         button_frame = ttk.Frame(right_panel)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -267,8 +274,7 @@ class FocusModeUI:
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        list_label = tk.Label(right_panel, text="Ban start times", font=("Arial", 11,))
-        list_label.pack(fill=tk.X)
+        
         
         # Listbox for blacklist (reduced size)
         self.blacklist_display = tk.Listbox(right_panel, height=15, width=35, font=("Arial", 9))
@@ -326,7 +332,7 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir= vars.rootdir,   
             title="Select a program executable",
-            filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
+            filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
         
         if file_path:
@@ -335,7 +341,7 @@ class FocusModeUI:
                 programs = vars.time_group[vars.time_var]['programs']
                 if executable not in programs:
                     programs.append(executable)
-                    self.update_blacklist_display()
+                    self.update_time_display()
                     messagebox.showinfo("Success", f"Added {executable} to blacklist")
                 else:
                     messagebox.showwarning("Duplicate", f"{executable} is already in the list")
@@ -405,10 +411,14 @@ class FocusModeUI:
         if vars.time_var and vars.time_var in vars.time_group:
             time_data = vars.time_group[vars.time_var]
             time_data['enabled'] = not time_data.get('enabled', True)
-            self.update_blacklist_display()
-            self.update_main_selection_state()
+            vars.time_group[vars.time_var]['enabled'] = time_data['enabled']
+            if self.current_view == 'main':
+                self.update_blacklist_display()
+                self.update_main_selection_state()
             if self.current_view == "time_settings" and vars.time_var in vars.session_temp.get('time_list', {}):
                 self.enabled_var.set(time_data['enabled'])
+                self.update_time_list()
+                
             
     def select_time(self, event):
         selection = self.time_listbox.curselection()
@@ -513,7 +523,7 @@ class FocusModeUI:
         app_frame= tk.Frame(dialog, name= 'app')
         web_frame= tk.Frame(dialog, name= 'web')
         button_frame= tk.Frame(dialog, name= "button",height=15)
-        button_frame.pack_configure()
+        button_frame.grid_configure()
         self.list_frame= tk.Frame(dialog, name='list')
         web_url= tk.StringVar(value='Enter Website')
         button_frame.pack_configure(padx=4)
@@ -533,17 +543,18 @@ class FocusModeUI:
         scrollbar.pack(side="right",fill='y')
         self.update_replacement_listbox()
         ttk.Button(button_frame, text="Change Type", 
-                  command=lambda:self.swap_out_widgets(app_frame,web_frame,self.list_frame,side='top')).pack(side="left")
-        ttk.Button(button_frame,text='Remove Selected',command=self.remove_replacement).pack(side="left")
+                  command=lambda:self.swap_out_widgets(app_frame,web_frame,self.list_frame,side='top')).grid(row=0,column=0)
+        ttk.Button(button_frame,text='Remove Selected',command=self.remove_replacement).grid(row=0,column=1)
         self.shuffle_select=ttk.Button(button_frame, text='Change to Queue', 
-                                      command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
+                                      command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='top') )
         queue_select= ttk.Button(button_frame, text='Change to Shuffle',
-                                command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
-        queue_select.pack(side="left")
+                                command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='top') )
+        queue_select.grid(row=0,column=2)
 
-        ttk.Button(button_frame, text='Exit', command=lambda:dialog.destroy(), width= 7).pack(side="right")
+        ttk.Button(button_frame, text='Exit', command=lambda:dialog.destroy(), width= 7).grid(row=0,column=3)
         self.replacement_list.pack(side="left")
-        
+        ttk.Button(button_frame, text='Force Sleep', command=lambda: self.enter_replacement("#Sleep PC")).grid(row=1,column=1)
+        ttk.Button(button_frame, text='Force Shutdown', command=lambda: self.enter_replacement("#Shutdown PC")).grid(row=1,column=2)
         submit_entry.pack()    
         button_frame.pack(side="bottom")
         
@@ -638,11 +649,16 @@ class FocusModeUI:
             obj3.pack_forget()
             obj3.pack(side='bottom')
             
-    def enter_replacement(self, entry:str):
-        if entry!= "Enter Website" or entry !=''or ' ' in entry:
+    def enter_replacement(self, entry:str): 
+        if entry==  "#Sleep PC" or entry== "#Shutdown PC":
+            if messagebox.askyesno("New Addition", f"Would you like to add '{entry[1:]}' to the list of replacements?", icon= "warning"):
+                vars.time_group[vars.time_var]["productive"].append(entry)
+                vars.time_group[vars.time_var]["select_type"]= 'Queue'  if not self.shuffle_select.winfo_ismapped() else "Random"
+                self.update_replacement_listbox()
+        elif entry!= "Enter Website" or entry !=''or ' ' in entry:
             domain= entry.split('/')[:min(2,len(entry.split('/')))]
             entry= ''.join(domain)
-            entry= entry if entry.startswith("www.") else "www." + entry+'.'
+            entry= entry if entry.startswith("www.") else "www." + entry
             if messagebox.askokcancel("Testing", "Opening Website for confirmation...\n OK to open website. Cancel to skip this step."):
                 webbrowser.open(entry)
             if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):
@@ -659,7 +675,7 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir=vars.rootdir,
             title="Select a program executable",
-            filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
+            filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
         if file_path!='':
             if messagebox.askokcancel("Testing", "Opening Website for confirmation..."):
@@ -742,6 +758,9 @@ class FocusModeUI:
                 # Save enabled state
                 time_data['enabled'] = self.enabled_var.get()
 
+                # Save action when finished
+                time_data['on_finish']= self.finish_options.index(self.finish_var.get())
+                
                 # Save days
                 selected_days = [day for day, var in self.day_vars.items() if var.get()]
                 vars.session_temp['days'] = selected_days
