@@ -44,9 +44,9 @@ def main():
             proc_funcs.convert_to_exe(
                              no_list, curr_time, index, set_temp)
 
-            # proc_funcs.close_by_process(no_list, curr_time,set_temp[index])
+            proc_funcs.close_by_process(no_list, curr_time,set_temp[index])
 
-            # proc_funcs.close_by_title(no_list, window, win, set_temp[index], curr_time)
+            proc_funcs.close_by_title(no_list, window, win, set_temp[index], curr_time)
 
             
 
@@ -64,5 +64,6 @@ def main():
         
     on_finish = [sys.exit,proc_funcs.shutdown_pc, proc_funcs.sleep_pc]
     on_finish[vars.time_group['on_finish']](curr_time)
+    
 if __name__ == "__main__":
     main()

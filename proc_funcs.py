@@ -30,7 +30,7 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
         
         
         with open(vars.json_path, "w") as f:
-            json.dump(vars.time_group, f, indent=2)  # updates json file
+            json.dump(vars.session_temp, f, indent=2)  # updates json file
 
 
 def close_by_process(no_list, curr_time,time_index):
