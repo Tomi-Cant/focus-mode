@@ -2,7 +2,9 @@
 import subprocess
 import sys
 from pathlib import Path
-
+from tkinter import messagebox
+import helper_funcs
+from target_edit import FocusModeUI
 def create_scheduled_task(
     task_name: str,
     python_exe: str,
@@ -89,12 +91,11 @@ def create_scheduled_task(
 
     result = subprocess.run(cmd, capture_output=True, text=True)
 
-    if result.returncode == 0:
-        print(f"Task '{task_name}' created successfully.")
-    else:
-        print("Failed to create task.")
-        print("stdout:", result.stdout)
-        print("stderr:", result.stderr)
+    if result.returncode != 0:
+        print(f"Failed to create task '{task_name}'.")
+        if messagebox.askokcancel("Fatal Error!", f"Something has gone horribly wrong with setup. Please contact support at 'focusedupofficial@gmail.com' with the following error:\n\n{result.stderr}"):
+            helper_funcs.contact_support()
+        sys.exit(1)
 
     xml_path.unlink(missing_ok=True)  # clean up the temp XML
     return result.returncode == 0

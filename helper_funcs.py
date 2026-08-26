@@ -1,4 +1,5 @@
 import tkinter as tk
+
 import vars
 
 import os
@@ -125,3 +126,11 @@ def find_epic_games():
                 if name and name not in games:
                     games.append(name)
     return games
+
+def contact_support():    
+    import webbrowser
+    support_email = "focusedupofficial@gmail.com"
+    subject = "Support Request"
+    body = "Please describe your issue here."
+    mailto_link = f"mailto:{support_email}?subject={subject}&body={body}"
+    webbrowser.open(mailto_link) 

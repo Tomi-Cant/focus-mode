@@ -63,11 +63,14 @@ class FocusModeUI:
                command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
                command=self.create_time_settings_view, bg_color="orange", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
-               command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
-               command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12)
         
+        
+        Button(self.blacklist_buttons_frame, x=4  , y=0, text="Save & Exit", 
+                       command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame, x=5, y=0, text="Contact Support", 
+               command=helper_funcs.contact_support, bg_color="yellow", fg_color="black", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame, x=6, y=0, text="Help", 
+                       command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
         # Right panel - List display (smaller)
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
@@ -88,7 +91,7 @@ class FocusModeUI:
         self.status_label = tk.Label(right_panel, textvariable=self.status_var, font=("Arial", 10, "italic"), fg="red", anchor="w")
         self.status_label.pack(fill=tk.X, pady=(5, 0))
  
-        self.toggle_enabled_button = Button(self.blacklist_buttons_frame, x=5, y=0, text="Disable", command=self.toggle_time_group_enabled, bg_color="purple", fg_color="white", font=("Arial", 11), width=12)
+        self.toggle_enabled_button = Button(self.blacklist_buttons_frame, x=3, y=0, text="Disable", command=self.toggle_time_group_enabled, bg_color="purple", fg_color="white", font=("Arial", 11), width=12)
         self.toggle_enabled_button.grid_remove()
  
         self.update_blacklist_display()
@@ -560,7 +563,8 @@ class FocusModeUI:
         
         self.list_frame.pack()
         
-        
+    
+         
     def find_steam_games_helper(self):  
         steam_games= helper_funcs.find_steam_games()
         if steam_games:
