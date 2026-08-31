@@ -1,4 +1,6 @@
-
+# Made By: Tomi Banjoko
+# Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
+# Date: 08/12/2025
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
