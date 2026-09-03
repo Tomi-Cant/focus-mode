@@ -237,13 +237,10 @@ class FocusModeUI:
     def create_tutorial_view(self):
         self.clear_window()
         self.current_view = "tutorial"
-    
-       
-        # Main container
+
         main_container = ttk.Frame(self.root)
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Title
+
         title = tk.Label(
             main_container,
             text="Focused Up Tutorial",
@@ -251,87 +248,86 @@ class FocusModeUI:
             bg="lightgray"
         )
         title.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Content frame
+
         content_frame = ttk.Frame(main_container)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Left panel - Buttons (smaller, fixed width)
+
         left_panel = ttk.Frame(content_frame, width=150)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
         left_panel.pack_propagate(False)
-        
+
         self.blacklist_buttons_frame = ttk.Frame(left_panel)
         self.blacklist_buttons_frame.pack(fill=tk.X)
-        
+
         Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
-               command=self.tutorial_add, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL) #change to adda new time on other screen
+               command=self.tutorial_add, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL)
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
                command=self.remove_from_timelist, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
                command=self.create_time_settings_view, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
-               command=self.create_tutorial_view, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
+        Button(self.blacklist_buttons_frame, x=3, y=0, text="Save & Exit", 
                command=self.exit, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-        
-        # Right panel - List display (smaller)
+
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        
-        
-        # Listbox for blacklist (reduced size)
+
         self.blacklist_display = tk.Listbox(right_panel, height=15, width=35, font=("Arial", 9))
         scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).pack()
-
+        self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         self.update_blacklist_display()
-       
+
     def tutorial_add(self):
         self.add_to_time_list()
         tutorial= tk.Toplevel(self.root)
-        tutorial.geometry("300x200+725+100")
+        self.tutorial_window = tutorial
+        tutorial.geometry("360x240+725+100")
         tutorial.title("Tutorial Add Function")
         tutorial.transient(self.root)
-        dialogs=['This is the screen where you can add a new time group. A time group is an alotted time when certain programs  will be blocked.',
-                 'Here you can set the name and when you would like it to start, by default it will end at 11:59 pm but you can change that as well.',
-                 'Now that you have initialized a time group, you can change around the time it ends, what days of the week its active and what programs  it blocks',
-                 'When you try to open a blocked program  during an active time group, it will either be closed or redirected to a productive replacement depending on its settings.',
-                 'Lets try adding a program to block for this time group. You can either enter the title of the program or browse for it on your computer for the executable.',
-                 'Now we need to set a replacement program or website for this time group to see the full functionality of the program, try setting one now! (Reminder: Don\'t forget to include the ".com", ".org" etc. for websites)',
-                 ]
-        self.index=0
-        self.label=ttk.Label(tutorial, text=dialogs[self.index], wraplength=280, font=("Arial", 12))
+
+        dialogs = [
+            "A time group defines when Focus Mode blocks selected programs. Use Add to create one, then give it a name and start time.",
+            "On the Time Settings screen, choose the end time and the days of the week when this group should run.",
+            "Use Allowed Hours to give yourself a daily allowance before a blocked program is closed. Set it to 0 for immediate blocking.",
+            "The Enabled checkbox lets you pause a time group without deleting it. Disabled groups remain saved and can be enabled again later.",
+            "Add programs by entering their window or process name, browsing for an executable, or searching installed Steam and Epic Games.",
+            "When a blocked program is closed, you can add a replacement app or website. Replacement items can run in Queue order or be selected at Random.",
+            "The replacement list also supports Force Sleep and Force Shutdown. These actions run when that replacement is selected, so use them carefully.",
+            "Save the time group before going back. Save & Exit writes all groups to disk; Focus Mode then checks enabled groups on their selected days.",
+            "On startup, a valid license creates the Windows scheduled task that runs Focus Mode at logon and daily. If setup fails, use Contact Support from the main screen.",
+            "This concludes the tutorial. Add as many time groups as you need, review each setting, and remember to save your changes before exiting.",
+        ]
+        self.tutorial_dialogs = dialogs
+        self.index = 0
+        self.label = ttk.Label(tutorial, text=dialogs[self.index], wraplength=330, font=("Arial", 12))
         self.label.pack(pady=10)
-        self.next_button = ttk.Button(tutorial, text="Next", command=lambda:self.next_dialog(dialogs))
-        self.next_button.pack(pady=10)
-         
-        # tutorial.grab_set()
-        
-        
-    def next_dialog(self,dialogs):
-        self.index+=1
-        if self.index<len(dialogs):
-            self.label.config(text=dialogs[self.index])   
-        if self.time_listbox.size()==0 and self.index==2:
-            self.label.config(text="Try adding a time group to continue the tutorial!")
-            self.index-=1
-        if self.time_listbox.size()>0:
-            if vars.time_group[vars.time_var]['programs']==[] and self.index==5:
-                self.label.config(text="Try adding a program to block for this time group to continue the tutorial!")
-                self.index-=1
-            if vars.time_group[vars.time_var]['productive']==[] and self.index==6:
-                self.label.config(text="Try setting a replacement program or website for this time group to continue the tutorial!")
-                self.index-=1
-        if self.index == len(dialogs):
-            self.next_button.config(state=tk.DISABLED)
-            self.label.config(text="This concludes the tutorial, feel free to explore the settings and add time groups to your liking! Remember to save your settings before exiting, each one must be saved individually. Now it's your time to lock in!")
+        button_frame = ttk.Frame(tutorial)
+        button_frame.pack(pady=10)
+        self.back_button = ttk.Button(button_frame, text="Back", command=lambda: self.next_dialog(-1))
+        self.back_button.pack(side=tk.LEFT, padx=5)
+        self.next_button = ttk.Button(button_frame, text="Next", command=lambda: self.next_dialog(1))
+        self.next_button.pack(side=tk.LEFT, padx=5)
+
+        def close_tutorial():
+            tutorial.destroy()
+
+        ttk.Button(button_frame, text="Close", command=close_tutorial).pack(side=tk.LEFT, padx=5)
+        self.back_button.config(state=tk.DISABLED)
+
+    def next_dialog(self, direction=1):
+        if direction > 0 and self.index == len(self.tutorial_dialogs) - 1:
+            self.tutorial_window.destroy()
+            return
+        self.index = max(0, min(self.index + direction, len(self.tutorial_dialogs) - 1))
+        self.label.config(text=self.tutorial_dialogs[self.index])
+        self.back_button.config(state=tk.NORMAL if self.index > 0 else tk.DISABLED)
+        self.next_button.config(
+            text="Finish" if self.index == len(self.tutorial_dialogs) - 1 else "Next"
+        )
     
     def add_to_blacklist(self):
         file_path = filedialog.askopenfilename(
