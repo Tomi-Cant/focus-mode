@@ -7,9 +7,10 @@ from pathlib import Path
 from tkinter import messagebox
 import helper_funcs
 from target_edit import FocusModeUI
+import pyuac
+@pyuac.main_requires_admin
 def create_scheduled_task(
     task_name: str,
-    python_exe: str,
     script_path: str,
     script_args: str = "",
 ):
@@ -73,8 +74,8 @@ def create_scheduled_task(
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>{python_exe}</Command>
-      <Arguments>"{script_path}" {script_args}</Arguments>
+      <Command>"{script_path}" {script_args}</Command>
+      <Arguments></Arguments>
     </Exec>
   </Actions>
 </Task>'''
@@ -91,7 +92,7 @@ def create_scheduled_task(
         "/f",  # overwrite if it already exists
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
 
     if result.returncode != 0:
         print(f"Failed to create task '{task_name}'.")
@@ -103,3 +104,9 @@ def create_scheduled_task(
     return result.returncode == 0
 
 
+if __name__ == "__main__":
+    # Example usage
+    create_scheduled_task(
+        task_name="FocusModeTask1",
+        script_path=f"{Path.cwd()}\\main.exe"
+    )

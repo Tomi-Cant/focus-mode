@@ -141,7 +141,8 @@ class FocusModeUI:
         button_frame.pack(fill=tk.X, padx=5, pady=5)
         temp = ttk.Button(button_frame, text= "Set Replacement Program/Site",command= self.change_replacement,default="disabled")
         temp.pack( padx=2, fill=tk.X,side= 'top')
-        ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, padx=2, fill=tk.X)
+        ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, fill=tk.X)
+        ttk.Button(button_frame, text="Remove", command=self.remove_from_timelist).pack(side=tk.LEFT, padx=2, fill=tk.X)
         temp.configure(default='disabled')
         temp.pack_forget()
         temp.pack( padx=2, fill=tk.X,side= 'top')
@@ -361,17 +362,21 @@ class FocusModeUI:
         return time_str.split(" - ")[0]
     
     def remove_from_timelist(self):
-        if self.current_view == "main":
+        if self.current_view == "time_settings":
+            selection = self.select_time(None)
+            if selection and selection in vars.time_group:
+                del vars.time_group[selection]
+                self.update_time_list()
+                messagebox.showinfo("Removed", f"Removed {selection}")
+        elif self.current_view == "main":
             if self.select(None)!=False: 
                 item = self.select(None)
-                if vars.time_group and vars.time_var in vars.time_group:
-                    times = vars.session_temp['time_list']
-                    if item in times:
-                        times.remove(item)
+                if vars.time_group and vars.time_var in vars.time_group: 
+                    if item in vars.time_group:
+                        del vars.time_group[item]
                         self.update_blacklist_display()
                         self.update_main_selection_state()
                         messagebox.showinfo("Removed", f"Removed {item}")
- 
  
     def select(self,event):
         selection = self.blacklist_display.curselection()
@@ -379,7 +384,6 @@ class FocusModeUI:
         if not selection:
             self.update_main_selection_state()
             return False
- 
         selection_index = selection[0]
         selection_text = self.blacklist_display.get(selection_index).strip()
         if selection_text == "" or selection_text.startswith("-"):

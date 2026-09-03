@@ -72,13 +72,13 @@ def close_by_title(added, window, win, time_index,curr_time):
         
 def sleep_pc(curr_time):
     print("slept")
-    # subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"])
+    subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"], creationflags=subprocess.CREATE_NO_WINDOW)
     with open(vars.log_path, "a") as log:
                 log.write(f"    PC slept {curr_time}\n")
                 
 def shutdown_pc(curr_time):
     print("shutdown")
-    # subprocess.run(["shutdown", "/s", "/t", "0"])
+    subprocess.run(["shutdown", "/s", "/t", "0"], creationflags=subprocess.CREATE_NO_WINDOW)
     with open(vars.log_path, "a") as log:
                 log.write(f"    PC shutdown {curr_time}\n")      
                          
