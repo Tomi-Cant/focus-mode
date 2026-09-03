@@ -1,3 +1,7 @@
+# Made By: Tomi Banjoko
+# Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
+# Date: 08/12/2025
+
 from os.path import dirname, abspath, join
 import json
 import tkinter as tk

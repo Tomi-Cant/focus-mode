@@ -1,3 +1,6 @@
+# Made By: Tomi Banjoko
+# Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
+# Date: 08/12/2025
 import re
 import subprocess
 import window_to_process
@@ -9,22 +12,25 @@ import json
 import vars
 import webbrowser
 from tkinter import messagebox
-subprocess.run(["rundll32.exe", "user32.dll,LockWorkStation"])
-subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"])
+
 def convert_to_exe( no_list, curr_time, index, set_temp):
     # converts application titles to their .exe counterpart
-    added = []
-
+    added = vars.time_group[set_temp[index]].get("converted", [])
+    temp =[]
     for i in no_list:
-        if not i.endswith(".exe") and not i.endswith(" #website"):
-            added.append(i)
-    for i in window_to_process.check_windows(added):
+        
+        if not i.endswith(".exe"):
+            temp.append(i.lower())
+        else:
+            added.append(i)  
+    open_windows = window_to_process.check_windows(temp)
+    for i in open_windows:
         PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {i['title']} {curr_time}\n")
-        no_list.append(i['name'])
-        added.remove(i['title'])
-        vars.session_temp[set_temp[index]]['programs'] = no_list
+        added.append(i['name'])
+        vars.time_group[set_temp[index]]['converted'] = added
+        
         
         with open(vars.json_path, "w") as f:
             json.dump(vars.session_temp, f, indent=2)  # updates json file
@@ -65,12 +71,14 @@ def close_by_title(added, window, win, time_index,curr_time):
             log.write(f"    Closed {window} {curr_time}\n")
         
 def sleep_pc(curr_time):
-    subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"])
+    print("slept")
+    # subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"])
     with open(vars.log_path, "a") as log:
                 log.write(f"    PC slept {curr_time}\n")
                 
 def shutdown_pc(curr_time):
-    subprocess.run(["shutdown", "/s", "/t", "0"])
+    print("shutdown")
+    # subprocess.run(["shutdown", "/s", "/t", "0"])
     with open(vars.log_path, "a") as log:
                 log.write(f"    PC shutdown {curr_time}\n")      
                          

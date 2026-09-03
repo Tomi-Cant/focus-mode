@@ -21,8 +21,7 @@ def main():
     find_last_run(curr_time)
     day_of_week = datetime.date.today().strftime("%A")
     # set_times, loop to collect, check if end time is passed if so remove from list with pair
-    set_temp = [list(time_list.keys())[i] for i in range(
-        len(list(time_list.keys())))] # generator for loop makes list of set time
+    set_temp = [key for key, data in time_list.items() if data.get('enabled', True)]
     if set_temp == []:
         sys.exit()
     end_temp = [time_list[i]['end_time'] for i in set_temp]
@@ -42,27 +41,29 @@ def main():
         window = win32gui.GetWindowText(win)
         
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
+            proc_funcs.convert_to_exe(
+                             no_list, curr_time, index, set_temp)
 
             proc_funcs.close_by_process(no_list, curr_time,set_temp[index])
 
             proc_funcs.close_by_title(no_list, window, win, set_temp[index], curr_time)
 
-            proc_funcs.convert_to_exe(
-                 no_list, curr_time, index, set_temp)
+            
 
-         cull_times(set_times, end_times, index, curr_time)   
+        set_times, end_times = cull_times(set_times, end_times, index, curr_time)
 
         index += 1
         index %= len(set_times)
         
         time.sleep(.5)
         
-    with open(path, "a") as log:
+    with open(vars.log_path, "a") as log:
         log.write(f"|Target Time Reached|\n")
     with open(vars.json_path, "w") as f:
         json.dump({"time_list": vars.time_group}, f, indent=2)  # updates json file
         
     on_finish = [sys.exit,proc_funcs.shutdown_pc, proc_funcs.sleep_pc]
     on_finish[vars.time_group['on_finish']](curr_time)
+    
 if __name__ == "__main__":
     main()

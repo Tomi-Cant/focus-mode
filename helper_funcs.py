@@ -1,4 +1,8 @@
+# Made By: Tomi Banjoko
+# Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
+# Date: 08/12/2025
 import tkinter as tk
+
 import vars
 
 import os
@@ -22,7 +26,7 @@ def shorten(text: str, box_width: int, font_size: int = 10) -> str:
     return text
 
 
-def cull_times(set, end, indx, time):
+def cull_times(start, end, indx, time):
     """Remove time entries that have passed their end time"""
     if time >= end[indx]:
         del end[indx]
@@ -125,3 +129,11 @@ def find_epic_games():
                 if name and name not in games:
                     games.append(name)
     return games
+
+def contact_support():    
+    import webbrowser
+    support_email = "focusedupofficial@gmail.com"
+    subject = "Support Request"
+    body = "Please describe your issue here."
+    mailto_link = f"mailto:{support_email}?subject={subject}&body={body}"
+    webbrowser.open(mailto_link) 

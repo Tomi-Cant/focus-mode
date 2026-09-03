@@ -2,11 +2,9 @@
   "time_list": {
     "11:10": {
       "programs": [
-        "Minecraft",
-        "Valorant",
         "Epic Games Launcher",
-        "Discord",
-        "Steam"
+        "Steam",
+        "Microsoft 365 Copilot"
       ],
       "end_time": "23:59",
       "days": [
@@ -19,23 +17,27 @@
         "Sunday"
       ],
       "name": "This",
-      
       "productive": [
         "www.a",
         "docs.exe"
       ],
       "select_type": "",
       "allowed_time": 360.0,
-      "time_left": 360
+      "time_left": 360,
+      "enabled": true,
+      "on_finish": 0,
+      "converted": [
+        "M365Copilot.exe"
+      ]
     },
     "13:25": {
       "programs": [
-        "Marvel Rivals",
-        "Fortnite",
-        "Epic Games Launcher",
-        "Discord"
+        "Discord",
+        "Deadlock",
+        "Marvel Rivals"
       ],
       "end_time": "23:50",
+      "enabled": true,
       "days": [
         "Monday",
         "Tuesday",
@@ -45,8 +47,9 @@
       ],
       "productive": [],
       "select_type": "",
-      "allowed_time": 360,
-      "time_left": 360
+      "allowed_time": 360.0,
+      "time_left": 360,
+      "on_finish": 0
     }
   },
   "days": [

@@ -1,4 +1,6 @@
-
+# Made By: Tomi Banjoko
+# Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
+# Date: 08/12/2025
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -63,11 +65,14 @@ class FocusModeUI:
                command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
                command=self.create_time_settings_view, bg_color="orange", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
-               command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
-               command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12)
         
+        
+        Button(self.blacklist_buttons_frame, x=4  , y=0, text="Save & Exit", 
+                       command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame, x=5, y=0, text="Contact Support", 
+               command=helper_funcs.contact_support, bg_color="yellow", fg_color="black", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame, x=6, y=0, text="Help", 
+                       command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
         # Right panel - List display (smaller)
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
@@ -81,9 +86,16 @@ class FocusModeUI:
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.Y, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
-
+ 
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+         
+        self.status_var = tk.StringVar(value="")
+        self.status_label = tk.Label(right_panel, textvariable=self.status_var, font=("Arial", 10, "italic"), fg="red", anchor="w")
+        self.status_label.pack(fill=tk.X, pady=(5, 0))
+ 
+        self.toggle_enabled_button = Button(self.blacklist_buttons_frame, x=3, y=0, text="Disable", command=self.toggle_time_group_enabled, bg_color="purple", fg_color="white", font=("Arial", 11), width=12)
+        self.toggle_enabled_button.grid_remove()
+ 
         self.update_blacklist_display()
     
     def create_time_settings_view(self):
@@ -140,9 +152,17 @@ class FocusModeUI:
         
         # Name input section
         name_frame = ttk.LabelFrame(right_panel, text="Name")
-        name_frame.pack(fill=tk.X, padx=5, pady=5)
+        name_frame.pack(fill=tk.X, padx=5, pady=5,ipady=3)
         self.name_var = tk.StringVar(value="")
         ttk.Entry(name_frame, textvariable=self.name_var, width=20).pack(fill=tk.X, padx=5, pady=5)
+        self.enabled_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(right_panel, text="Enabled", variable=self.enabled_var,command= lambda: self.toggle_time_group_enabled()).pack(anchor=tk.W, padx=5, pady=(0,5))
+        finish_frame= ttk.Frame(right_panel)
+        self.finish_var= tk.StringVar(value="Nothing")
+        ttk.Label(finish_frame,text="When Finished:").grid(row=0,column=0)
+        self.finish_options= ["Nothing", "Shutdown PC", "Sleep PC"]
+        ttk.OptionMenu(finish_frame, self.finish_var,"Nothing", *self.finish_options).grid(row=0, column=1)
+        finish_frame.pack(fill=tk.X, padx=5, pady=5)
         
         # Time input section
         time_frame = ttk.LabelFrame(right_panel, text="Time Range (00:00-23:59)")
@@ -202,6 +222,7 @@ class FocusModeUI:
         find_epic_button= ttk.Button(prog_input_frame, text="Search Epic Games", command=self.find_epic_games_helper)
         find_epic_button.grid(row=2, column=2, columnspan=2, padx=5, pady=15)
         
+        
         # Buttons
         button_frame = ttk.Frame(right_panel)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -216,13 +237,10 @@ class FocusModeUI:
     def create_tutorial_view(self):
         self.clear_window()
         self.current_view = "tutorial"
-    
-       
-        # Main container
+
         main_container = ttk.Frame(self.root)
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Title
+
         title = tk.Label(
             main_container,
             text="Focused Up Tutorial",
@@ -230,94 +248,92 @@ class FocusModeUI:
             bg="lightgray"
         )
         title.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Content frame
+
         content_frame = ttk.Frame(main_container)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Left panel - Buttons (smaller, fixed width)
+
         left_panel = ttk.Frame(content_frame, width=150)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
         left_panel.pack_propagate(False)
-        
+
         self.blacklist_buttons_frame = ttk.Frame(left_panel)
         self.blacklist_buttons_frame.pack(fill=tk.X)
-        
+
         Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
-               command=self.tutorial_add, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL) #change to adda new time on other screen
+               command=self.tutorial_add, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL)
         Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
                command=self.remove_from_timelist, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
                command=self.create_time_settings_view, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame, x=3, y=0, text="Help", 
-               command=self.create_tutorial_view, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame, x=4, y=0, text="Save & Exit", 
+        Button(self.blacklist_buttons_frame, x=3, y=0, text="Save & Exit", 
                command=self.exit, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-        
-        # Right panel - List display (smaller)
+
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        list_label = tk.Label(right_panel, text="Ban start times", font=("Arial", 11,))
-        list_label.pack(fill=tk.X)
-        
-        # Listbox for blacklist (reduced size)
+
         self.blacklist_display = tk.Listbox(right_panel, height=15, width=35, font=("Arial", 9))
         scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).pack()
-
+        self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         self.update_blacklist_display()
-       
+
     def tutorial_add(self):
         self.add_to_time_list()
         tutorial= tk.Toplevel(self.root)
-        tutorial.geometry("300x200+725+100")
+        self.tutorial_window = tutorial
+        tutorial.geometry("360x240+725+100")
         tutorial.title("Tutorial Add Function")
         tutorial.transient(self.root)
-        dialogs=['This is the screen where you can add a new time group. A time group is an alotted time when certain programs  will be blocked.',
-                 'Here you can set the name and when you would like it to start, by default it will end at 11:59 pm but you can change that as well.',
-                 'Now that you have initialized a time group, you can change around the time it ends, what days of the week its active and what programs  it blocks',
-                 'When you try to open a blocked program  during an active time group, it will either be closed or redirected to a productive replacement depending on its settings.',
-                 'Lets try adding a program to block for this time group. You can either enter the title of the program or browse for it on your computer for the executable.',
-                 'Now we need to set a replacement program or website for this time group to see the full functionality of the program, try setting one now! (Reminder: Don\'t forget to include the ".com", ".org" etc. for websites)',
-                 ]
-        self.index=0
-        self.label=ttk.Label(tutorial, text=dialogs[self.index], wraplength=280, font=("Arial", 12))
+
+        dialogs = [
+            "A time group defines when Focus Mode blocks selected programs. Use Add to create one, then give it a name and start time.",
+            "On the Time Settings screen, choose the end time and the days of the week when this group should run.",
+            "Use Allowed Hours to give yourself a daily allowance before a blocked program is closed. Set it to 0 for immediate blocking.",
+            "The Enabled checkbox lets you pause a time group without deleting it. Disabled groups remain saved and can be enabled again later.",
+            "Add programs by entering their window or process name, browsing for an executable, or searching installed Steam and Epic Games.",
+            "When a blocked program is closed, you can add a replacement app or website. Replacement items can run in Queue order or be selected at Random.",
+            "The replacement list also supports Force Sleep and Force Shutdown. These actions run when that replacement is selected, so use them carefully.",
+            "Save the time group before going back. Save & Exit writes all groups to disk; Focus Mode then checks enabled groups on their selected days.",
+            "On startup, a valid license creates the Windows scheduled task that runs Focus Mode at logon and daily. If setup fails, use Contact Support from the main screen.",
+            "This concludes the tutorial. Add as many time groups as you need, review each setting, and remember to save your changes before exiting.",
+        ]
+        self.tutorial_dialogs = dialogs
+        self.index = 0
+        self.label = ttk.Label(tutorial, text=dialogs[self.index], wraplength=330, font=("Arial", 12))
         self.label.pack(pady=10)
-        self.next_button = ttk.Button(tutorial, text="Next", command=lambda:self.next_dialog(dialogs))
-        self.next_button.pack(pady=10)
-         
-        # tutorial.grab_set()
-        
-        
-    def next_dialog(self,dialogs):
-        self.index+=1
-        if self.index<len(dialogs):
-            self.label.config(text=dialogs[self.index])   
-        if self.time_listbox.size()==0 and self.index==2:
-            self.label.config(text="Try adding a time group to continue the tutorial!")
-            self.index-=1
-        if self.time_listbox.size()>0:
-            if vars.time_group[vars.time_var]['programs']==[] and self.index==5:
-                self.label.config(text="Try adding a program to block for this time group to continue the tutorial!")
-                self.index-=1
-            if vars.time_group[vars.time_var]['productive']==[] and self.index==6:
-                self.label.config(text="Try setting a replacement program or website for this time group to continue the tutorial!")
-                self.index-=1
-        if self.index == len(dialogs):
-            self.next_button.config(state=tk.DISABLED)
-            self.label.config(text="This concludes the tutorial, feel free to explore the settings and add time groups to your liking! Remember to save your settings before exiting, each one must be saved individually. Now it's your time to lock in!")
+        button_frame = ttk.Frame(tutorial)
+        button_frame.pack(pady=10)
+        self.back_button = ttk.Button(button_frame, text="Back", command=lambda: self.next_dialog(-1))
+        self.back_button.pack(side=tk.LEFT, padx=5)
+        self.next_button = ttk.Button(button_frame, text="Next", command=lambda: self.next_dialog(1))
+        self.next_button.pack(side=tk.LEFT, padx=5)
+
+        def close_tutorial():
+            tutorial.destroy()
+
+        ttk.Button(button_frame, text="Close", command=close_tutorial).pack(side=tk.LEFT, padx=5)
+        self.back_button.config(state=tk.DISABLED)
+
+    def next_dialog(self, direction=1):
+        if direction > 0 and self.index == len(self.tutorial_dialogs) - 1:
+            self.tutorial_window.destroy()
+            return
+        self.index = max(0, min(self.index + direction, len(self.tutorial_dialogs) - 1))
+        self.label.config(text=self.tutorial_dialogs[self.index])
+        self.back_button.config(state=tk.NORMAL if self.index > 0 else tk.DISABLED)
+        self.next_button.config(
+            text="Finish" if self.index == len(self.tutorial_dialogs) - 1 else "Next"
+        )
     
     def add_to_blacklist(self):
         file_path = filedialog.askopenfilename(
             initialdir= vars.rootdir,   
             title="Select a program executable",
-            filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
+            filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
         
         if file_path:
@@ -326,7 +342,7 @@ class FocusModeUI:
                 programs = vars.time_group[vars.time_var]['programs']
                 if executable not in programs:
                     programs.append(executable)
-                    self.update_blacklist_display()
+                    self.update_time_display()
                     messagebox.showinfo("Success", f"Added {executable} to blacklist")
                 else:
                     messagebox.showwarning("Duplicate", f"{executable} is already in the list")
@@ -349,19 +365,61 @@ class FocusModeUI:
                     if item in times:
                         times.remove(item)
                         self.update_blacklist_display()
+                        self.update_main_selection_state()
                         messagebox.showinfo("Removed", f"Removed {item}")
-    
-
-            
+ 
+ 
     def select(self,event):
         selection = self.blacklist_display.curselection()
-    
-        if selection:
-            selection :str = self.blacklist_display.get(selection[0])
-            selection =self.parse_selected_time(selection)
+     
+        if not selection:
+            self.update_main_selection_state()
+            return False
+ 
+        selection_index = selection[0]
+        selection_text = self.blacklist_display.get(selection_index).strip()
+        if selection_text == "" or selection_text.startswith("-"):
+            # If a program or blank line is selected, find the nearest group header above it
+            while selection_index > 0:
+                selection_index -= 1
+                selection_text = self.blacklist_display.get(selection_index).strip()
+                if selection_text and not selection_text.startswith("-"):
+                    break
+            else:
+                self.update_main_selection_state()
+                return False
+ 
+        selection = self.parse_selected_time(selection_text)
+        if selection in vars.time_group:
             vars.time_var = selection
+            self.update_main_selection_state()
             return selection
+ 
+        self.update_main_selection_state()
         return False
+ 
+    def update_main_selection_state(self):
+        if vars.time_var and vars.time_var in vars.time_group:
+            enabled = vars.time_group[vars.time_var].get('enabled', True)
+            self.status_var.set("Selected time group is disabled" if not enabled else "")
+            self.toggle_enabled_button.configure(text="Enable" if not enabled else "Disable")
+            self.toggle_enabled_button.grid()
+        else:
+            self.status_var.set("")
+            self.toggle_enabled_button.grid_remove()
+ 
+    def toggle_time_group_enabled(self):
+        if vars.time_var and vars.time_var in vars.time_group:
+            time_data = vars.time_group[vars.time_var]
+            time_data['enabled'] = not time_data.get('enabled', True)
+            vars.time_group[vars.time_var]['enabled'] = time_data['enabled']
+            if self.current_view == 'main':
+                self.update_blacklist_display()
+                self.update_main_selection_state()
+            if self.current_view == "time_settings" and vars.time_var in vars.session_temp.get('time_list', {}):
+                self.enabled_var.set(time_data['enabled'])
+                self.update_time_list()
+                
             
     def select_time(self, event):
         selection = self.time_listbox.curselection()
@@ -436,7 +494,8 @@ class FocusModeUI:
                     "select_type":"Queue",
                     'allowed_hours': 0.0,
                     'time_left': 0.0, 
-                    'on_finish': 0  #either 0: nothing, 1: shutdown, 2: sleep 
+                    'on_finish': 0,  #either 0: nothing, 1: shutdown, 2: sleep 
+                    'enabled': True
                 }
                 if vars.time_group[time_key]["name"]== None:
                     del vars.time_group[time_key]["name"]
@@ -465,7 +524,7 @@ class FocusModeUI:
         app_frame= tk.Frame(dialog, name= 'app')
         web_frame= tk.Frame(dialog, name= 'web')
         button_frame= tk.Frame(dialog, name= "button",height=15)
-        button_frame.pack_configure()
+        button_frame.grid_configure()
         self.list_frame= tk.Frame(dialog, name='list')
         web_url= tk.StringVar(value='Enter Website')
         button_frame.pack_configure(padx=4)
@@ -485,23 +544,25 @@ class FocusModeUI:
         scrollbar.pack(side="right",fill='y')
         self.update_replacement_listbox()
         ttk.Button(button_frame, text="Change Type", 
-                  command=lambda:self.swap_out_widgets(app_frame,web_frame,self.list_frame,side='top')).pack(side="left")
-        ttk.Button(button_frame,text='Remove Selected',command=self.remove_replacement).pack(side="left")
+                  command=lambda:self.swap_out_widgets(app_frame,web_frame,self.list_frame,side='top')).grid(row=0,column=0)
+        ttk.Button(button_frame,text='Remove Selected',command=self.remove_replacement).grid(row=0,column=1)
         self.shuffle_select=ttk.Button(button_frame, text='Change to Queue', 
-                                      command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
+                                      command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='top') )
         queue_select= ttk.Button(button_frame, text='Change to Shuffle',
-                                command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='left') )
-        queue_select.pack(side="left")
+                                command=lambda:self.swap_out_widgets(queue_select,self.shuffle_select,self.list_frame,side='top') )
+        queue_select.grid(row=0,column=2)
 
-        ttk.Button(button_frame, text='Exit', command=lambda:dialog.destroy(), width= 7).pack(side="right")
+        ttk.Button(button_frame, text='Exit', command=lambda:dialog.destroy(), width= 7).grid(row=0,column=3)
         self.replacement_list.pack(side="left")
-        
+        ttk.Button(button_frame, text='Force Sleep', command=lambda: self.enter_replacement("#Sleep PC")).grid(row=1,column=1)
+        ttk.Button(button_frame, text='Force Shutdown', command=lambda: self.enter_replacement("#Shutdown PC")).grid(row=1,column=2)
         submit_entry.pack()    
         button_frame.pack(side="bottom")
         
         self.list_frame.pack()
         
-        
+    
+         
     def find_steam_games_helper(self):  
         steam_games= helper_funcs.find_steam_games()
         if steam_games:
@@ -590,11 +651,16 @@ class FocusModeUI:
             obj3.pack_forget()
             obj3.pack(side='bottom')
             
-    def enter_replacement(self, entry:str):
-        if entry!= "Enter Website" or entry !=''or ' ' in entry:
+    def enter_replacement(self, entry:str): 
+        if entry==  "#Sleep PC" or entry== "#Shutdown PC":
+            if messagebox.askyesno("New Addition", f"Would you like to add '{entry[1:]}' to the list of replacements?", icon= "warning"):
+                vars.time_group[vars.time_var]["productive"].append(entry)
+                vars.time_group[vars.time_var]["select_type"]= 'Queue'  if not self.shuffle_select.winfo_ismapped() else "Random"
+                self.update_replacement_listbox()
+        elif entry!= "Enter Website" or entry !=''or ' ' in entry:
             domain= entry.split('/')[:min(2,len(entry.split('/')))]
             entry= ''.join(domain)
-            entry= entry if entry.startswith("www.") else "www." + entry+'.'
+            entry= entry if entry.startswith("www.") else "www." + entry
             if messagebox.askokcancel("Testing", "Opening Website for confirmation...\n OK to open website. Cancel to skip this step."):
                 webbrowser.open(entry)
             if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):
@@ -611,7 +677,7 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir=vars.rootdir,
             title="Select a program executable",
-            filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
+            filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
         if file_path!='':
             if messagebox.askokcancel("Testing", "Opening Website for confirmation..."):
@@ -633,14 +699,15 @@ class FocusModeUI:
     def update_time_display(self):
         if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
             time_data = vars.time_group[vars.time_var]
-            
+             
             # Update name
             name = time_data.get('name', '')
             self.name_var.set(name)
-            
+            self.enabled_var.set(time_data.get('enabled', True))
+             
             end_time = time_data.get('end_time', '00:00')
             allowed_time = time_data.get('allowed_time', 0)/360
-            
+             
             self.hour_var.set(vars.time_var[:2])
             self.minute_var.set(vars.time_var[3:])
             self.end_hour_var.set(end_time[:2])
@@ -690,10 +757,16 @@ class FocusModeUI:
                 
                 time_data['end_time'] = end_time
                 
+                # Save enabled state
+                time_data['enabled'] = self.enabled_var.get()
+
+                # Save action when finished
+                time_data['on_finish']= self.finish_options.index(self.finish_var.get())
+                
                 # Save days
                 selected_days = [day for day, var in self.day_vars.items() if var.get()]
                 vars.session_temp['days'] = selected_days
-                
+                 
                 # Save allowed time
                 allowed_time = self.allowed_hours.get()
                 time_data['allowed_time'] = float(allowed_time)*360
@@ -717,12 +790,13 @@ class FocusModeUI:
                     programs = time_data.get('programs', [])
                     
                     # Display nickname if given, otherwise show time_key
+                    status = " [DISABLED]" if not time_data.get('enabled', True) else ""
                     if name:
-                        self.blacklist_display.insert(tk.END, f"{name} ({time_key} - {end_time})")
-
+                        self.blacklist_display.insert(tk.END, f"{name} ({time_key} - {end_time}){status}")
+ 
                     # Always show time range
                     else:
-                        self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}")
+                        self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}{status}")
                     
                     # Show only first 2 programs
                     for i, program in enumerate(programs[:2]):
@@ -740,12 +814,12 @@ class FocusModeUI:
             self.time_listbox.delete(0, tk.END)
             for time_key in vars.time_group:
                 end = vars.time_group[time_key].get('end_time', '23:59')
+                status = " [DISABLED]" if not vars.time_group[time_key].get('enabled', True) else ""
                 if vars.time_group[time_key].get('name'):
                     display_name = vars.time_group[time_key]['name']
-                    
-                    self.time_listbox.insert(tk.END, f"{display_name} ({time_key} - {end})")
+                    self.time_listbox.insert(tk.END, f"{display_name} ({time_key} - {end}){status}")
                 else:
-                    self.time_listbox.insert(tk.END, f"{time_key} - {end}")
+                    self.time_listbox.insert(tk.END, f"{time_key} - {end}{status}")
     
    
     
