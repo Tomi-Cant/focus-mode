@@ -279,14 +279,21 @@ class FocusModeUI:
         ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).pack()
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
+        self.intro = tk.Toplevel(self.root)
+        
+        self.intro.geometry("450x200+775+100")
+        self.intro.title("Tutorial Add Function")
+        self.intro.transient(self.root)
+        tk.Label(self.intro, text="Welcome to Focus Mode!\nThis tutorial will guide you through the main features of the application.\nClick Add to get started").pack(pady=10)
+        
         self.update_blacklist_display()
 
     def tutorial_add(self):
+        self.intro.destroy()
         self.add_to_time_list()
         tutorial= tk.Toplevel(self.root)
         self.tutorial_window = tutorial
-        tutorial.geometry("360x240+725+100")
+        tutorial.geometry("360x240+750+100")
         tutorial.title("Tutorial Add Function")
         tutorial.transient(self.root)
 
@@ -299,7 +306,6 @@ class FocusModeUI:
             "When a blocked program is closed, you can add a replacement app or website. Replacement items can run in Queue order or be selected at Random.",
             "The replacement list also supports Force Sleep and Force Shutdown. These actions run when that replacement is selected, so use them carefully.",
             "Save the time group before going back. Save & Exit writes all groups to disk; Focus Mode then checks enabled groups on their selected days.",
-            "On startup, a valid license creates the Windows scheduled task that runs Focus Mode at logon and daily. If setup fails, use Contact Support from the main screen.",
             "This concludes the tutorial. Add as many time groups as you need, review each setting, and remember to save your changes before exiting.",
         ]
         self.tutorial_dialogs = dialogs
