@@ -52,13 +52,8 @@
       "on_finish": 0
     }
   },
-  "days": [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday"
-  ]
+  "audio": {
+    "enabled": false,
+    "volume": 0.5
+  }
 }

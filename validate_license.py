@@ -48,7 +48,7 @@ def verify_license(license_path: str) -> dict | None:
         if license_file.get("task_made", False) :
             
             create_task.create_scheduled_task(
-                task_name="Focused Up Task",
+                task_name="FocusedUpTask",
                 script_path=f"{vars.rootdir}\\main.exe"
             )
             license_file["task_made"] = True

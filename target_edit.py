@@ -723,7 +723,8 @@ class FocusModeUI:
             self.end_hour_var.set(end_time[:2])
             self.end_minute_var.set(end_time[3:])
             self.allowed_hours.set(allowed_time)
-            
+            for day in vars.selected_days:
+                self.day_vars[day].set(day in time_data.get('days', []))
             
             # Update program list
             self.program_listbox.delete(0, tk.END)
@@ -774,9 +775,9 @@ class FocusModeUI:
                 time_data['on_finish']= self.finish_options.index(self.finish_var.get())
                 
                 # Save days
-                selected_days = [day for day, var in self.day_vars.items() if var.get()]
-                vars.session_temp['days'] = selected_days
-                 
+                enabled_days = [day for day, var in self.day_vars.items() if var.get()==1]
+                vars.session_temp["time_list"][vars.time_var]["days"] = enabled_days
+
                 # Save allowed time
                 allowed_time = self.allowed_hours.get()
                 time_data['allowed_time'] = float(allowed_time)*360
