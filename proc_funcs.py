@@ -11,6 +11,9 @@ import psutil
 import json
 import vars
 import webbrowser
+import os
+import random
+from pygame import mixer
 from tkinter import messagebox
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
@@ -31,7 +34,6 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
         added.append(i['name'])
         vars.time_group[set_temp[index]]['converted'] = added
         
-        
         with open(vars.json_path, "w") as f:
             json.dump(vars.session_temp, f, indent=2)  # updates json file
 
@@ -48,6 +50,7 @@ def close_by_process(no_list, curr_time,time_index):
             with open(vars.log_path, "a") as log:
                 try:
                     proc.kill()
+                    play_audio()
                     productive_open(proc.info['name'], curr_time, time_index)
                     log.write(f"    Closed {proc.name()} {curr_time}\n")
                     continue
@@ -62,11 +65,12 @@ def close_by_process(no_list, curr_time,time_index):
 
 def close_by_title(added, window, win, time_index,curr_time):
     if window in added or find_minecraft(window,added) != []: 
-        # if vars.time_group[time_index]["time_left"] >= 0:
-        #     vars.time_group[time_index]["time_left"]-=.5
-        #     return 
+        if vars.time_group[time_index]["time_left"] >= 0:
+            vars.time_group[time_index]["time_left"]-=.5
+            return 
         
         PostMessage(win, win32con.WM_CLOSE, 0, 0)
+        play_audio()
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
         
@@ -89,8 +93,36 @@ def find_minecraft(title, added):
             return re.findall(pattern, title)
     return []
 
+def play_audio():
+    if vars.configs["audio"]==False:
+        return
+    available_audio=get_audio()
+    selected_audio= load_audio(available_audio)
+    if not available_audio:
+        return 
+    selected_audio.set_volume(vars.configs["volume"])
+    selected_audio.play(maxtime=4000)
+    
+def get_audio() -> list[str] | None:
+    audio_sets = vars.self_path + "\\assets\\audio"
+    audio_folders=os.listdir(audio_sets)
+    audio_files=[]
+    for folder in audio_folders:
+        folder_dest= audio_sets+"\\"+folder
+        for file in os.listdir(folder_dest): 
+            if file.endswith(".mp4"):
+                audio_files.append(file)
+    
+    return audio_files
+
+def load_audio(audio_paths) ->mixer.Sound:
+    
+    random.shuffle(audio_paths)
+    mixer.init()
+    return mixer.Sound(audio_paths[0])
+    
 def productive_open(added, curr_time, time_index): 
-    import random
+    
     output=''
     select_type=vars.time_group[time_index]["select_type"]
     if vars.time_group[time_index]["productive"] == "":
@@ -115,3 +147,5 @@ def productive_open(added, curr_time, time_index):
     with open(vars.log_path, "a") as log:
         log.write(output)
 
+if __name__ == '__main__':
+    play_audio()
