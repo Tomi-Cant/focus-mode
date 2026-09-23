@@ -29,7 +29,7 @@ def get_blacklist_path():
 def get_log_path():
     return os.path.join(get_data_dir(), "log.txt")
 def get_config_path():
-    return os.path.join(get_self_dir(), "config.json")
+    return os.path.join(get_data_dir(), "config.json")
 
 def save_config(data):
     with open(get_blacklist_path(), "w") as f:
@@ -47,7 +47,7 @@ def load_blacklist():
     
 parent_path = get_data_dir()
 self_path = get_self_dir()
-rootdir= parent_path[:parent_path.find("\\")+1]
+root_dir= parent_path[:parent_path.find("\\")+1]
 log_path = get_log_path()
 json_path = get_blacklist_path()
 config_path = get_config_path()
@@ -69,6 +69,3 @@ time_group : dict = session_temp.get('time_list', {})
 with open(config_path, "r", encoding= "utf-8") as f:
     configs :dict = json.load(f)
     configs["audio"]=True
-
-
-

@@ -338,7 +338,7 @@ class FocusModeUI:
     
     def add_to_blacklist(self):
         file_path = filedialog.askopenfilename(
-            initialdir= vars.rootdir,   
+            initialdir= vars.root_dir,   
             title="Select a program executable",
             filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
@@ -685,7 +685,7 @@ class FocusModeUI:
     
     def select_file(self):
         file_path = filedialog.askopenfilename(
-            initialdir=vars.rootdir,
+            initialdir=vars.root_dir,
             title="Select a program executable",
             filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )

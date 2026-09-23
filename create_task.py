@@ -7,8 +7,7 @@ from pathlib import Path
 from tkinter import messagebox
 import helper_funcs
 from target_edit import FocusModeUI
-import pyuac
-@pyuac.main_requires_admin
+
 def create_scheduled_task(
     task_name: str,
     script_path: str,
