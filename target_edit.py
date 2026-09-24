@@ -73,6 +73,8 @@ class FocusModeUI:
                command=helper_funcs.contact_support, bg_color="yellow", fg_color="black", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=6, y=0, text="Help", 
                        command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame,x=7, y=0, text= "Sound Settings",
+               command = self.open_audio_settings, bg_color="grey", fg_color='black', font=("Arial", 11), width=12, )
         # Right panel - List display (smaller)
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
@@ -268,7 +270,8 @@ class FocusModeUI:
                command=self.create_time_settings_view, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Save & Exit", 
                command=self.exit, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-
+        Button(self.blacklist_buttons_frame,x=4, y=0, text= "Sound Settings",
+               command = self.open_audio_settings, bg_color="grey", fg_color='black', font=("Arial", 11), width=12, state=tk.DISABLED)
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -571,7 +574,8 @@ class FocusModeUI:
         
         self.list_frame.pack()
         
-    
+    def open_audio_settings(self):
+        pass
          
     def find_steam_games_helper(self):  
         steam_games= helper_funcs.find_steam_games()
