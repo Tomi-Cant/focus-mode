@@ -60,8 +60,8 @@ def verify_license(license_path: str) -> dict | None:
                 json.dump(license_file, f) 
         if messagebox.askyesno("Desktop Icon?", "Would you like to add this app to your desktop screen for easier access?"):
             curr_dir=path.abspath(path.dirname(__file__))
-            subprocess.run(["robocopy", curr_dir, dir_path , "/s"])
-            subprocess.run(['mklnk',f"%userprofile%\\Desktop\\Focused Up.lnk",f"{dir_path}\\Focused Up.exe", "/s"])
+            subprocess.run(["robocopy", curr_dir, dir_path , "/s"],creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run(['mklnk',f"%userprofile%\\Desktop\\Focused Up.lnk",f"{dir_path}\\Focused Up.exe", "/s"],creationflags=subprocess.CREATE_NO_WINDOW)
         target_edit.main()
 
     except (InvalidSignature, FileNotFoundError, KeyError, ValueError, json.JSONDecodeError):
@@ -71,5 +71,7 @@ def verify_license(license_path: str) -> dict | None:
 
 # Usage in your app's startup:
 if __name__ == "__main__":
+    if not messagebox.askokcancel("Setup Wizard", "This installation requires admin access to the device and will install itself into program files. Is this ok?", icon ='info'):
+            sys.exit()
     result = verify_license("license.lic")
   
