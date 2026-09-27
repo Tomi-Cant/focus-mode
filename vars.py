@@ -61,11 +61,11 @@ if not os.path.exists(log_path):
         f.write("Log initialized\n")
 if not os.path.exists(config_path):
     with open(config_path, "w", encoding= "utf-8") as f:
-        json.dump({"audio": False,"volume": 1},f, indent = 4)
+        json.dump({"active": [],"owned": [],"enabled": False,"volume": 1},f, indent = 4)
         
 with open(json_path, "r", encoding="utf-8") as f:
     session_temp :dict = json.load(f)
 time_group : dict = session_temp.get('time_list', {})
 with open(config_path, "r", encoding= "utf-8") as f:
     configs :dict = json.load(f)
-    configs["audio"]=True
+
