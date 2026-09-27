@@ -2,9 +2,9 @@
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
 import tkinter as tk
-
+import random
 import vars
-
+from pygame import mixer
 import os
 def shorten(text: str, box_width: int, font_size: int = 10) -> str:
     
@@ -115,6 +115,7 @@ def find_steam_games():
                     if name and name not in games:
                         games.append(name)
     return games
+
 def find_epic_games():
     import json
     path= r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
@@ -129,6 +130,38 @@ def find_epic_games():
                 if name and name not in games:
                     games.append(name)
     return games
+
+def play_audio():
+    if vars.configs["audio"]==False:
+        return
+    available_audio=get_audio()
+    selected_audio= load_audio(available_audio)
+    if not available_audio:
+        return 
+    selected_audio.set_volume(vars.configs["volume"])
+    selected_audio.play(maxtime=4000)
+    
+def get_audio() -> list[str] :
+    return vars.configs.get("active", [])
+
+def check_audio_files() -> list[str]:     
+    audio_sets = vars.self_path + "\\assets\\audio"
+    audio_folders=os.listdir(audio_sets)
+    audio_files=[]
+    for folder in audio_folders:
+        folder_dest= audio_sets+"\\"+folder
+        for file in os.listdir(folder_dest): 
+            if file.endswith(".mp4"):
+                audio_files.append(file)
+    
+    return audio_files
+
+def load_audio(audio_paths) ->mixer.Sound:
+    
+    random.shuffle(audio_paths)
+    mixer.init()
+    return mixer.Sound(audio_paths[0])
+    
 
 def contact_support():    
     import webbrowser
