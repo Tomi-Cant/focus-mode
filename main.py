@@ -11,6 +11,7 @@ import json
 from helper_funcs import time_seperator, cull_times, find_last_run
 import vars
 
+
 def main():
     index = 0
     
@@ -24,12 +25,20 @@ def main():
     set_temp = [key for key, data in time_list.items() if data.get('enabled', True)]
     if set_temp == []:
         sys.exit()
+    to_remove :list[dict]= []
+    for grouping,values in time_list.items():
+            if day_of_week not in values.get('days', []):
+                to_remove.append({grouping: values})
+    for grouping in to_remove:
+        grouping = list(grouping.keys())[0]
+        del time_list[grouping]
+        set_temp.remove(grouping)
     end_temp = [time_list[i]['end_time'] for i in set_temp]
     set_times = [datetime.datetime.now().replace(hour=int(time_seperator(set_temp[i])[0]), minute=int(
-        time_seperator(set_temp[i])[1])) for i in range(len(set_temp))]# *makes list of datetime objects for set times
+        time_seperator(set_temp[i])[1])) for i in range(len(set_temp))]     # *makes list of datetime objects for set times
     end_times = [datetime.datetime.now().replace(hour=int(time_seperator(end_temp[i])[
-        0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]
-        # *
+        0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]  # *
+      
     with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")
     
@@ -57,6 +66,8 @@ def main():
         
         time.sleep(.5)
         
+    for i in to_remove:
+        time_list.update(i)
     with open(vars.log_path, "a") as log:
         log.write(f"|Target Time Reached|\n")
     with open(vars.json_path, "w") as f:

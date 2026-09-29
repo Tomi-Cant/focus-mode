@@ -579,7 +579,8 @@ class FocusModeUI:
         dialog.title("Audio Settings")
         dialog.geometry("350x220+700+400")
         dialog.transient(self.root)
-        if vars.configs["audio"]== False:
+        owns_expansion=vars.configs.get("owned",[])
+        if not owns_expansion:
             messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addon. Please purchase the addon to access this feature.")
             dialog.destroy()
             return
@@ -591,7 +592,7 @@ class FocusModeUI:
                 bool_var=tk.BooleanVar(value=True)
             else:
                 bool_var=tk.BooleanVar(value=False)
-            tk.Checkbutton(button_frame,text=voice,variable=bool_var,command=lambda voice=voice, voice_var=bool_var: self.update_audio_settings(voice_var.get(), voice)).pack()
+            tk.Checkbutton(button_frame,text=voice.split("\\")[-1] if voice.split("\\") != -1 else voice,variable=bool_var,command=lambda voice=voice, voice_var=bool_var: self.update_audio_settings(voice_var.get(), voice)).pack()
         tk.Button(button_frame,text="Exit",command=lambda: dialog.destroy()).pack()
         button_frame.pack()
     def update_audio_settings(self, bool_var:bool,name=None):
@@ -889,4 +890,5 @@ def main():
 
 
 if __name__ == "__main__":
+    helper_funcs.check_audio_files()
     main()
