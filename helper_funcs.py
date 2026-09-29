@@ -2,9 +2,9 @@
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
 import tkinter as tk
-
+import random
 import vars
-
+from pygame import mixer
 import os
 def shorten(text: str, box_width: int, font_size: int = 10) -> str:
     
@@ -115,6 +115,7 @@ def find_steam_games():
                     if name and name not in games:
                         games.append(name)
     return games
+
 def find_epic_games():
     import json
     path= r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
@@ -129,6 +130,39 @@ def find_epic_games():
                 if name and name not in games:
                     games.append(name)
     return games
+
+def play_audio():
+    if vars.configs["active"]==[]:
+        return
+    available_audio=get_audio()
+    selected_audio= load_audio(available_audio)
+    if not available_audio:
+        return 
+    selected_audio.set_volume(vars.configs["volume"])
+    selected_audio.play(maxtime=4000)
+    
+def get_audio() -> list[str] :
+    return vars.configs.get("active", [])
+
+def check_audio_files():     
+    audio_sets = vars.self_path + "\\assets\\audio"
+    audio_folders=os.listdir(audio_sets)
+    audio_files=vars.configs.get("owned", [])
+    for folder in audio_folders:
+        folder_dest= audio_sets+"\\"+folder
+        for file in os.listdir(folder_dest): 
+            if file.endswith(".mp3") and folder_dest+"\\"+file not in audio_files:
+                audio_files.append(folder_dest+"\\"+file)
+    vars.configs["owned"] = audio_files
+    import json
+    with open(vars.config_path, "w") as f:
+        json.dump(vars.configs, f)
+
+def load_audio(audio_paths) ->mixer.Sound:
+    random.shuffle(audio_paths)
+    mixer.init()
+    return mixer.Sound(audio_paths[0])
+    
 
 def contact_support():    
     import webbrowser

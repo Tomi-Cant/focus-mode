@@ -11,6 +11,10 @@ import psutil
 import json
 import vars
 import webbrowser
+
+import random
+import helper_funcs
+
 from tkinter import messagebox
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
@@ -31,7 +35,6 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
         added.append(i['name'])
         vars.time_group[set_temp[index]]['converted'] = added
         
-        
         with open(vars.json_path, "w") as f:
             json.dump(vars.session_temp, f, indent=2)  # updates json file
 
@@ -48,6 +51,7 @@ def close_by_process(no_list, curr_time,time_index):
             with open(vars.log_path, "a") as log:
                 try:
                     proc.kill()
+                    helper_funcs.play_audio()
                     productive_open(proc.info['name'], curr_time, time_index)
                     log.write(f"    Closed {proc.name()} {curr_time}\n")
                     continue
@@ -62,11 +66,12 @@ def close_by_process(no_list, curr_time,time_index):
 
 def close_by_title(added, window, win, time_index,curr_time):
     if window in added or find_minecraft(window,added) != []: 
-        # if vars.time_group[time_index]["time_left"] >= 0:
-        #     vars.time_group[time_index]["time_left"]-=.5
-        #     return 
+        if vars.time_group[time_index]["time_left"] >= 0:
+            vars.time_group[time_index]["time_left"]-=.5
+            return 
         
         PostMessage(win, win32con.WM_CLOSE, 0, 0)
+        helper_funcs.play_audio()
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
         
@@ -89,8 +94,9 @@ def find_minecraft(title, added):
             return re.findall(pattern, title)
     return []
 
+
 def productive_open(added, curr_time, time_index): 
-    import random
+    
     output=''
     select_type=vars.time_group[time_index]["select_type"]
     if vars.time_group[time_index]["productive"] == "":
@@ -115,3 +121,5 @@ def productive_open(added, curr_time, time_index):
     with open(vars.log_path, "a") as log:
         log.write(output)
 
+if __name__ == '__main__':
+    helper_funcs.play_audio()

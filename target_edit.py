@@ -73,6 +73,8 @@ class FocusModeUI:
                command=helper_funcs.contact_support, bg_color="yellow", fg_color="black", font=("Arial", 11), width=12)
         Button(self.blacklist_buttons_frame, x=6, y=0, text="Help", 
                        command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
+        Button(self.blacklist_buttons_frame,x=7, y=0, text= "Sound Settings",
+               command = self.open_audio_settings, bg_color="grey", fg_color='black', font=("Arial", 11), width=12, )
         # Right panel - List display (smaller)
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
@@ -268,7 +270,8 @@ class FocusModeUI:
                command=self.create_time_settings_view, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
         Button(self.blacklist_buttons_frame, x=3, y=0, text="Save & Exit", 
                command=self.exit, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-
+        Button(self.blacklist_buttons_frame,x=4, y=0, text= "Sound Settings",
+               command = self.open_audio_settings, bg_color="grey", fg_color='black', font=("Arial", 11), width=12, state=tk.DISABLED)
         right_panel = ttk.Frame(content_frame)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -338,7 +341,7 @@ class FocusModeUI:
     
     def add_to_blacklist(self):
         file_path = filedialog.askopenfilename(
-            initialdir= vars.rootdir,   
+            initialdir= vars.root_dir,   
             title="Select a program executable",
             filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
@@ -571,8 +574,41 @@ class FocusModeUI:
         
         self.list_frame.pack()
         
-    
-         
+    def open_audio_settings(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Audio Settings")
+        dialog.geometry("350x220+700+400")
+        dialog.transient(self.root)
+        owns_expansion=vars.configs.get("owned",[])
+        if not owns_expansion:
+            messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addon. Please purchase the addon to access this feature.")
+            dialog.destroy()
+            return
+        button_frame=tk.Frame(dialog, name='voice')
+        active_bool=tk.BooleanVar(value=vars.configs["enabled"])
+        tk.Checkbutton(button_frame,name="enable audio",text="Enable 'The Voices'",variable=active_bool,command=lambda: self.update_audio_settings(active_bool.get(), "enable audio")).pack()
+        for voice in vars.configs['owned']:
+            if voice in vars.configs['active']:
+                bool_var=tk.BooleanVar(value=True)
+            else:
+                bool_var=tk.BooleanVar(value=False)
+            tk.Checkbutton(button_frame,text=voice.split("\\")[-1] if voice.split("\\") != -1 else voice,variable=bool_var,command=lambda voice=voice, voice_var=bool_var: self.update_audio_settings(voice_var.get(), voice)).pack()
+        tk.Button(button_frame,text="Exit",command=lambda: dialog.destroy()).pack()
+        button_frame.pack()
+    def update_audio_settings(self, bool_var:bool,name=None):
+        if name== "enable audio":
+            vars.configs["enabled"]= bool_var
+            
+        else:
+            active_voices = vars.configs.setdefault('active', [])
+            if bool_var and name not in active_voices:
+                active_voices.append(name)
+            elif not bool_var and name in active_voices:
+                active_voices.remove(name)
+        with open(vars.config_path, 'w') as f:
+            json.dump(vars.configs, f, indent=4)
+        
+        
     def find_steam_games_helper(self):  
         steam_games= helper_funcs.find_steam_games()
         if steam_games:
@@ -685,7 +721,7 @@ class FocusModeUI:
     
     def select_file(self):
         file_path = filedialog.askopenfilename(
-            initialdir=vars.rootdir,
+            initialdir=vars.root_dir,
             title="Select a program executable",
             filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
         )
@@ -855,4 +891,5 @@ def main():
 
 
 if __name__ == "__main__":
+    helper_funcs.check_audio_files()
     main()
