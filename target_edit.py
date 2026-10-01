@@ -586,6 +586,7 @@ class FocusModeUI:
             return
         button_frame=tk.Frame(dialog, name='voice')
         active_bool=tk.BooleanVar(value=vars.configs["enabled"])
+        tk.Scrollbar(button_frame, orient=tk.VERTICAL).pack(side=tk.RIGHT, fill=tk.Y)
         tk.Checkbutton(button_frame,name="enable audio",text="Enable 'The Voices'",variable=active_bool,command=lambda: self.update_audio_settings(active_bool.get(), "enable audio")).pack()
         for voice in vars.configs['owned']:
             if voice in vars.configs['active']:
@@ -594,7 +595,7 @@ class FocusModeUI:
                 bool_var=tk.BooleanVar(value=False)
             tk.Checkbutton(button_frame,text=voice.split("\\")[-1] if voice.split("\\") != -1 else voice,variable=bool_var,command=lambda voice=voice, voice_var=bool_var: self.update_audio_settings(voice_var.get(), voice)).pack()
         tk.Button(button_frame,text="Exit",command=lambda: dialog.destroy()).pack()
-        button_frame.pack()
+        button_frame.pack(fill=tk.BOTH, expand=True)
     def update_audio_settings(self, bool_var:bool,name=None):
         if name== "enable audio":
             vars.configs["enabled"]= bool_var
