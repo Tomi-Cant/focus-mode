@@ -83,11 +83,12 @@ class FocusModeUI:
         list_label.pack(fill=tk.X)
         
         # Listbox for blacklist (reduced size)
-        self.blacklist_display = tk.Listbox(right_panel, height=35, width=60, font=("Arial", 9))
+        self.blacklist_display = tk.Listbox(right_panel, height=35, width=58, font=("Arial", 9))
         scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.Y, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
+        scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
  
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
          
@@ -282,6 +283,7 @@ class FocusModeUI:
         ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).pack()
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
         self.intro = tk.Toplevel(self.root)
         
         self.intro.geometry("450x200+775+100")
@@ -553,6 +555,7 @@ class FocusModeUI:
         
         self.replacement_list= tk.Listbox(self.list_frame, height=15, width =50)
         scrollbar = ttk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.replacement_list.yview)
+        scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
         self.replacement_list.config(yscrollcommand=scrollbar.set)
         scrollbar.pack(side="right",fill='y')
         self.update_replacement_listbox()
@@ -577,16 +580,25 @@ class FocusModeUI:
     def open_audio_settings(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("Audio Settings")
-        dialog.geometry("350x220+700+400")
+        dialog.geometry("350x250+700+400")
         dialog.transient(self.root)
         owns_expansion=vars.configs.get("owned",[])
         if not owns_expansion:
             messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addon. Please purchase the addon to access this feature.")
             dialog.destroy()
             return
-        button_frame=tk.Frame(dialog, name='voice')
+
+        button_canvas=tk.Canvas(dialog,width=275,height=150)
+        button_canvas.pack(side=tk.LEFT)
+        
         active_bool=tk.BooleanVar(value=vars.configs["enabled"])
-        tk.Scrollbar(button_frame, orient=tk.VERTICAL).pack(side=tk.RIGHT, fill=tk.Y)
+        scrollbar = tk.Scrollbar(dialog, orient=tk.VERTICAL, command=button_canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        button_canvas.configure(yscrollcommand=scrollbar.set)
+        button_canvas.bind('<Configure>', lambda e: button_canvas.configure(scrollregion=button_canvas.bbox("all")))
+        button_canvas.bind_all("<MouseWheel>", lambda event: button_canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+        button_frame = tk.Frame(button_canvas)
+        button_canvas.create_window((0, 0), window=button_frame, anchor="nw")
         tk.Checkbutton(button_frame,name="enable audio",text="Enable 'The Voices'",variable=active_bool,command=lambda: self.update_audio_settings(active_bool.get(), "enable audio")).pack()
         for voice in vars.configs['owned']:
             if voice in vars.configs['active']:
@@ -594,8 +606,10 @@ class FocusModeUI:
             else:
                 bool_var=tk.BooleanVar(value=False)
             tk.Checkbutton(button_frame,text=voice.split("\\")[-1] if voice.split("\\") != -1 else voice,variable=bool_var,command=lambda voice=voice, voice_var=bool_var: self.update_audio_settings(voice_var.get(), voice)).pack()
-        tk.Button(button_frame,text="Exit",command=lambda: dialog.destroy()).pack()
-        button_frame.pack(fill=tk.BOTH, expand=True)
+            tk.Button(button_frame,text="Play",command=lambda voice=voice: helper_funcs.play_voice(voice)).pack()
+            tk.Label(button_frame,text="",font=("Arial", 7)).pack()
+        button_canvas.pack(fill=tk.BOTH, expand=True)
+        tk.Button(dialog,text="Exit",command=lambda: dialog.destroy()).pack(pady=15, side=tk.BOTTOM, padx=10)
     def update_audio_settings(self, bool_var:bool,name=None):
         if name== "enable audio":
             vars.configs["enabled"]= bool_var
@@ -607,7 +621,7 @@ class FocusModeUI:
             elif not bool_var and name in active_voices:
                 active_voices.remove(name)
         with open(vars.config_path, 'w') as f:
-            json.dump(vars.configs, f, indent=4)
+            json.dump(vars.configs, f, indent=2)
         
         
     def find_steam_games_helper(self):  
@@ -620,6 +634,7 @@ class FocusModeUI:
             
             listbox = tk.Listbox(dialog, selectmode=tk.MULTIPLE)
             scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=listbox.yview)
+            scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
             listbox.config(yscrollcommand=scrollbar.set)
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -654,6 +669,7 @@ class FocusModeUI:
             
             listbox = tk.Listbox(dialog, selectmode=tk.MULTIPLE)
             scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=listbox.yview)
+            scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
             listbox.config(yscrollcommand=scrollbar.set)
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -885,6 +901,7 @@ class FocusModeUI:
 
 
 def main():
+    
     
     root = tk.Tk()
     app = FocusModeUI(root)

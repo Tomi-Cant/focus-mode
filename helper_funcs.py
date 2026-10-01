@@ -5,6 +5,7 @@ import tkinter as tk
 import random
 import vars
 from pygame import mixer
+from tkinter import messagebox
 import os
 def shorten(text: str, box_width: int, font_size: int = 10) -> str:
     
@@ -163,7 +164,14 @@ def load_audio(audio_paths) ->mixer.Sound:
     mixer.init()
     return mixer.Sound(audio_paths[0])
     
-
+def play_voice(voice_path):
+    if not os.path.exists(voice_path):
+        messagebox.showerror("Error", f"Voice file not found: {voice_path}\n Please try relaunching the program or re-downloading the voice pack.")
+        return
+    mixer.init()
+    sound = mixer.Sound(voice_path)
+    sound.play(maxtime=4000)
+    
 def contact_support():    
     import webbrowser
     support_email = "focusedupofficial@gmail.com"
