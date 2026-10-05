@@ -18,6 +18,11 @@ import helper_funcs
 from tkinter import messagebox
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
+    allowed_time = vars.time_group[index]["allowed_time"]
+    for proc in window_to_process.process_search(no_list):
+            if allowed_time > 0:
+                allowed_time-=.5
+                return
     # converts application titles to their .exe counterpart
     added = vars.time_group[set_temp[index]].get("converted", [])
     temp =[]
@@ -32,7 +37,8 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
         PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {i['title']} {curr_time}\n")
-        added.append(i['name'])
+        if i['name'] not in added:    
+            added.append(i['name'])
         vars.time_group[set_temp[index]]['converted'] = added
         
         with open(vars.json_path, "w") as f:
@@ -44,7 +50,7 @@ def close_by_process(no_list, curr_time,time_index):
         # checks if process is banned with error catches
         allowed_time = vars.time_group[time_index]["allowed_time"]
         for proc in window_to_process.process_search(no_list):
-            if allowed_time >= 0:
+            if allowed_time > 0:
                 allowed_time-=.5
                 return
 
@@ -66,7 +72,7 @@ def close_by_process(no_list, curr_time,time_index):
 
 def close_by_title(added, window, win, time_index,curr_time):
     if window in added or find_minecraft(window,added) != []: 
-        if vars.time_group[time_index]["time_left"] >= 0:
+        if vars.time_group[time_index]["time_left"] > 0:
             vars.time_group[time_index]["time_left"]-=.5
             return 
         
