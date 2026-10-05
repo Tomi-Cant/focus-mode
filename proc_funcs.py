@@ -127,5 +127,3 @@ def productive_open(added, curr_time, time_index):
     with open(vars.log_path, "a") as log:
         log.write(output)
 
-if __name__ == '__main__':
-    helper_funcs.play_audio()
