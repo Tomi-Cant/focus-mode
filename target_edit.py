@@ -809,7 +809,26 @@ class FocusModeUI:
     def save_time_settings(self):
         try:
             if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
-                time_data = vars.time_group[vars.time_var]
+                current_time = vars.time_var
+                try:
+                    start_hour = int(self.hour_var.get())
+                    start_minute = int(self.minute_var.get())
+                    if not 0 <= start_hour <= 23 or not 0 <= start_minute <= 59:
+                        raise ValueError
+                except ValueError:
+                    messagebox.showerror("Invalid Start Time", "Hour must be 0-23 and minute must be 0-59")
+                    return
+
+                new_time = f"{start_hour:02d}:{start_minute:02d}"
+                if new_time != current_time and new_time in vars.time_group:
+                    messagebox.showerror("Duplicate Start Time", f"A time group already starts at {new_time}")
+                    return
+
+                if new_time != current_time:
+                    vars.time_group[new_time] = vars.time_group.pop(current_time)
+                    vars.time_var = new_time
+
+                time_data = vars.time_group[new_time]
                 
                 # Save name
                 name = self.name_var.get().strip()
@@ -829,7 +848,7 @@ class FocusModeUI:
                 
                 # Save days
                 enabled_days = [day for day, var in self.day_vars.items() if var.get()==1]
-                vars.session_temp["time_list"][vars.time_var]["days"] = enabled_days
+                time_data["days"] = enabled_days
 
                 # Save allowed time
                 allowed_time = self.allowed_hours.get()
@@ -838,6 +857,12 @@ class FocusModeUI:
                 # Save to JSON
                 with open(vars.json_path, "w", encoding="utf-8") as f:
                     json.dump(vars.session_temp, f, indent=2)
+
+                self.update_time_list()
+                selected_index = list(vars.time_group).index(new_time)
+                self.time_listbox.selection_clear(0, tk.END)
+                self.time_listbox.selection_set(selected_index)
+                self.update_time_display()
                 
                 messagebox.showinfo("Saved", "Time settings saved successfully")
         except Exception as e:
