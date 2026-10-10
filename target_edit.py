@@ -852,9 +852,14 @@ class FocusModeUI:
         self.new_time_group()
         
     def parse_selected_time(self, time_str:str) -> str:
-        if " (" in time_str:
-            return time_str.split(" (")[1].split(" - ")[0]
-        return time_str.split(" - ")[0]
+        cleaned = time_str.strip()
+        if " [" in cleaned:
+            return cleaned.split(" [", 1)[0].strip()
+        if " (" in cleaned and " - " in cleaned:
+            return cleaned.split(" (", 1)[0].strip()
+        if " - " in cleaned:
+            return cleaned.split(" - ", 1)[0].strip()
+        return cleaned
     
     def remove_from_timelist(self):
         if self.current_view == "time_settings":
@@ -1023,17 +1028,21 @@ class FocusModeUI:
                     messagebox.showerror("Invalid", "Hour must be 0-23, minute must be 0-59")
                     return
                 
-                time_key = f"{hour:02d}:{minute:02d}"
-                
-                if time_key in vars.time_group:
-                    messagebox.showwarning("Duplicate", f"Time {time_key} already exists")
+                start_time = f"{hour:02d}:{minute:02d}"
+
+                if any(group_data.get("start_time") == start_time for group_data in vars.time_group.values()):
+                    messagebox.showwarning("Duplicate", f"Time {start_time} already exists")
                     return
                 
-                name = name_var.get().strip() or None
+                group_name = name_var.get().strip() or vars.get_next_group_name(vars.time_group)
+                if group_name in vars.time_group:
+                    messagebox.showwarning("Duplicate", f"Group name {group_name} already exists")
+                    return
                 
                 # Add new time group with default values
-                vars.time_group[time_key] = {
-                    "name": name,
+                vars.time_group[group_name] = {
+                    "name": group_name,
+                    "start_time": start_time,
                     "programs": [],
                     "end_time": "23:59",
                     "days": vars.selected_days.copy(),
@@ -1045,12 +1054,10 @@ class FocusModeUI:
                     'on_finish': 0,  #either 0: nothing, 1: shutdown, 2: sleep 
                     'enabled': True
                 }
-                if vars.time_group[time_key]["name"]== None:
-                    del vars.time_group[time_key]["name"]
                 
                 self.update_time_list()
                 dialog.destroy()
-                messagebox.showinfo("Success", f"Created new time group: {time_key}")
+                messagebox.showinfo("Success", f"Created new time group: {group_name}")
                 self.time_listbox.select_set(tk.END)
                 self.time_listbox.event_generate("<<ListboxSelect>>")
                 
@@ -1374,11 +1381,11 @@ class FocusModeUI:
             self.replacement_list.insert(tk.END,*vars.time_group[vars.time_var]['productive'])
             
     def update_time_display(self):
-        if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
+        if vars.time_var and vars.time_var in vars.time_group:
             time_data = vars.time_group[vars.time_var]
              
             # Update name
-            name = time_data.get('name', '')
+            name = time_data.get('name', vars.time_var)
             self.name_var.set(name)
             self.enabled_var.set(time_data.get('enabled', True))
 
@@ -1417,8 +1424,9 @@ class FocusModeUI:
             end_time = time_data.get('end_time', '00:00')
             allowed_time = time_data.get('allowed_time', 0)/360
              
-            self.hour_var.set(vars.time_var[:2])
-            self.minute_var.set(vars.time_var[3:])
+            start_time = time_data.get('start_time', '00:00')
+            self.hour_var.set(start_time[:2])
+            self.minute_var.set(start_time[3:])
             self.end_hour_var.set(end_time[:2])
             self.end_minute_var.set(end_time[3:])
             self.allowed_hours.set(allowed_time)
@@ -1454,8 +1462,9 @@ class FocusModeUI:
 
     def save_time_settings(self):
         try:
-            if vars.time_var and vars.time_var in vars.session_temp.get('time_list', {}):
-                current_time = vars.time_var
+            if vars.time_var and vars.time_var in vars.time_group:
+                current_group = vars.time_var
+                current_time = vars.time_group[current_group].get('start_time', '00:00')
                 try:
                     start_hour = int(self.hour_var.get())
                     start_minute = int(self.minute_var.get())
@@ -1466,8 +1475,17 @@ class FocusModeUI:
                     return
 
                 new_time = f"{start_hour:02d}:{start_minute:02d}"
-                if new_time != current_time and new_time in vars.time_group:
+                if new_time != current_time and any(
+                    group_data.get('start_time') == new_time
+                    for group_name, group_data in vars.time_group.items()
+                    if group_name != current_group
+                ):
                     messagebox.showerror("Duplicate Start Time", f"A time group already starts at {new_time}")
+                    return
+
+                new_name = self.name_var.get().strip() or vars.get_next_group_name(vars.time_group)
+                if new_name != current_group and new_name in vars.time_group:
+                    messagebox.showerror("Duplicate Group Name", f"A group named {new_name} already exists")
                     return
 
                 if self.start_var.get() == 'Custom':
@@ -1526,16 +1544,16 @@ class FocusModeUI:
                 else:
                     finish_action = self.finish_options.index(self.finish_var.get())
 
-                if new_time != current_time:
-                    vars.time_group[new_time] = vars.time_group.pop(current_time)
-                    vars.time_var = new_time
+                if current_group != new_name:
+                    time_data = vars.time_group.pop(current_group)
+                    time_data['name'] = new_name
+                    vars.time_group[new_name] = time_data
+                    vars.time_var = new_name
+                else:
+                    time_data = vars.time_group[current_group]
 
-                time_data = vars.time_group[new_time]
-                
-                # Save name
-                name = self.name_var.get().strip()
-                if name:
-                    time_data['name'] = name
+                time_data['name'] = new_name
+                time_data['start_time'] = new_time
                 
                 # Validate and save time
                 end_time = f"{self.end_hour_var.get().zfill(2)}:{self.end_minute_var.get().zfill(2)}"
@@ -1562,7 +1580,7 @@ class FocusModeUI:
                     json.dump(vars.session_temp, f, indent=2)
 
                 self.update_time_list()
-                selected_index = list(vars.time_group).index(new_time)
+                selected_index = list(vars.time_group).index(vars.time_var)
                 self.time_listbox.selection_clear(0, tk.END)
                 self.time_listbox.selection_set(selected_index)
                 self.update_time_display()
@@ -1575,20 +1593,14 @@ class FocusModeUI:
         if self.blacklist_display:
             self.blacklist_display.delete(0, tk.END)
             if vars.session_temp.get('time_list'):
-                for time_key, time_data in vars.time_group.items():
-                    # Get name and programs
-                    name = time_data.get('name')
+                for group_name, time_data in vars.time_group.items():
+                    name = time_data.get('name', group_name)
+                    start_time = time_data.get('start_time', '00:00')
                     end_time = time_data.get('end_time', '23:59')
                     programs = time_data.get('programs', [])
-                    
-                    # Display nickname if given, otherwise show time_key
+
                     status = " [DISABLED]" if not time_data.get('enabled', True) else ""
-                    if name:
-                        self.blacklist_display.insert(tk.END, f"{name} ({time_key} - {end_time}){status}")
- 
-                    # Always show time range
-                    else:
-                        self.blacklist_display.insert(tk.END, f"{time_key} - {end_time}{status}")
+                    self.blacklist_display.insert(tk.END, f"{name} [{start_time} - {end_time}]{status}")
                     
                     # Show only first 2 programs
                     for i, program in enumerate(programs[:2]):
@@ -1604,14 +1616,12 @@ class FocusModeUI:
     def update_time_list(self):
         if self.time_listbox:
             self.time_listbox.delete(0, tk.END)
-            for time_key in vars.time_group:
-                end = vars.time_group[time_key].get('end_time', '23:59')
-                status = " [DISABLED]" if not vars.time_group[time_key].get('enabled', True) else ""
-                if vars.time_group[time_key].get('name'):
-                    display_name = vars.time_group[time_key]['name']
-                    self.time_listbox.insert(tk.END, f"{display_name} ({time_key} - {end}){status}")
-                else:
-                    self.time_listbox.insert(tk.END, f"{time_key} - {end}{status}")
+            for group_name, time_data in vars.time_group.items():
+                start_time = time_data.get('start_time', '00:00')
+                end = time_data.get('end_time', '23:59')
+                status = " [DISABLED]" if not time_data.get('enabled', True) else ""
+                display_name = time_data.get('name', group_name)
+                self.time_listbox.insert(tk.END, f"{display_name} [{start_time} - {end}]{status}")
     
    
     

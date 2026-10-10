@@ -78,10 +78,10 @@ def main():
         del time_list[grouping]
         set_temp.remove(grouping)
     end_temp = [time_list[i]['end_time'] for i in set_temp]
-    set_times = [datetime.datetime.now().replace(hour=int(time_seperator(set_temp[i])[0]), minute=int(
-        time_seperator(set_temp[i])[1])) for i in range(len(set_temp))]     # *makes list of datetime objects for set times
-    end_times = [datetime.datetime.now().replace(hour=int(time_seperator(end_temp[i])[
-        0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]  # *
+    start_times = [time_list[i].get('start_time', '00:00') for i in set_temp]
+    set_times = [datetime.datetime.now().replace(hour=int(time_seperator(start_times[i])[0]), minute=int(
+        time_seperator(start_times[i])[1])) for i in range(len(start_times))]
+    end_times = [datetime.datetime.now().replace(hour=int(time_seperator(end_temp[i])[0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]
       
     with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")

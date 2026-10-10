@@ -6,6 +6,7 @@ import os
 
 import json
 import tkinter as tk
+import re
 
 root: tk.Tk = None #type:ignore
 
@@ -44,6 +45,67 @@ def load_blacklist():
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return {}
+
+
+def _looks_like_time(value):
+    if not isinstance(value, str):
+        return False
+    if len(value) != 5 or value[2] != ":":
+        return False
+    hour, minute = value.split(":", 1)
+    try:
+        return 0 <= int(hour) <= 23 and 0 <= int(minute) <= 59
+    except ValueError:
+        return False
+
+
+def get_next_group_name(existing_groups=None):
+    groups = existing_groups if existing_groups is not None else time_group
+    if not isinstance(groups, dict):
+        groups = {}
+
+    index = 1
+    while True:
+        candidate = f"New Group ({index})"
+        if candidate not in groups:
+            return candidate
+        index += 1
+
+
+def normalize_time_groups(raw_groups):
+    if not isinstance(raw_groups, dict):
+        return {}
+
+    normalized = {}
+    for key, value in raw_groups.items():
+        if not isinstance(value, dict):
+            continue
+
+        if value.get("name"):
+            group_name = str(value.get("name")).strip()
+        elif _looks_like_time(str(key)):
+            group_name = get_next_group_name(normalized)
+        else:
+            group_name = str(key).strip() or get_next_group_name(normalized)
+        if group_name in normalized:
+            base_name = group_name
+            suffix = 2
+            while True:
+                candidate = f"{base_name} ({suffix})"
+                if candidate not in normalized:
+                    group_name = candidate
+                    break
+                suffix += 1
+
+        data = dict(value)
+        data["name"] = group_name
+        if not data.get("start_time") and _looks_like_time(str(key)):
+            data["start_time"] = str(key)
+        elif not data.get("start_time"):
+            data["start_time"] = "00:00"
+        normalized[group_name] = data
+
+    return normalized
     
 parent_path = get_data_dir()
 self_path = get_self_dir()
@@ -65,7 +127,13 @@ if not os.path.exists(config_path):
         
 with open(json_path, "r", encoding="utf-8") as f:
     session_temp :dict = json.load(f)
-time_group : dict = session_temp.get('time_list', {})
+original_time_list = session_temp.get('time_list', {})
+time_group : dict = normalize_time_groups(original_time_list)
+session_temp['time_list'] = time_group
+
+if original_time_list != time_group:
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(session_temp, f, indent=2)
 with open(config_path, "r", encoding= "utf-8") as f:
     configs :dict = json.load(f)
 
