@@ -1236,6 +1236,10 @@ class FocusModeUI:
         
     def find_steam_games_helper(self):  
         steam_games= helper_funcs.find_steam_games()
+        if not steam_games:
+            messagebox.showinfo("No Games Found", "No Steam games were found on this computer.")
+            return
+         
         if steam_games:
             dialog = tk.Toplevel(self.root)
             dialog.title("Select Steam Games")

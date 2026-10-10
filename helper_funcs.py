@@ -107,7 +107,7 @@ def find_steam_games():
         
     except FileNotFoundError:
         pass
-    games =[]
+    games = ["Steam"]
     for path in paths:
         for file in os.listdir(path):
             if file.endswith(".acf"):
@@ -121,7 +121,7 @@ def find_steam_games():
 def find_epic_games():
     import json
     path= r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
-    games = []
+    games = ["Epic Games Launcher"]
     if not os.path.exists(path):
         return None
     for file in os.listdir(path):
