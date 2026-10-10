@@ -293,6 +293,7 @@ class FocusModeUI:
                     window, width=event.width
                 ),
             )
+            
             return canvas, content
 
         schedule_canvas, schedule_content = create_scrollable_tab(schedule_tab)
@@ -866,7 +867,11 @@ class FocusModeUI:
             selection = self.select_time(None)
             if selection and selection in vars.time_group:
                 del vars.time_group[selection]
+                if vars.time_var not in vars.time_group:
+                    if vars.time_group:
+                        vars.time_var = next(iter(vars.time_group))
                 self.update_time_list()
+                self.update_time_display()
                 messagebox.showinfo("Removed", f"Removed {selection}")
         elif self.current_view == "main":
             if self.select(None)!=False: 
@@ -877,7 +882,9 @@ class FocusModeUI:
                         self.update_blacklist_display()
                         self.update_main_selection_state()
                         messagebox.showinfo("Removed", f"Removed {item}")
- 
+        
+                
+                
     def select(self,event):
         selection = self.blacklist_display.curselection()
      
@@ -1029,10 +1036,6 @@ class FocusModeUI:
                     return
                 
                 start_time = f"{hour:02d}:{minute:02d}"
-
-                if any(group_data.get("start_time") == start_time for group_data in vars.time_group.values()):
-                    messagebox.showwarning("Duplicate", f"Time {start_time} already exists")
-                    return
                 
                 group_name = name_var.get().strip() or vars.get_next_group_name(vars.time_group)
                 if group_name in vars.time_group:

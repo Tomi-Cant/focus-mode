@@ -15,7 +15,7 @@ selected_days = ["Monday", "Tuesday", "Wednesday",
 title_text = ""
 help_open = False
 time_selected = False
-time_var = ''
+time_var:str = '' 
 
 
 #declaring paths
