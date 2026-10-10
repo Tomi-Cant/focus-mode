@@ -83,7 +83,7 @@ class FocusModeUI:
         list_label.pack(fill=tk.X)
         
         # Listbox for blacklist (reduced size)
-        self.blacklist_display = tk.Listbox(right_panel, height=35, width=58, font=("Arial", 9))
+        self.blacklist_display = tk.Listbox(right_panel, height=35, width=58, font=("Arial",11))
         scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.Y, expand=True)

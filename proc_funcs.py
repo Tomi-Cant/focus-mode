@@ -18,7 +18,7 @@ import helper_funcs
 from tkinter import messagebox
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
-    allowed_time = vars.time_group[index]["allowed_time"]
+    allowed_time = vars.time_group[set_temp[index]]["allowed_time"]
     for proc in window_to_process.process_search(no_list):
             if allowed_time > 0:
                 allowed_time-=.5
@@ -35,6 +35,7 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
     open_windows = window_to_process.check_windows(temp)
     for i in open_windows:
         PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
+        productive_open(i['title'], curr_time, set_temp[index])
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {i['title']} {curr_time}\n")
         if i['name'] not in added:    
@@ -77,6 +78,7 @@ def close_by_title(added, window, win, time_index,curr_time):
             return 
         
         PostMessage(win, win32con.WM_CLOSE, 0, 0)
+        productive_open(window, curr_time, time_index)
         helper_funcs.play_audio()
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")

@@ -59,7 +59,7 @@ def main():
 
             
 
-        set_times, end_times = cull_times(set_times, end_times, index, curr_time)
+        set_times, end_times = cull_times(set_times, end_times, index, curr_time,set_temp)
 
         index += 1
         index %= len(set_times)

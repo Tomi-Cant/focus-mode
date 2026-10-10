@@ -27,11 +27,12 @@ def shorten(text: str, box_width: int, font_size: int = 10) -> str:
     return text
 
 
-def cull_times(start, end, indx, time):
+def cull_times(start, end, indx, time,set_temp):
     """Remove time entries that have passed their end time"""
     if time >= end[indx]:
         del end[indx]
         del start[indx]
+        del set_temp[indx]
     return start, end
 
 def time_seperator(time: str) -> tuple[str, str]:
