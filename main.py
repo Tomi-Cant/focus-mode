@@ -8,13 +8,56 @@ import proc_funcs
 import time
 import sys
 import json
+import subprocess
+import webbrowser
 from helper_funcs import time_seperator, cull_times, find_last_run
 import helper_funcs
 import vars
 
 
+def run_custom_action(action, action_name="finish"):
+    if isinstance(action, dict) and action.get('type') == 'custom':
+        target = action.get('target', '').strip()
+        try:
+            if not target:
+                raise ValueError(f"Custom {action_name} target is empty")
+            if action.get('target_type') == 'website':
+                webbrowser.open(target)
+            elif action.get('target_type') == 'application':
+                subprocess.Popen([target])
+            else:
+                raise ValueError(f"Unknown custom {action_name} target type")
+        except Exception as error:
+            with open(vars.log_path, "a", encoding="utf-8") as log:
+                log.write(f"Could not run custom {action_name} action: {error}\n")
+        return True
+    return False
+
+
+def run_trigger_action(action, curr_time):
+    return run_custom_action(action, "start")
+
+
+def run_start_action(action, curr_time):
+    if run_custom_action(action, "start"):
+        return
+    return
+
+
+def run_finish_action(action, curr_time):
+    if run_custom_action(action, "finish"):
+        return
+
+    actions = [sys.exit, proc_funcs.shutdown_pc, proc_funcs.sleep_pc]
+    if isinstance(action, int) and 0 <= action < len(actions):
+        actions[action](curr_time)
+    else:
+        sys.exit()
+
+
 def main():
     index = 0
+    finish_action = 0
     
     time_list = vars.time_group
 
@@ -43,6 +86,7 @@ def main():
     with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")
     
+    started_groups = set()
     while set_times != []:  # main loop goes through each time pair
         curr_time = datetime.datetime.now()
         no_list = vars.time_group[set_temp[index]]['programs']
@@ -51,6 +95,10 @@ def main():
         window = win32gui.GetWindowText(win)
         
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
+            group_key = set_temp[index]
+            if group_key not in started_groups:
+                run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
+                started_groups.add(group_key)
             closed = proc_funcs.convert_to_exe(
                 no_list, curr_time, index, set_temp)
             closed = proc_funcs.close_by_process(
@@ -60,10 +108,13 @@ def main():
             if closed:
                 helper_funcs.play_audio()
 
-            
+        if curr_time >= end_times[index]:
+            finish_action = vars.time_group[set_temp[index]].get('on_finish', finish_action)
 
         set_times, end_times = cull_times(set_times, end_times, index, curr_time,set_temp)
 
+        if not set_times:
+            break
         index += 1
         index %= len(set_times)
         
@@ -76,8 +127,7 @@ def main():
     with open(vars.json_path, "w") as f:
         json.dump({"time_list": vars.time_group}, f, indent=2)  # updates json file
         
-    on_finish = [sys.exit,proc_funcs.shutdown_pc, proc_funcs.sleep_pc]
-    on_finish[vars.time_group['on_finish']](curr_time)
+    run_finish_action(finish_action, curr_time)
     
 if __name__ == "__main__":
     main()

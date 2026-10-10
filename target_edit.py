@@ -6,7 +6,9 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import json
 import os
+import shutil
 from tkinter import dialog
+from urllib.parse import urlparse
 import helper_funcs
 import webbrowser
 
@@ -34,264 +36,723 @@ class FocusModeUI:
     def create_main_view(self):
         self.clear_window()
         self.current_view = "main"
-        
-        # Main container
+
+        self.root.geometry("800x620+500+100")
         main_container = ttk.Frame(self.root)
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Title
-        title = tk.Label(
-            main_container,
+
+        palette = {
+            "canvas": "#F1F5F1",
+            "ink": "#183B36",
+            "muted": "#60736D",
+            "teal": "#187B70",
+            "teal_hover": "#12665D",
+            "coral": "#C6534C",
+            "coral_hover": "#A9403A",
+            "gold": "#E3A63A",
+            "gold_hover": "#C88C25",
+            "blue": "#397B8A",
+            "blue_hover": "#2D6572",
+            "orange": "#D8753C",
+            "orange_hover": "#BD5F2D",
+            "slate": "#526A68",
+            "slate_hover": "#405654",
+        }
+
+        header = tk.Frame(main_container, bg=palette["ink"], padx=18, pady=14)
+        header.pack(fill=tk.X, padx=5, pady=(0, 12))
+        tk.Label(
+            header,
             text="Focused Up",
-            font=("Arial", 16, "bold"),
-            bg="lightgray"
-        )
-        title.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Content frame
-        content_frame = ttk.Frame(main_container)
-        content_frame.pack(fill=tk.BOTH, padx=5, pady=5)
-        
-        # Left panel - Buttons (smaller, fixed width)
-        left_panel = ttk.Frame(content_frame, width=150)
-        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
-        # left_panel.pack_propagate(False)
-        
+            font=("Segoe UI", 22, "bold"),
+            fg="#FFFFFF",
+            bg=palette["ink"],
+        ).pack(anchor=tk.W)
+        tk.Frame(header, bg=palette["gold"], height=3).pack(fill=tk.X, pady=(8, 0))
+
+        content_frame = tk.Frame(main_container, bg=palette["canvas"])
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        left_panel = tk.Frame(content_frame, bg=palette["canvas"], width=185)
+        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 14), pady=5)
+        left_panel.pack_propagate(False)
+
         self.blacklist_buttons_frame = ttk.Frame(left_panel)
-        self.blacklist_buttons_frame.pack(fill=tk.BOTH)
-        
-        Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
-               command=self.add_to_time_list, bg_color="red", fg_color="white", font=("Arial", 11), width=12) #change to adda new time on other screen
-        Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
-               command=self.remove_from_timelist, bg_color="red", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
-               command=self.create_time_settings_view, bg_color="orange", fg_color="white", font=("Arial", 11), width=12)
-        
-        
-        Button(self.blacklist_buttons_frame, x=4  , y=0, text="Save & Exit", 
-                       command=self.exit, bg_color="green", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=5, y=0, text="Contact Support", 
-               command=helper_funcs.contact_support, bg_color="yellow", fg_color="black", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame, x=6, y=0, text="Help", 
-                       command=self.create_tutorial_view, bg_color="blue", fg_color="white", font=("Arial", 11), width=12)
-        Button(self.blacklist_buttons_frame,x=7, y=0, text= "Sound Settings",
-               command = self.open_audio_settings, bg_color="grey", fg_color='black', font=("Arial", 11), width=12, )
-        # Right panel - List display (smaller)
-        right_panel = ttk.Frame(content_frame)
-        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
-        
-        list_label = tk.Label(right_panel, text="Ban start times", font=("Arial", 11,))
-        list_label.pack(fill=tk.X)
-        
-        # Listbox for blacklist (reduced size)
-        self.blacklist_display = tk.Listbox(right_panel, height=35, width=58, font=("Arial",11))
+        self.blacklist_buttons_frame.pack(fill=tk.X, pady=(0, 8))
+
+        def add_action_button(row, text, command, color, hover, foreground="#FFFFFF"):
+            button = Button(
+                self.blacklist_buttons_frame,
+                x=row,
+                y=0,
+                text=text,
+                command=command,
+                bg_color=color,
+                fg_color=foreground,
+                font=("Segoe UI", 10),
+                width=14,
+                height=2,
+            )
+            button.configure(
+                relief=tk.FLAT,
+                borderwidth=0,
+                activebackground=hover,
+                activeforeground=foreground,
+                cursor="hand2",
+            )
+            button.bind("<Enter>", lambda event, shade=hover: event.widget.configure(bg=shade))
+            button.bind("<Leave>", lambda event, shade=color: event.widget.configure(bg=shade))
+            return button
+
+        add_action_button(0, "Add", self.add_to_time_list, palette["teal"], palette["teal_hover"])
+        add_action_button(1, "Remove", self.remove_from_timelist, palette["coral"], palette["coral_hover"])
+        add_action_button(
+            2,
+            "Edit Properties",
+            self.create_time_settings_view,
+            palette["gold"],
+            palette["gold_hover"],
+            foreground=palette["ink"],
+        )
+        add_action_button(4, "Save & Exit", self.exit, palette["teal"], palette["teal_hover"])
+        add_action_button(
+            5,
+            "Contact Support",
+            helper_funcs.contact_support,
+            palette["blue"],
+            palette["blue_hover"],
+        )
+        add_action_button(6, "Help", self.create_tutorial_view, palette["orange"], palette["orange_hover"])
+        add_action_button(
+            7,
+            "Sound Settings",
+            self.open_audio_settings,
+            palette["slate"],
+            palette["slate_hover"],
+        )
+
+        right_panel = tk.Frame(content_frame, bg=palette["canvas"])
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=5)
+
+        list_label = tk.Label(
+            right_panel,
+            text="Your schedules",
+            font=("Segoe UI", 13, "bold"),
+            fg=palette["ink"],
+            bg=palette["canvas"],
+            anchor=tk.W,
+        )
+        list_label.pack(fill=tk.X, padx=2, pady=(0, 7))
+
+        list_frame = tk.Frame(right_panel, bg=palette["canvas"])
+        list_frame.pack(fill=tk.BOTH, expand=True)
+        self.blacklist_display = tk.Listbox(
+            list_frame,
+            height=18,
+            font=("Segoe UI", 10),
+            bg="#FFFFFF",
+            fg=palette["ink"],
+            selectbackground=palette["teal"],
+            selectforeground="#FFFFFF",
+            activestyle="none",
+            highlightthickness=1,
+            highlightbackground="#D5E0DA",
+            highlightcolor=palette["teal"],
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
         scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
-        self.blacklist_display.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        self.blacklist_display.pack(in_=list_frame, side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
- 
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-         
+
+        scrollbar.pack(in_=list_frame, side=tk.RIGHT, fill=tk.Y)
+
         self.status_var = tk.StringVar(value="")
-        self.status_label = tk.Label(right_panel, textvariable=self.status_var, font=("Arial", 10, "italic"), fg="red", anchor="w")
-        self.status_label.pack(fill=tk.X, pady=(5, 0))
- 
-        self.toggle_enabled_button = Button(self.blacklist_buttons_frame, x=3, y=0, text="Disable", command=self.toggle_time_group_enabled, bg_color="purple", fg_color="white", font=("Arial", 11), width=12)
+        self.status_label = tk.Label(
+            right_panel,
+            textvariable=self.status_var,
+            font=("Segoe UI", 9),
+            fg=palette["coral"],
+            bg=palette["canvas"],
+            anchor=tk.W,
+        )
+        self.status_label.pack(fill=tk.X, pady=(7, 0))
+
+        self.toggle_enabled_button = add_action_button(
+            3,
+            "Disable",
+            self.toggle_time_group_enabled,
+            palette["slate"],
+            palette["slate_hover"],
+        )
         self.toggle_enabled_button.grid_remove()
- 
+
         self.update_blacklist_display()
     
     def create_time_settings_view(self):
-        
         self.clear_window()
         self.current_view = "time_settings"
-        
+        self.root.geometry("800x620+500+100")
+
+        palette = {
+            "canvas": "#F1F5F1",
+            "ink": "#183B36",
+            "muted": "#60736D",
+            "teal": "#187B70",
+            "teal_hover": "#12665D",
+            "gold": "#E3A63A",
+            "slate": "#526A68",
+            "slate_hover": "#405654",
+            "border": "#D5E0DA",
+        }
+
         main_container = ttk.Frame(self.root)
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Title
-        title = tk.Label(
-            main_container,
+
+        header = tk.Frame(main_container, bg=palette["ink"], padx=18, pady=12)
+        header.pack(fill=tk.X, padx=5, pady=(0, 10))
+        tk.Label(
+            header,
             text="Time Settings",
-            font=("Arial", 16, "bold"),
-            bg="lightgray"
+            font=("Segoe UI", 20, "bold"),
+            fg="#FFFFFF",
+            bg=palette["ink"],
+        ).pack(anchor=tk.W)
+        tk.Frame(header, bg=palette["gold"], height=3).pack(fill=tk.X, pady=(7, 0))
+
+        def make_action_button(parent, text, command, color, hover, foreground="#FFFFFF"):
+            button = tk.Button(
+                parent,
+                text=text,
+                command=command,
+                font=("Segoe UI", 10),
+                bg=color,
+                fg=foreground,
+                activebackground=hover,
+                activeforeground=foreground,
+                relief=tk.FLAT,
+                borderwidth=0,
+                padx=12,
+                pady=7,
+                cursor="hand2",
+            )
+            button.bind("<Enter>", lambda event, shade=hover: event.widget.configure(bg=shade))
+            button.bind("<Leave>", lambda event, shade=color: event.widget.configure(bg=shade))
+            return button
+
+        button_frame = tk.Frame(main_container, bg=palette["canvas"])
+        button_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=(8, 0))
+        make_action_button(
+            button_frame,
+            "Back",
+            self.create_main_view,
+            palette["slate"],
+            palette["slate_hover"],
+        ).pack(side=tk.RIGHT, padx=(6, 0))
+        make_action_button(
+            button_frame,
+            "Save",
+            self.save_time_settings,
+            palette["teal"],
+            palette["teal_hover"],
+        ).pack(side=tk.RIGHT)
+
+        notebook_style = ttk.Style(self.root)
+        notebook_style.configure("FocusedUp.TNotebook", tabmargins=(0, 2, 0, 0))
+        notebook_style.configure(
+            "FocusedUp.TNotebook.Tab",
+            font=("Segoe UI", 10, "bold"),
+            padding=(14, 8),
         )
-        title.pack(fill=tk.X, padx=5, pady=5)
-        
-        left_panel = ttk.Frame(main_container)
-        left_panel.pack(side=tk.LEFT, padx=5, pady=5, anchor=tk.NW)
-        
-        tk.Label(left_panel, text="Time Groups", font=("Arial", 12, "bold")).pack(fill=tk.BOTH)
-        
-        # Frame for listbox and scrollbar
-        list_frame = ttk.Frame(left_panel)
-        list_frame.pack( fill=tk.X, padx=0, pady=5)
-        
-        self.time_listbox = tk.Listbox(list_frame, height=10, width=30)
+        notebook = ttk.Notebook(main_container, style="FocusedUp.TNotebook")
+        notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        schedule_tab = ttk.Frame(notebook)
+        programs_tab = ttk.Frame(notebook)
+        notebook.add(schedule_tab, text="Schedule")
+        notebook.add(programs_tab, text="Programs to Block")
+
+        def create_scrollable_tab(tab):
+            canvas = tk.Canvas(tab, bg=palette["canvas"], highlightthickness=0)
+            scrollbar = ttk.Scrollbar(tab, orient=tk.VERTICAL, command=canvas.yview)
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+            content = tk.Frame(canvas, bg=palette["canvas"], padx=10, pady=10)
+            content_window = canvas.create_window((0, 0), window=content, anchor="nw")
+            content.bind(
+                "<Configure>",
+                lambda event, target=canvas: target.configure(scrollregion=target.bbox("all")),
+            )
+            canvas.bind(
+                "<Configure>",
+                lambda event, target=canvas, window=content_window: target.itemconfigure(
+                    window, width=event.width
+                ),
+            )
+            return canvas, content
+
+        schedule_canvas, schedule_content = create_scrollable_tab(schedule_tab)
+        programs_canvas, programs_content = create_scrollable_tab(programs_tab)
+
+        groups_frame = ttk.LabelFrame(schedule_content, text="Time Groups", padding=8)
+        groups_frame.pack(fill=tk.X, pady=(0, 8))
+
+        list_frame = ttk.Frame(groups_frame)
+        list_frame.grid(row=0, column=0, rowspan=2, sticky="nsew", padx=(0, 10))
+        groups_frame.columnconfigure(0, weight=1)
+        groups_frame.rowconfigure(0, weight=1)
+
+        self.time_listbox = tk.Listbox(
+            list_frame,
+            height=3,
+            width=30,
+            exportselection=False,
+            font=("Segoe UI", 10),
+            bg="#FFFFFF",
+            fg=palette["ink"],
+            selectbackground=palette["teal"],
+            selectforeground="#FFFFFF",
+            activestyle="none",
+            highlightthickness=1,
+            highlightbackground=palette["border"],
+            highlightcolor=palette["teal"],
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
         scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.time_listbox.yview)
         self.time_listbox.config(yscrollcommand=scrollbar.set)
         self.time_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT,fill=tk.Y)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.time_listbox.bind("<<ListboxSelect>>", self.select_time)
-        
-        
-        # self.time_listbox.select_set(0)
-        # self.time_listbox.event_generate("<<ListboxSelect>>")
         self.update_time_list()
-        
-        # Button frame for actions
-        button_frame = ttk.Frame(left_panel)
-        button_frame.pack(fill=tk.X, padx=5, pady=5)
-        temp = ttk.Button(button_frame, text= "Set Replacement Program/Site",command= self.change_replacement,default="disabled")
-        temp.pack( padx=2, fill=tk.X,side= 'top')
-        ttk.Button(button_frame, text="New", command=self.new_time_group).pack(side=tk.LEFT, fill=tk.X)
-        ttk.Button(button_frame, text="Remove", command=self.remove_from_timelist).pack(side=tk.LEFT, padx=2, fill=tk.X)
-        temp.configure(default='disabled')
-        temp.pack_forget()
-        temp.pack( padx=2, fill=tk.X,side= 'top')
-        
-        # Right panel - Settings (visible by default)
-        right_panel = ttk.Frame(main_container,width=10)
-        right_panel.pack(side=tk.RIGHT,  padx=5, pady=5, anchor =tk.N)
-        
-        # Name input section
-        name_frame = ttk.LabelFrame(right_panel, text="Name")
-        name_frame.pack(fill=tk.X, padx=5, pady=5,ipady=3)
+
+        group_actions = ttk.Frame(groups_frame)
+        group_actions.grid(row=0, column=1, rowspan=2, sticky="nsew")
+        group_actions.columnconfigure(0, weight=1)
+        make_action_button(
+            group_actions,
+            "Set Replacement Program/Site",
+            self.change_replacement,
+            palette["slate"],
+            palette["slate_hover"],
+        ).grid(row=0, column=0, sticky="ew", pady=(0, 6))
+        make_action_button(
+            group_actions,
+            "New",
+            self.new_time_group,
+            palette["teal"],
+            palette["teal_hover"],
+        ).grid(row=1, column=0, sticky="ew", pady=(0, 4))
+        make_action_button(
+            group_actions,
+            "Remove",
+            self.remove_from_timelist,
+            "#C6534C",
+            "#A9403A",
+        ).grid(row=2, column=0, sticky="ew")
+
+        settings_frame = ttk.Frame(schedule_content)
+        settings_frame.pack(fill=tk.BOTH, expand=True)
+        settings_frame.columnconfigure(0, weight=1)
+        settings_frame.columnconfigure(1, weight=1)
+
+        name_frame = ttk.LabelFrame(settings_frame, text="Group", padding=8)
+        name_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         self.name_var = tk.StringVar(value="")
-        ttk.Entry(name_frame, textvariable=self.name_var, width=20).pack(fill=tk.X, padx=5, pady=5)
+        ttk.Entry(name_frame, textvariable=self.name_var).grid(
+            row=0, column=0, sticky="ew", padx=(0, 10)
+        )
         self.enabled_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(right_panel, text="Enabled", variable=self.enabled_var,command= lambda: self.toggle_time_group_enabled()).pack(anchor=tk.W, padx=5, pady=(0,5))
-        finish_frame= ttk.Frame(right_panel)
-        self.finish_var= tk.StringVar(value="Nothing")
-        ttk.Label(finish_frame,text="When Finished:").grid(row=0,column=0)
-        self.finish_options= ["Nothing", "Shutdown PC", "Sleep PC"]
-        ttk.OptionMenu(finish_frame, self.finish_var,"Nothing", *self.finish_options).grid(row=0, column=1)
-        finish_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Time input section
-        time_frame = ttk.LabelFrame(right_panel, text="Time Range (00:00-23:59)")
-        time_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        ttk.Label(time_frame, text="Start Time (HH:MM):").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Label(time_frame, text="End Time (HH:MM):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Label(time_frame, text= "Allowed Hours").grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Checkbutton(
+            name_frame,
+            text="Enabled",
+            variable=self.enabled_var,
+            command=lambda: self.toggle_time_group_enabled(),
+        ).grid(row=0, column=1, sticky=tk.W)
+        name_frame.columnconfigure(0, weight=1)
+
+        time_frame = ttk.LabelFrame(settings_frame, text="Time Range", padding=8)
+        time_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 4), pady=(0, 8))
+        ttk.Label(time_frame, text="Start").grid(row=0, column=0, sticky=tk.W, padx=4, pady=3)
+        ttk.Label(time_frame, text="End").grid(row=1, column=0, sticky=tk.W, padx=4, pady=3)
+        ttk.Label(time_frame, text="Allowed hours").grid(
+            row=2, column=0, sticky=tk.W, padx=4, pady=3
+        )
         self.hour_var = tk.StringVar(value="00")
         self.minute_var = tk.StringVar(value="00")
         self.end_hour_var = tk.StringVar(value="00")
         self.end_minute_var = tk.StringVar(value="00")
-        self.allowed_hours= tk.DoubleVar(value=0.0) #converted to seconds in json
-        
-        
-        ttk.Entry(time_frame, textvariable=self.hour_var, width=5).grid(row=0, column=1, padx=5, pady=5)
+        self.allowed_hours = tk.DoubleVar(value=0.0)
+
+        ttk.Entry(time_frame, textvariable=self.hour_var, width=4).grid(row=0, column=1, padx=2)
         ttk.Label(time_frame, text=":").grid(row=0, column=2)
-        ttk.Entry(time_frame, textvariable=self.minute_var, width=5).grid(row=0, column=3, padx=5, pady=5)
-        
-        ttk.Entry(time_frame, textvariable=self.end_hour_var, width=5).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Entry(time_frame, textvariable=self.minute_var, width=4).grid(row=0, column=3, padx=2)
+        ttk.Entry(time_frame, textvariable=self.end_hour_var, width=4).grid(row=1, column=1, padx=2)
         ttk.Label(time_frame, text=":").grid(row=1, column=2)
-        ttk.Entry(time_frame, textvariable=self.end_minute_var, width=5).grid(row=1, column=3, padx=5, pady=5)
-        
-        ttk.Entry(time_frame,textvariable=self.allowed_hours,width=5).grid(row=2,column=1)
-        # Day selection
-        days_frame = ttk.LabelFrame(right_panel, text="Active Days")
-        days_frame.pack(fill=tk.X, padx=5, pady=5)
-        
+        ttk.Entry(time_frame, textvariable=self.end_minute_var, width=4).grid(row=1, column=3, padx=2)
+        ttk.Entry(time_frame, textvariable=self.allowed_hours, width=7).grid(
+            row=2, column=1, columnspan=3, sticky="w", padx=2
+        )
+
+        days_frame = ttk.LabelFrame(settings_frame, text="Active Days", padding=8)
+        days_frame.grid(row=1, column=1, sticky="nsew", padx=(4, 0), pady=(0, 8))
         self.day_vars = {}
         for i, day in enumerate(vars.selected_days):
             var = tk.BooleanVar(value=True)
             self.day_vars[day] = var
-            ttk.Checkbutton(days_frame, text=day, variable=var).grid(row=i//2, column=i%2, sticky=tk.W, padx=5, pady=3)
-        
-        # Program blacklist for this time
-        programs_frame = ttk.LabelFrame(left_panel, text="Programs to Block")
-        programs_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        self.program_listbox = tk.Listbox(programs_frame, height=8)
+            ttk.Checkbutton(days_frame, text=day, variable=var).grid(
+                row=i // 2, column=i % 2, sticky=tk.W, padx=8, pady=3
+            )
+        days_frame.columnconfigure(0, weight=1)
+        days_frame.columnconfigure(1, weight=1)
+
+        start_frame = ttk.LabelFrame(settings_frame, text="When Started", padding=8)
+        start_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        self.start_var = tk.StringVar(value="Nothing")
+        self.start_options = ["Nothing", "Custom"]
+        ttk.OptionMenu(
+            start_frame,
+            self.start_var,
+            "Nothing",
+            *self.start_options,
+            command=self.update_custom_start_controls,
+        ).pack(fill=tk.X)
+
+        self.start_type_var = tk.StringVar(value="website")
+        self.start_target_var = tk.StringVar(value="")
+        self.start_target_label_var = tk.StringVar(value="Website URL")
+        self.custom_start_frame = ttk.Frame(start_frame)
+        ttk.Label(self.custom_start_frame, text="Open:").grid(
+            row=0, column=0, sticky=tk.W, pady=(6, 2)
+        )
+        ttk.Radiobutton(
+            self.custom_start_frame,
+            text="Website",
+            variable=self.start_type_var,
+            value="website",
+            command=self.update_custom_start_controls,
+        ).grid(row=0, column=1, sticky=tk.W, pady=(6, 2))
+        ttk.Radiobutton(
+            self.custom_start_frame,
+            text="Application",
+            variable=self.start_type_var,
+            value="application",
+            command=self.update_custom_start_controls,
+        ).grid(row=0, column=2, sticky=tk.W, pady=(6, 2))
+        ttk.Label(self.custom_start_frame, textvariable=self.start_target_label_var).grid(
+            row=1, column=0, sticky=tk.W, padx=(0, 6)
+        )
+        ttk.Entry(self.custom_start_frame, textvariable=self.start_target_var).grid(
+            row=1, column=1, sticky="ew"
+        )
+        self.start_browse_button = ttk.Button(
+            self.custom_start_frame,
+            text="Browse...",
+            command=self.browse_start_application,
+        )
+        self.start_browse_button.grid(row=1, column=2, padx=(6, 0))
+        self.custom_start_frame.columnconfigure(1, weight=1)
+        self.update_custom_start_controls()
+
+        finish_frame = ttk.LabelFrame(settings_frame, text="When Finished", padding=8)
+        finish_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        self.finish_var = tk.StringVar(value="Nothing")
+        self.finish_options = ["Nothing", "Shutdown PC", "Sleep PC", "Custom"]
+        ttk.OptionMenu(
+            finish_frame,
+            self.finish_var,
+            "Nothing",
+            *self.finish_options,
+            command=self.update_custom_finish_controls,
+        ).pack(fill=tk.X)
+
+        self.finish_type_var = tk.StringVar(value="website")
+        self.finish_target_var = tk.StringVar(value="")
+        self.finish_target_label_var = tk.StringVar(value="Website URL")
+        self.custom_finish_frame = ttk.Frame(finish_frame)
+        ttk.Label(self.custom_finish_frame, text="Open:").grid(
+            row=0, column=0, sticky=tk.W, pady=(6, 2)
+        )
+        ttk.Radiobutton(
+            self.custom_finish_frame,
+            text="Website",
+            variable=self.finish_type_var,
+            value="website",
+            command=self.update_custom_finish_controls,
+        ).grid(row=0, column=1, sticky=tk.W, pady=(6, 2))
+        ttk.Radiobutton(
+            self.custom_finish_frame,
+            text="Application",
+            variable=self.finish_type_var,
+            value="application",
+            command=self.update_custom_finish_controls,
+        ).grid(row=0, column=2, sticky=tk.W, pady=(6, 2))
+        ttk.Label(self.custom_finish_frame, textvariable=self.finish_target_label_var).grid(
+            row=1, column=0, sticky=tk.W, padx=(0, 6)
+        )
+        ttk.Entry(self.custom_finish_frame, textvariable=self.finish_target_var).grid(
+            row=1, column=1, sticky="ew"
+        )
+        self.finish_browse_button = ttk.Button(
+            self.custom_finish_frame,
+            text="Browse...",
+            command=self.browse_finish_application,
+        )
+        self.finish_browse_button.grid(row=1, column=2, padx=(6, 0))
+        self.custom_finish_frame.columnconfigure(1, weight=1)
+        self.update_custom_finish_controls()
+
+        programs_heading = tk.Frame(programs_content, bg=palette["canvas"])
+        programs_heading.pack(fill=tk.X, pady=(0, 8))
+        tk.Label(
+            programs_heading,
+            text="Block list",
+            font=("Segoe UI", 14, "bold"),
+            fg=palette["ink"],
+            bg=palette["canvas"],
+        ).pack(anchor=tk.W)
+
+        programs_frame = tk.Frame(
+            programs_content,
+            bg="#FFFFFF",
+            highlightthickness=1,
+            highlightbackground=palette["border"],
+        )
+        programs_frame.pack(fill=tk.BOTH, expand=True)
+        self.program_listbox = tk.Listbox(
+            programs_frame,
+            height=12,
+            exportselection=False,
+            font=("Segoe UI", 10),
+            bg="#FFFFFF",
+            fg=palette["ink"],
+            selectbackground=palette["teal"],
+            selectforeground="#FFFFFF",
+            activestyle="none",
+            highlightthickness=1,
+            highlightbackground=palette["border"],
+            highlightcolor=palette["teal"],
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
         prog_scrollbar = ttk.Scrollbar(programs_frame, orient=tk.VERTICAL, command=self.program_listbox.yview)
         self.program_listbox.config(yscrollcommand=prog_scrollbar.set)
         self.program_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         prog_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Program input
-        prog_input_frame = ttk.Frame(left_panel)
-        prog_input_frame.pack(fill=tk.X, padx=5, pady=5)
-        
+
+        prog_input_frame = ttk.LabelFrame(programs_content, text="Manage programs", padding=8)
+        prog_input_frame.pack(fill=tk.X, pady=(8, 0))
+        prog_input_frame.columnconfigure(0, weight=1)
         self.program_entry = ttk.Entry(prog_input_frame)
-        self.program_entry.grid(row=1, column=1, padx=5)
-        
-        ttk.Button(prog_input_frame, text="Enter", command=self.add_program).grid(row=1, column=2, padx=5)
-        ttk.Button(prog_input_frame, text="Browse...", command=self.add_to_blacklist).grid(row=1, column=3, padx=5)
-        ttk.Button(prog_input_frame, text="Remove Selected", command=self.remove_program).grid(row=0, column=0, columnspan=4, padx=5, pady=5)
-        find_steam_button= ttk.Button(prog_input_frame, text="Search Steam", command=self.find_steam_games_helper)
-        find_steam_button.grid(row=2, column=0, columnspan=2, padx=5, pady=15)
-        find_epic_button= ttk.Button(prog_input_frame, text="Search Epic Games", command=self.find_epic_games_helper)
-        find_epic_button.grid(row=2, column=2, columnspan=2, padx=5, pady=15)
-        
-        
-        # Buttons
-        button_frame = ttk.Frame(right_panel)
-        button_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        ttk.Button(button_frame, text="Save", command=self.save_time_settings).pack(side=tk.LEFT, padx=5,pady=20)
-        ttk.Button(button_frame, text="Back", command=self.create_main_view).pack(side=tk.LEFT, padx=5,pady=20)
+        self.program_entry.grid(row=0, column=0, sticky="ew", padx=(0, 6), pady=4)
+        make_action_button(
+            prog_input_frame,
+            "Enter",
+            self.add_program,
+            palette["teal"],
+            palette["teal_hover"],
+        ).grid(row=0, column=1, padx=3, pady=4)
+        make_action_button(
+            prog_input_frame,
+            "Browse...",
+            self.add_to_blacklist,
+            palette["slate"],
+            palette["slate_hover"],
+        ).grid(row=0, column=2, padx=3, pady=4)
+        make_action_button(
+            prog_input_frame,
+            "Remove Selected",
+            self.remove_program,
+            "#C6534C",
+            "#A9403A",
+        ).grid(row=0, column=3, padx=(8, 0), pady=4)
+
+        game_search_frame = ttk.LabelFrame(programs_content, text="Game libraries", padding=8)
+        game_search_frame.pack(fill=tk.X, pady=(8, 0))
+        game_search_frame.columnconfigure(0, weight=1, uniform="game-search")
+        game_search_frame.columnconfigure(1, weight=1, uniform="game-search")
+        make_action_button(
+            game_search_frame,
+            "Search Steam",
+            self.find_steam_games_helper,
+            palette["teal"],
+            palette["teal_hover"],
+        ).grid(row=0, column=0, sticky="ew", padx=(0, 3))
+        make_action_button(
+            game_search_frame,
+            "Search Epic Games",
+            self.find_epic_games_helper,
+            palette["teal"],
+            palette["teal_hover"],
+        ).grid(row=0, column=1, sticky="ew", padx=(3, 0))
+
+        def bind_tab_mousewheel(widget, canvas):
+            if not isinstance(widget, tk.Listbox):
+                widget.bind(
+                    "<MouseWheel>",
+                    lambda event, target=canvas: target.yview_scroll(
+                        -int(event.delta / 120), "units"
+                    ),
+                    add="+",
+                )
+            for child in widget.winfo_children():
+                bind_tab_mousewheel(child, canvas)
+
+        bind_tab_mousewheel(schedule_content, schedule_canvas)
+        bind_tab_mousewheel(programs_content, programs_canvas)
+
         if vars.time_group:
             self.time_listbox.select_set(0)
-            vars.time_var=list(vars.time_group.keys())[0]
+            vars.time_var = list(vars.time_group.keys())[0]
             self.update_time_display()
     
     def create_tutorial_view(self):
         self.clear_window()
         self.current_view = "tutorial"
+        self.root.geometry("800x620+500+100")
+
+        palette = {
+            "canvas": "#F1F5F1",
+            "ink": "#183B36",
+            "teal": "#187B70",
+            "teal_hover": "#12665D",
+            "gold": "#E3A63A",
+            "orange": "#D8753C",
+            "orange_hover": "#BD5F2D",
+            "slate": "#526A68",
+            "slate_hover": "#405654",
+            "border": "#D5E0DA",
+        }
 
         main_container = ttk.Frame(self.root)
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        title = tk.Label(
-            main_container,
+        header = tk.Frame(main_container, bg=palette["ink"], padx=18, pady=14)
+        header.pack(fill=tk.X, padx=5, pady=(0, 12))
+        tk.Label(
+            header,
             text="Focused Up Tutorial",
-            font=("Arial", 16, "bold"),
-            bg="lightgray"
-        )
-        title.pack(fill=tk.X, padx=5, pady=5)
+            font=("Segoe UI", 22, "bold"),
+            fg="#FFFFFF",
+            bg=palette["ink"],
+        ).pack(anchor=tk.W)
+        tk.Frame(header, bg=palette["gold"], height=3).pack(fill=tk.X, pady=(8, 0))
 
-        content_frame = ttk.Frame(main_container)
+        content_frame = tk.Frame(main_container, bg=palette["canvas"])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        left_panel = ttk.Frame(content_frame, width=150)
-        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        left_panel = tk.Frame(content_frame, bg=palette["canvas"], width=185)
+        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 14), pady=5)
         left_panel.pack_propagate(False)
 
         self.blacklist_buttons_frame = ttk.Frame(left_panel)
-        self.blacklist_buttons_frame.pack(fill=tk.X)
+        self.blacklist_buttons_frame.pack(fill=tk.X, pady=(0, 8))
 
-        Button(self.blacklist_buttons_frame, x=0, y=0, text="Add", 
-               command=self.tutorial_add, bg_color="red", fg_color="white", font=("Arial", 11), width=12, state=tk.NORMAL)
-        Button(self.blacklist_buttons_frame, x=1, y=0, text="Remove", 
-               command=self.remove_from_timelist, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame, x=2, y=0, text="Edit Properties", 
-               command=self.create_time_settings_view, bg_color="grey", fg_color="white", font=("Arial", 9), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame, x=3, y=0, text="Save & Exit", 
-               command=self.exit, bg_color="grey", fg_color="white", font=("Arial", 11), width=12, state=tk.DISABLED)
-        Button(self.blacklist_buttons_frame,x=4, y=0, text= "Sound Settings",
-               command = self.open_audio_settings, bg_color="grey", fg_color='black', font=("Arial", 11), width=12, state=tk.DISABLED)
-        right_panel = ttk.Frame(content_frame)
-        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        def add_action_button(row, text, command, color, hover, foreground="#FFFFFF"):
+            button = Button(
+                self.blacklist_buttons_frame,
+                x=row,
+                y=0,
+                text=text,
+                command=command,
+                bg_color=color,
+                fg_color=foreground,
+                font=("Segoe UI", 10),
+                width=14,
+                height=2,
+            )
+            button.configure(
+                relief=tk.FLAT,
+                borderwidth=0,
+                activebackground=hover,
+                activeforeground=foreground,
+                cursor="hand2",
+            )
+            button.bind("<Enter>", lambda event, shade=hover: event.widget.configure(bg=shade))
+            button.bind("<Leave>", lambda event, shade=color: event.widget.configure(bg=shade))
+            return button
 
-        self.blacklist_display = tk.Listbox(right_panel, height=15, width=35, font=("Arial", 9))
-        scrollbar = ttk.Scrollbar(right_panel, orient=tk.VERTICAL, command=self.blacklist_display.yview)
+        add_action_button(0, "Add", self.tutorial_add, palette["teal"], palette["teal_hover"])
+        add_action_button(1, "Remove", self.remove_from_timelist, palette["slate"], palette["slate_hover"])
+        add_action_button(
+            2,
+            "Edit Properties",
+            self.create_time_settings_view,
+            palette["gold"],
+            palette["gold"],
+            foreground=palette["ink"],
+        )
+        add_action_button(3, "Save & Exit", self.exit, palette["teal"], palette["teal_hover"])
+        add_action_button(
+            4,
+            "Sound Settings",
+            self.open_audio_settings,
+            palette["slate"],
+            palette["slate_hover"],
+        )
+        add_action_button(
+            5,
+            "Back to Main Menu",
+            self.create_main_view,
+            palette["orange"],
+            palette["orange_hover"],
+        )
+
+        right_panel = tk.Frame(content_frame, bg=palette["canvas"])
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=5)
+
+        list_label = tk.Label(
+            right_panel,
+            text="Tutorial overview",
+            font=("Segoe UI", 13, "bold"),
+            fg=palette["ink"],
+            bg=palette["canvas"],
+            anchor=tk.W,
+        )
+        list_label.pack(fill=tk.X, padx=2, pady=(0, 7))
+
+        list_frame = tk.Frame(right_panel, bg=palette["canvas"])
+        list_frame.pack(fill=tk.BOTH, expand=True)
+        self.blacklist_display = tk.Listbox(
+            list_frame,
+            height=18,
+            font=("Segoe UI", 10),
+            bg="#FFFFFF",
+            fg=palette["ink"],
+            selectbackground=palette["teal"],
+            selectforeground="#FFFFFF",
+            activestyle="none",
+            highlightthickness=1,
+            highlightbackground="#D5E0DA",
+            highlightcolor=palette["teal"],
+            relief=tk.FLAT,
+            borderwidth=0,
+        )
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.blacklist_display.yview)
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        ttk.Button(self.root, text="Back to Main Menu", command=self.create_main_view).pack()
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
+
         self.intro = tk.Toplevel(self.root)
-        
         self.intro.geometry("450x200+775+100")
-        self.intro.title("Tutorial Add Function")
+        self.intro.title("Tutorial")
         self.intro.transient(self.root)
-        tk.Label(self.intro, text="Welcome to Focus Mode!\nThis tutorial will guide you through the main features of the application.\nClick Add to get started").pack(pady=10)
-        
+        self.intro.configure(bg=palette["canvas"])
+        tk.Label(
+            self.intro,
+            text="Welcome to Focus Mode!\nThis tutorial will guide you through the main features of the application.\nClick Add to get started",
+            font=("Segoe UI", 11),
+            bg=palette["canvas"],
+            fg=palette["ink"],
+            justify=tk.CENTER,
+        ).pack(padx=20, pady=18)
+
         self.update_blacklist_display()
 
     def tutorial_add(self):
@@ -299,9 +760,21 @@ class FocusModeUI:
         self.add_to_time_list()
         tutorial= tk.Toplevel(self.root)
         self.tutorial_window = tutorial
-        tutorial.geometry("360x240+750+100")
-        tutorial.title("Tutorial Add Function")
+        tutorial.geometry("420x260+750+100")
+        tutorial.title("Tutorial")
         tutorial.transient(self.root)
+        tutorial.configure(bg="#F1F5F1")
+
+        header = tk.Frame(tutorial, bg="#183B36", padx=16, pady=12)
+        header.pack(fill=tk.X)
+        tk.Label(
+            header,
+            text="Focus Mode Guide",
+            font=("Segoe UI", 16, "bold"),
+            fg="#FFFFFF",
+            bg="#183B36",
+        ).pack(anchor=tk.W)
+        tk.Frame(header, bg="#E3A63A", height=3).pack(fill=tk.X, pady=(8, 0))
 
         dialogs = [
             "A time group defines when Focus Mode blocks selected programs. Use Add to create one, then give it a name and start time.",
@@ -316,10 +789,22 @@ class FocusModeUI:
         ]
         self.tutorial_dialogs = dialogs
         self.index = 0
-        self.label = ttk.Label(tutorial, text=dialogs[self.index], wraplength=330, font=("Arial", 12))
-        self.label.pack(pady=10)
+        self.label = ttk.Label(tutorial, text=dialogs[self.index], wraplength=360, font=("Segoe UI", 11), justify=tk.LEFT)
+        self.label.pack(fill=tk.BOTH, expand=True, padx=18, pady=(12, 8))
+        self.video_link = tk.Label(
+            tutorial,
+            text="Watch video tutorial",
+            fg="#187B70",
+            bg="#F1F5F1",
+            font=("Segoe UI", 10, "underline"),
+            cursor="hand2",
+            pady=4,
+        )
+        self.video_link.bind("<Button-1>", lambda event: webbrowser.open("https://example.com/focus-mode-video"))
+        self.video_link.pack(anchor=tk.W, padx=18)
+        self.video_link.pack_forget()
         button_frame = ttk.Frame(tutorial)
-        button_frame.pack(pady=10)
+        button_frame.pack(pady=(0, 12))
         self.back_button = ttk.Button(button_frame, text="Back", command=lambda: self.next_dialog(-1))
         self.back_button.pack(side=tk.LEFT, padx=5)
         self.next_button = ttk.Button(button_frame, text="Next", command=lambda: self.next_dialog(1))
@@ -332,11 +817,13 @@ class FocusModeUI:
         self.back_button.config(state=tk.DISABLED)
 
     def next_dialog(self, direction=1):
-        if direction > 0 and self.index == len(self.tutorial_dialogs) - 1:
+        is_last = self.index == len(self.tutorial_dialogs) - 1
+        if direction > 0 and is_last:
             self.tutorial_window.destroy()
             return
         self.index = max(0, min(self.index + direction, len(self.tutorial_dialogs) - 1))
         self.label.config(text=self.tutorial_dialogs[self.index])
+        self.video_link.pack_forget() if self.index != len(self.tutorial_dialogs) - 1 else self.video_link.pack(anchor=tk.W, padx=18)
         self.back_button.config(state=tk.NORMAL if self.index > 0 else tk.DISABLED)
         self.next_button.config(
             text="Finish" if self.index == len(self.tutorial_dialogs) - 1 else "Next"
@@ -455,6 +942,50 @@ class FocusModeUI:
             selection :str = self.program_listbox.get(selection[0])
             return selection
         return False
+
+    def update_custom_start_controls(self, *_):
+        if self.start_var.get() == "Custom":
+            if not self.custom_start_frame.winfo_manager():
+                self.custom_start_frame.pack(fill=tk.X, pady=(6, 0))
+        else:
+            self.custom_start_frame.pack_forget()
+
+        is_application = self.start_type_var.get() == "application"
+        self.start_target_label_var.set("Application" if is_application else "Website URL")
+        self.start_browse_button.configure(state=tk.NORMAL if is_application else tk.DISABLED)
+
+    def update_custom_finish_controls(self, *_):
+        if self.finish_var.get() == "Custom":
+            if not self.custom_finish_frame.winfo_manager():
+                self.custom_finish_frame.pack(fill=tk.X, pady=(6, 0))
+        else:
+            self.custom_finish_frame.pack_forget()
+
+        is_application = self.finish_type_var.get() == "application"
+        self.finish_target_label_var.set("Application" if is_application else "Website URL")
+        self.finish_browse_button.configure(state=tk.NORMAL if is_application else tk.DISABLED)
+
+    def browse_start_application(self):
+        file_path = filedialog.askopenfilename(
+            initialdir=vars.root_dir,
+            title="Select an application",
+            filetypes=[("Applications", "*.exe"), ("All files", "*.*")],
+        )
+        if file_path:
+            self.start_type_var.set("application")
+            self.start_target_var.set(file_path)
+            self.update_custom_start_controls()
+
+    def browse_finish_application(self):
+        file_path = filedialog.askopenfilename(
+            initialdir=vars.root_dir,
+            title="Select an application",
+            filetypes=[("Applications", "*.exe"), ("All files", "*.*")],
+        )
+        if file_path:
+            self.finish_type_var.set("application")
+            self.finish_target_var.set(file_path)
+            self.update_custom_finish_controls()
    
     def new_time_group(self):
         # Create a dialog for time and name input
@@ -509,7 +1040,8 @@ class FocusModeUI:
                     "productive":[],
                     "select_type":"Queue",
                     'allowed_hours': 0.0,
-                    'time_left': 0.0, 
+                    'time_left': 0.0,
+                    'on_start': 0,
                     'on_finish': 0,  #either 0: nothing, 1: shutdown, 2: sleep 
                     'enabled': True
                 }
@@ -845,6 +1377,38 @@ class FocusModeUI:
             name = time_data.get('name', '')
             self.name_var.set(name)
             self.enabled_var.set(time_data.get('enabled', True))
+
+            start_action = time_data.get('on_start', 0)
+            if isinstance(start_action, dict) and start_action.get('type') == 'custom':
+                self.start_var.set('Custom')
+                start_type = start_action.get('target_type', 'website')
+                self.start_type_var.set(
+                    start_type if start_type in ('website', 'application') else 'website'
+                )
+                self.start_target_var.set(start_action.get('target', ''))
+            else:
+                self.start_var.set('Nothing')
+                self.start_type_var.set('website')
+                self.start_target_var.set('')
+            self.update_custom_start_controls()
+
+            finish_action = time_data.get('on_finish', 0)
+            if isinstance(finish_action, dict) and finish_action.get('type') == 'custom':
+                self.finish_var.set('Custom')
+                finish_type = finish_action.get('target_type', 'website')
+                self.finish_type_var.set(
+                    finish_type if finish_type in ('website', 'application') else 'website'
+                )
+                self.finish_target_var.set(finish_action.get('target', ''))
+            elif isinstance(finish_action, int) and 0 <= finish_action < 3:
+                self.finish_var.set(self.finish_options[finish_action])
+                self.finish_type_var.set('website')
+                self.finish_target_var.set('')
+            else:
+                self.finish_var.set('Nothing')
+                self.finish_type_var.set('website')
+                self.finish_target_var.set('')
+            self.update_custom_finish_controls()
              
             end_time = time_data.get('end_time', '00:00')
             allowed_time = time_data.get('allowed_time', 0)/360
@@ -902,6 +1466,62 @@ class FocusModeUI:
                     messagebox.showerror("Duplicate Start Time", f"A time group already starts at {new_time}")
                     return
 
+                if self.start_var.get() == 'Custom':
+                    start_target = self.start_target_var.get().strip()
+                    start_type = self.start_type_var.get()
+                    if not start_target:
+                        messagebox.showerror("Missing Target", "Enter a website URL or select an application.")
+                        return
+                    if start_type == 'website':
+                        parsed_url = urlparse(start_target)
+                        if parsed_url.scheme not in ('http', 'https') or not parsed_url.netloc:
+                            messagebox.showerror(
+                                "Invalid Website",
+                                "Enter a complete website URL beginning with http:// or https://.",
+                            )
+                            return
+                    elif not os.path.isfile(start_target) and shutil.which(start_target) is None:
+                        messagebox.showerror(
+                            "Invalid Application",
+                            "Select an existing application file or enter an application available on PATH.",
+                        )
+                        return
+                    start_action = {
+                        'type': 'custom',
+                        'target_type': start_type,
+                        'target': start_target,
+                    }
+                else:
+                    start_action = 0
+
+                if self.finish_var.get() == 'Custom':
+                    finish_target = self.finish_target_var.get().strip()
+                    finish_type = self.finish_type_var.get()
+                    if not finish_target:
+                        messagebox.showerror("Missing Target", "Enter a website URL or select an application.")
+                        return
+                    if finish_type == 'website':
+                        parsed_url = urlparse(finish_target)
+                        if parsed_url.scheme not in ('http', 'https') or not parsed_url.netloc:
+                            messagebox.showerror(
+                                "Invalid Website",
+                                "Enter a complete website URL beginning with http:// or https://.",
+                            )
+                            return
+                    elif not os.path.isfile(finish_target) and shutil.which(finish_target) is None:
+                        messagebox.showerror(
+                            "Invalid Application",
+                            "Select an existing application file or enter an application available on PATH.",
+                        )
+                        return
+                    finish_action = {
+                        'type': 'custom',
+                        'target_type': finish_type,
+                        'target': finish_target,
+                    }
+                else:
+                    finish_action = self.finish_options.index(self.finish_var.get())
+
                 if new_time != current_time:
                     vars.time_group[new_time] = vars.time_group.pop(current_time)
                     vars.time_var = new_time
@@ -921,8 +1541,9 @@ class FocusModeUI:
                 # Save enabled state
                 time_data['enabled'] = self.enabled_var.get()
 
-                # Save action when finished
-                time_data['on_finish']= self.finish_options.index(self.finish_var.get())
+                # Save actions for when the group starts and finishes
+                time_data['on_start'] = start_action
+                time_data['on_finish'] = finish_action
                 
                 # Save days
                 enabled_days = [day for day, var in self.day_vars.items() if var.get()==1]
