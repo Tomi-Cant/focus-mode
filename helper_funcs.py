@@ -134,36 +134,40 @@ def find_epic_games():
     return games
 
 def play_audio():
-    if vars.configs["active"]==[]:
-        return
-    available_audio=get_audio()
-    selected_audio= load_audio(available_audio)
+    available_audio = get_audio()
     if not available_audio:
-        return 
+        return
+
+    if not mixer.get_init():
+        mixer.init()
+    channel = mixer.Channel(0)
+    if channel.get_busy():
+        return
+
+    selected_audio = load_audio(available_audio)
     selected_audio.set_volume(vars.configs["volume"])
-    selected_audio.play(maxtime=4000)
+    channel.play(selected_audio, maxtime=4000)
     
 def get_audio() -> list[str] :
     return vars.configs.get("active", [])
 
 def check_audio_files():     
-    audio_sets = vars.self_path + "\\assets\\audio"
-    audio_folders=os.listdir(audio_sets)
-    audio_files=vars.configs.get("owned", [])
-    for folder in audio_folders:
-        folder_dest= audio_sets+"\\"+folder
-        for file in os.listdir(folder_dest): 
-            if file.endswith(".mp3") and folder_dest+"\\"+file not in audio_files:
-                audio_files.append(folder_dest+"\\"+file)
+    audio_sets = os.path.join(vars.self_path, "assets", "audio")
+    audio_files = vars.configs.get("owned", [])
+    for folder, _, files in os.walk(audio_sets):
+        for file in files:
+            audio_path = os.path.join(folder, file)
+            if file.lower().endswith(".mp3") and audio_path not in audio_files:
+                audio_files.append(audio_path)
     vars.configs["owned"] = audio_files
     import json
     with open(vars.config_path, "w") as f:
         json.dump(vars.configs, f)
 
 def load_audio(audio_paths) ->mixer.Sound:
-    random.shuffle(audio_paths)
-    mixer.init()
-    return mixer.Sound(audio_paths[0])
+    if not mixer.get_init():
+        mixer.init()
+    return mixer.Sound(random.choice(audio_paths))
     
 def play_voice(voice_path):
     if not os.path.exists(voice_path):

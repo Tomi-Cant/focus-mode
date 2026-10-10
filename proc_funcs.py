@@ -13,16 +13,16 @@ import vars
 import webbrowser
 
 import random
-import helper_funcs
 
 from tkinter import messagebox
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
+    closed = False
     allowed_time = vars.time_group[set_temp[index]]["allowed_time"]
     for proc in window_to_process.process_search(no_list):
             if allowed_time > 0:
                 allowed_time-=.5
-                return
+                return False
     # converts application titles to their .exe counterpart
     added = vars.time_group[set_temp[index]].get("converted", [])
     temp =[]
@@ -34,8 +34,13 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
             added.append(i)  
     open_windows = window_to_process.check_windows(temp)
     for i in open_windows:
-        PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
-        productive_open(i['title'], curr_time, set_temp[index])
+        try:
+            PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
+            closed = True
+            productive_open(i['title'], curr_time, set_temp[index])
+        except:
+                pass
+        
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {i['title']} {curr_time}\n")
         if i['name'] not in added:    
@@ -44,9 +49,11 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
         
         with open(vars.json_path, "w") as f:
             json.dump(vars.session_temp, f, indent=2)  # updates json file
+    return closed
 
 
 def close_by_process(no_list, curr_time,time_index):
+    closed = False
     if no_list != []: 
         # checks if process is banned with error catches
         allowed_time = vars.time_group[time_index]["allowed_time"]
@@ -58,7 +65,7 @@ def close_by_process(no_list, curr_time,time_index):
             with open(vars.log_path, "a") as log:
                 try:
                     proc.kill()
-                    helper_funcs.play_audio()
+                    closed = True
                     productive_open(proc.info['name'], curr_time, time_index)
                     log.write(f"    Closed {proc.name()} {curr_time}\n")
                     continue
@@ -70,18 +77,25 @@ def close_by_process(no_list, curr_time,time_index):
                 except Exception as e:
                     log.write(
                         f"An unexpected error occurred while trying to terminate process '{proc.info['name']}': {e}\n")
+    return closed
 
 def close_by_title(added, window, win, time_index,curr_time):
     if window in added or find_minecraft(window,added) != []: 
         if vars.time_group[time_index]["time_left"] > 0:
             vars.time_group[time_index]["time_left"]-=.5
-            return 
-        
-        PostMessage(win, win32con.WM_CLOSE, 0, 0)
-        productive_open(window, curr_time, time_index)
-        helper_funcs.play_audio()
+            return False
+        closed = False
+        try:
+            PostMessage(win, win32con.WM_CLOSE, 0, 0)
+            closed = True
+            productive_open(window, curr_time, time_index)
+        except:
+            pass
+       
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")
+        return closed
+    return False
         
 def sleep_pc(curr_time):
     print("slept")

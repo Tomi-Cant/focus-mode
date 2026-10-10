@@ -9,6 +9,7 @@ import time
 import sys
 import json
 from helper_funcs import time_seperator, cull_times, find_last_run
+import helper_funcs
 import vars
 
 
@@ -50,12 +51,14 @@ def main():
         window = win32gui.GetWindowText(win)
         
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
-            proc_funcs.convert_to_exe(
-                             no_list, curr_time, index, set_temp)
-
-            proc_funcs.close_by_process(no_list, curr_time,set_temp[index])
-
-            proc_funcs.close_by_title(no_list, window, win, set_temp[index], curr_time)
+            closed = proc_funcs.convert_to_exe(
+                no_list, curr_time, index, set_temp)
+            closed = proc_funcs.close_by_process(
+                no_list, curr_time, set_temp[index]) or closed
+            closed = proc_funcs.close_by_title(
+                no_list, window, win, set_temp[index], curr_time) or closed
+            if closed:
+                helper_funcs.play_audio()
 
             
 
