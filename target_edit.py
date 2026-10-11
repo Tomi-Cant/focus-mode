@@ -1123,28 +1123,39 @@ class FocusModeUI:
     def open_audio_settings(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("Audio Settings")
-        dialog.geometry("350x250+700+400")
+        dialog.geometry("460x360+700+350")
         dialog.transient(self.root)
-        owns_expansion=vars.configs.get("owned",[])
+        dialog.minsize(380, 260)
+
+        owns_expansion = vars.configs.get("owned", [])
         if not owns_expansion:
             messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addon. Please purchase the addon to access this feature.")
             dialog.destroy()
             return
 
-        button_canvas = tk.Canvas(dialog, width=275, height=200)
-        scrollbar = tk.Scrollbar(dialog, orient=tk.VERTICAL, command=button_canvas.yview)
+        main = ttk.Frame(dialog, padding=12)
+        main.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(main, text="Voice Pack Settings", font=("Arial", 14, "bold")).pack(anchor=tk.W, pady=(0, 8))
+
+        canvas_frame = ttk.Frame(main)
+        canvas_frame.pack(fill=tk.BOTH, expand=True)
+
+        button_canvas = tk.Canvas(canvas_frame, height=220, highlightthickness=0)
+        button_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=button_canvas.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         button_canvas.configure(yscrollcommand=scrollbar.set)
-        button_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        button_frame = tk.Frame(button_canvas)
-        canvas_window = button_canvas.create_window((0, 0), window=button_frame, anchor="nw")
+
+        button_frame = ttk.Frame(button_canvas)
+        button_canvas.create_window((0, 0), window=button_frame, anchor="nw")
         button_frame.bind(
             "<Configure>",
             lambda event: button_canvas.configure(scrollregion=button_canvas.bbox("all")),
         )
         button_canvas.bind(
             "<Configure>",
-            lambda event: button_canvas.itemconfigure(canvas_window, width=event.width),
+            lambda event: button_canvas.itemconfigure("all", width=event.width),
         )
         button_canvas.bind(
             "<MouseWheel>",
@@ -1152,33 +1163,33 @@ class FocusModeUI:
         )
 
         active_bool = tk.BooleanVar(value=vars.configs.get("enabled", False))
-        tk.Checkbutton(
+        ttk.Checkbutton(
             button_frame,
             text="Enable 'The Voices'",
             variable=active_bool,
             command=lambda: self.update_audio_settings(active_bool.get(), "enable audio"),
-        ).pack(anchor=tk.W)
+        ).pack(anchor=tk.W, pady=(0, 8))
 
         voices_by_folder = {}
         for voice in vars.configs.get("owned", []):
-            folder = os.path.dirname(voice)
+            folder = os.path.dirname(os.path.abspath(voice))
             voices_by_folder.setdefault(folder, []).append(voice)
 
         active_voices = set(vars.configs.get("active", []))
         for folder, voices in sorted(voices_by_folder.items()):
-            folder_frame = tk.Frame(button_frame)
-            folder_frame.pack(fill=tk.X, anchor=tk.W)
-            folder_var = tk.BooleanVar(value=any(voice in active_voices for voice in voices))
-            child_frame = tk.Frame(button_frame)
-            child_frame.pack(fill=tk.X, anchor=tk.W, padx=(22, 0))
-            voice_vars = {}
+            folder_frame = ttk.Frame(button_frame)
+            folder_frame.pack(fill=tk.X, anchor=tk.W, pady=(0, 4))
 
-            tk.Checkbutton(
+            folder_var = tk.BooleanVar(value=any(voice in active_voices for voice in voices))
+            voice_vars = {}
+            child_frame = ttk.Frame(button_frame)
+            child_frame.pack(fill=tk.X, anchor=tk.W, padx=(22, 0))
+
+            ttk.Checkbutton(
                 folder_frame,
                 text=os.path.basename(folder) or folder,
                 variable=folder_var,
-                command=lambda voices=voices, folder_var=folder_var,
-                child_frame=child_frame, voice_vars=voice_vars: self.update_audio_folder(
+                command=lambda voices=voices, folder_var=folder_var, child_frame=child_frame, voice_vars=voice_vars: self.update_audio_folder(
                     voices, folder_var.get(), voice_vars, child_frame
                 ),
             ).pack(side=tk.LEFT, anchor=tk.W)
@@ -1186,24 +1197,28 @@ class FocusModeUI:
             for voice in voices:
                 voice_var = tk.BooleanVar(value=voice in active_voices)
                 voice_vars[voice] = voice_var
-                tk.Checkbutton(
-                    child_frame,
+
+                voice_row = ttk.Frame(child_frame)
+                voice_row.pack(fill=tk.X, pady=2)
+                ttk.Checkbutton(
+                    voice_row,
                     text=os.path.basename(voice),
                     variable=voice_var,
                     command=lambda voice=voice, voice_var=voice_var: self.update_audio_file(
                         voice, voice_var.get()
                     ),
-                ).pack(anchor=tk.W)
-                tk.Button(
-                    child_frame,
+                ).pack(side=tk.LEFT, anchor=tk.W, expand=True)
+                ttk.Button(
+                    voice_row,
                     text="Play",
                     command=lambda voice=voice: helper_funcs.play_voice(voice),
-                ).pack(anchor=tk.W, padx=(20, 0))
+                    width=8,
+                ).pack(side=tk.RIGHT)
 
             if not folder_var.get():
                 child_frame.pack_forget()
 
-        tk.Button(dialog, text="Exit", command=dialog.destroy).pack(pady=8, side=tk.BOTTOM, padx=10)
+        ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=(10, 12))
 
     def update_audio_folder(self, voices, enabled, voice_vars, child_frame):
         active_voices = vars.configs.setdefault("active", [])
@@ -1212,7 +1227,7 @@ class FocusModeUI:
                 active_voices.append(voice)
             elif not enabled and voice in active_voices:
                 active_voices.remove(voice)
-            voice_vars[voice].set(enabled)
+            # voice_vars[voice].set(enabled)
         if enabled:
             child_frame.pack(fill=tk.X, anchor=tk.W, padx=(22, 0))
         else:
@@ -1227,7 +1242,7 @@ class FocusModeUI:
             active_voices.remove(voice)
         self._save_audio_settings()
 
-    def update_audio_settings(self, bool_var:bool,name=None):
+    def update_audio_settings(self, bool_var:bool,name:str):
         if name== "enable audio":
             vars.configs["enabled"]= bool_var
             
