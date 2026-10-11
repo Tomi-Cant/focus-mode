@@ -18,7 +18,7 @@ from tkinter import messagebox
 
 def convert_to_exe( no_list, curr_time, index, set_temp):
     closed = False
-    allowed_time = vars.time_group[set_temp[index]]["allowed_time"]
+    allowed_time = vars.time_group[set_temp[index]]["time_left"]
     for proc in window_to_process.process_search(no_list):
             if allowed_time > 0:
                 allowed_time-=.5
@@ -56,7 +56,7 @@ def close_by_process(no_list, curr_time,time_index):
     closed = False
     if no_list != []: 
         # checks if process is banned with error catches
-        allowed_time = vars.time_group[time_index]["allowed_time"]
+        allowed_time = vars.time_group[time_index]["time_left"]
         for proc in window_to_process.process_search(no_list):
             if allowed_time > 0:
                 allowed_time-=.5

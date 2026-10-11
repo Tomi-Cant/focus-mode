@@ -58,10 +58,7 @@ def run_finish_action(action, curr_time):
 def main():
     index = 0
     finish_action = 0
-    
     time_list = vars.time_group
-
-   
     curr_time = datetime.datetime.now()
     find_last_run(curr_time)
     day_of_week = datetime.date.today().strftime("%A")
@@ -87,9 +84,13 @@ def main():
         log.write(f"Script started at {datetime.datetime.now()}\n")
     
     started_groups = set()
+    for group in set_temp:
+        vars.time_group[group]["time_left"]=vars.time_group[group]["allowed_time"]
+        
     while set_times != []:  # main loop goes through each time pair
         curr_time = datetime.datetime.now()
         no_list = vars.time_group[set_temp[index]]['programs']
+        converted_list= vars.time_group[set_temp[index]]['converted']
         vars.time_var= vars.time_group[set_temp[index]]
         win = win32gui.GetForegroundWindow()
         window = win32gui.GetWindowText(win)
@@ -100,7 +101,7 @@ def main():
                 run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
                 started_groups.add(group_key)
             closed = proc_funcs.convert_to_exe(
-                no_list, curr_time, index, set_temp)
+                converted_list, curr_time, index, set_temp)
             closed = proc_funcs.close_by_process(
                 no_list, curr_time, set_temp[index]) or closed
             closed = proc_funcs.close_by_title(
