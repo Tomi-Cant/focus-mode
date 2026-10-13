@@ -6,7 +6,6 @@ import win32con
 import win32process
 import psutil
 
-# complete vibe code
 
 
 def get_window_process(hwnd):

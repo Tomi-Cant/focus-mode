@@ -20,9 +20,9 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
     closed = False
     allowed_time = vars.time_group[set_temp[index]]["time_left"]
     for proc in window_to_process.process_search(no_list):
-            if allowed_time > 0:
-                allowed_time-=.5
-                return False
+        if allowed_time > 0:
+            allowed_time-=.5
+            return False
     # converts application titles to their .exe counterpart
     added = vars.time_group[set_temp[index]].get("converted", [])
     temp =[]
@@ -54,28 +54,29 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
 
 def close_by_process(no_list, curr_time,time_index):
     closed = False
-    if no_list != []: 
-        # checks if process is banned with error catches
-        allowed_time = vars.time_group[time_index]["time_left"]
-        for proc in window_to_process.process_search(no_list):
-            if allowed_time > 0:
-                allowed_time-=.5
-                return
+    if no_list == []:
+        return 
+    # checks if process is banned with error catches
+    allowed_time = vars.time_group[time_index]["time_left"]
+    for proc in window_to_process.process_search(no_list):
+        if allowed_time > 0:
+            allowed_time-=.5
+            return
 
-            with open(vars.log_path, "a") as log:
-                try:
-                    proc.kill()
-                    closed = True
-                    productive_open(proc.info['name'], curr_time, time_index)
-                    log.write(f"    Closed {proc.name()} {curr_time}\n")
-                    continue
-                except psutil.NoSuchProcess:
-                    log.write(f"Process '{proc.info['name']}' no longer exists.")
-                except psutil.AccessDenied:
-                    log.write(
-                        f"Access denied to terminate process '{proc.info['name']}'.")
-                except Exception as e:
-                    log.write(
+        with open(vars.log_path, "a") as log:
+            try:
+                proc.kill()
+                closed = True
+                productive_open(proc.info['name'], curr_time, time_index)
+                log.write(f"    Closed {proc.name()} {curr_time}\n")
+                continue
+            except psutil.NoSuchProcess:
+                log.write(f"Process '{proc.info['name']}' no longer exists.")
+            except psutil.AccessDenied:
+                log.write(
+                    f"Access denied to terminate process '{proc.info['name']}'.")
+            except Exception as e:
+                log.write(
                         f"An unexpected error occurred while trying to terminate process '{proc.info['name']}': {e}\n")
     return closed
 

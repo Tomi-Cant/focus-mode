@@ -7,24 +7,7 @@ import vars
 from pygame import mixer
 from tkinter import messagebox
 import os
-def shorten(text: str, box_width: int, font_size: int = 10) -> str:
-    
 
-    tries = 0
-    max_width = box_width // (font_size // 2)  # Rough estimate for character width
-    
-    if len(text) <= max_width:
-        return text
-    
-    while len(text) > max_width and tries < 1000:
-        tries += 1
-        text = text[:-1]
-    
-    text = text.rstrip()
-    if len(text) > max_width - 3:
-        text = text[:max_width-3]
-    text = text + '...'
-    return text
 
 
 def cull_times(start, end, indx, time,set_temp):
@@ -81,9 +64,10 @@ def find_last_run(curr_time ):
             found =True
             break
     if found:
-        return   
+        return found  
     for group in vars.time_group.values():
         group["time_left"] = group["allowed_time"]
+    return found
 
 def find_steam_games():
     import vdf, winreg

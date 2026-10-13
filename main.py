@@ -60,7 +60,7 @@ def main():
     finish_action = 0
     time_list = vars.time_group
     curr_time = datetime.datetime.now()
-    find_last_run(curr_time)
+    is_same_day=find_last_run(curr_time)
     day_of_week = datetime.date.today().strftime("%A")
     # set_times, loop to collect, check if end time is passed if so remove from list with pair
     set_temp = [key for key, data in time_list.items() if data.get('enabled', True)]
@@ -74,12 +74,15 @@ def main():
         grouping = list(grouping.keys())[0]
         del time_list[grouping]
         set_temp.remove(grouping)
+    
     end_temp = [time_list[i]['end_time'] for i in set_temp]
     start_times = [time_list[i].get('start_time', '00:00') for i in set_temp]
     set_times = [datetime.datetime.now().replace(hour=int(time_seperator(start_times[i])[0]), minute=int(
         time_seperator(start_times[i])[1])) for i in range(len(start_times))]
     end_times = [datetime.datetime.now().replace(hour=int(time_seperator(end_temp[i])[0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]
-      
+    if is_same_day:
+            for i in range(len(set_temp)):
+                cull_times(set_times, end_times, i, curr_time, set_temp)  
     with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")
     
