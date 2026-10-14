@@ -1,67 +1,130 @@
 # Made By: Tomi Banjoko
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
-import win32gui
-import win32con
-import win32process
+import os
+import shutil
+import subprocess
+
 import psutil
-
-
 
 def get_window_process(hwnd):
     """Return psutil.Process for a given window handle, or None."""
     try:
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+        result = subprocess.run(
+            ["xdotool", "getwindowpid", str(hwnd)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            return None
+        pid = int(result.stdout.strip())
         return psutil.Process(pid)
-    except psutil.NoSuchProcess:
+    except (OSError, ValueError, psutil.Error):
         return None
 
 
-def is_taskbar_window(hwnd):
-    """Check if a window should appear in the taskbar."""
-    if not win32gui.IsWindowVisible(hwnd):
-        return False
-    if win32gui.GetWindow(hwnd, win32con.GW_OWNER):  # owned = not in taskbar
-        return False
-    if not win32gui.GetWindowText(hwnd):  # no title
-        return False
-
-    exstyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
-    if exstyle & win32con.WS_EX_TOOLWINDOW:  # tool windows are excluded
-        return False
-
-    return True
-
-
 def enum_taskbar_windows():
+    if shutil.which("wmctrl") is None:
+        return []
+    try:
+        result = subprocess.run(
+            ["wmctrl", "-lp"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return []
     windows = []
-
-    def callback(hwnd, _):
-        if is_taskbar_window(hwnd):
-            proc = get_window_process(hwnd)
-            if proc:
-                windows.append({
-                    "hwnd": hwnd,
-                    "title": win32gui.GetWindowText(hwnd),
-                    "pid": proc.pid,
-                    "name": proc.name()
-                })
-        return True
-
-    win32gui.EnumWindows(callback, None)
+    if result.returncode != 0:
+        return windows
+    for line in result.stdout.splitlines():
+        fields = line.split(maxsplit=4)
+        if len(fields) < 5:
+            continue
+        try:
+            pid = int(fields[2])
+            process = psutil.Process(pid)
+            windows.append({
+                "hwnd": fields[0],
+                "title": fields[4],
+                "pid": pid,
+                "name": process.name(),
+            })
+        except (ValueError, psutil.Error):
+            continue
     return windows
+
+
+def get_active_window():
+    """Return the active window title and handle when the desktop exposes them."""
+    if shutil.which("xdotool") is None:
+        return "", None
+    try:
+        result = subprocess.run(
+            ["xdotool", "getactivewindow"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            return "", None
+        hwnd = result.stdout.strip()
+        title = subprocess.run(
+            ["xdotool", "getwindowname", hwnd],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return (title.stdout.strip(), hwnd) if title.returncode == 0 else ("", None)
+    except OSError:
+        return "", None
+
+
+def close_window(hwnd):
+    """Request a graceful close using the current desktop's window manager."""
+    if hwnd is None:
+        return False
+    if shutil.which("wmctrl") is None:
+        return False
+    try:
+        result = subprocess.run(
+            ["wmctrl", "-ic", str(hwnd)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.returncode == 0
+    except OSError:
+        return False
 
 
 def check_windows(window_titles: list[str]):
     windows = enum_taskbar_windows()
     processes = []
+    target_titles = {title.casefold() for title in window_titles}
     for w in windows:
-        if w['title'].lower() in window_titles:
+        if w['title'].casefold() in target_titles:
             processes.append(w)
     return processes
 
 
 def process_search(executable_file_names: list[str]):
-    for proc in psutil.process_iter(['name']):
-        if proc.info['name'] in executable_file_names:
-            yield proc
+    def normalize_name(name):
+        return os.path.basename(str(name)).casefold()
+
+    target_names = {normalize_name(name) for name in executable_file_names}
+    for proc in psutil.process_iter(["name", "exe", "cmdline"]):
+        try:
+            info = proc.info
+            candidates = [info.get("name"), info.get("exe")]
+            command = info.get("cmdline") or []
+            if command:
+                candidates.append(command[0])
+            if target_names.intersection(
+                normalize_name(candidate) for candidate in candidates if candidate
+            ):
+                yield proc
+        except psutil.Error:
+            continue

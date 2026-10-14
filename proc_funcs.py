@@ -4,40 +4,32 @@
 import re
 import subprocess
 import window_to_process
-from win32gui import PostMessage
-from win32api import ShellExecute
-import win32con
 import psutil
 import json
 import vars
 import webbrowser
 
 import random
+import helper_funcs
 
 from tkinter import messagebox
 
-def convert_to_exe( no_list, curr_time, index, set_temp):
+def close_matching_windows(no_list, curr_time, index, set_temp):
     closed = False
     allowed_time = vars.time_group[set_temp[index]]["time_left"]
     for proc in window_to_process.process_search(no_list):
         if allowed_time > 0:
             allowed_time-=.5
             return False
-    # converts application titles to their .exe counterpart
     added = vars.time_group[set_temp[index]].get("converted", [])
-    temp =[]
-    for i in no_list:
-        
-        if not i.endswith(".exe"):
-            temp.append(i.lower())
-        else:
-            added.append(i)  
+    temp = [program.casefold() for program in no_list]
     open_windows = window_to_process.check_windows(temp)
     for i in open_windows:
         try:
-            PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
-            closed = True
-            productive_open(i['title'], curr_time, set_temp[index])
+            window_closed = window_to_process.close_window(i['hwnd'])
+            closed = window_closed or closed
+            if window_closed:
+                productive_open(i['title'], curr_time, set_temp[index])
         except:
                 pass
         
@@ -87,8 +79,9 @@ def close_by_title(added, window, win, time_index,curr_time):
             return False
         closed = False
         try:
-            PostMessage(win, win32con.WM_CLOSE, 0, 0)
-            closed = True
+            closed = window_to_process.close_window(win)
+            if not closed:
+                return False
             productive_open(window, curr_time, time_index)
         except:
             pass
@@ -99,16 +92,29 @@ def close_by_title(added, window, win, time_index,curr_time):
     return False
         
 def sleep_pc(curr_time):
-    print("slept")
-    subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"], creationflags=subprocess.CREATE_NO_WINDOW)
-    with open(vars.log_path, "a") as log:
-                log.write(f"    PC slept {curr_time}\n")
+    _run_power_action(["systemctl", "suspend"], curr_time, "slept")
                 
 def shutdown_pc(curr_time):
-    print("shutdown")
-    subprocess.run(["shutdown", "/s", "/t", "0"], creationflags=subprocess.CREATE_NO_WINDOW)
-    with open(vars.log_path, "a") as log:
-                log.write(f"    PC shutdown {curr_time}\n")      
+    _run_power_action(["systemctl", "poweroff"], curr_time, "shutdown")
+
+
+def _run_power_action(command, curr_time, action):
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        result_text = (
+            f"    PC {action} {curr_time}\n"
+            if result.returncode == 0
+            else f"Power action '{action}' failed: {result.stderr.strip()}\n"
+        )
+    except OSError as error:
+        result_text = f"Power action '{action}' failed: {error}\n"
+    with open(vars.log_path, "a", encoding="utf-8") as log:
+        log.write(result_text)
                          
 def find_minecraft(title, added):
     if  'minecraft' in added or "Minecraft" in added:
@@ -121,25 +127,32 @@ def find_minecraft(title, added):
 def productive_open(added, curr_time, time_index): 
     
     output=''
+    productive_list = vars.time_group[time_index].get("productive", [])
+    if not productive_list:
+        messagebox.showwarning("No productive app set!", "You did not set up an app to open when the last one was closed.", icon='warning')
+        with open(vars.log_path, "a", encoding="utf-8") as log:
+            log.write("    No productive application/website for this time slot\n")
+        return
+
     select_type=vars.time_group[time_index]["select_type"]
-    if vars.time_group[time_index]["productive"] == "":
-         # write a window message that says no productive target for this time slot
-        messagebox.showwarning("No productive app set!", "You did not set up an app to open when the last one was closed.",icon='warning')
-        output = (f"    No productive application/website for this time slot")
     if select_type == "Random":
-        productive = vars.time_group[time_index]["productive"][random.randint(0, len(vars.time_group[time_index]["productive"])-1)]
+        productive = productive_list[random.randint(0, len(productive_list)-1)]
     if select_type == "Queue":
-        productive = vars.time_group[time_index]["productive"][0] 
-    if productive == "#sleep pc":
+        productive = productive_list[0]
+    if select_type not in ("Random", "Queue"):
+        productive = productive_list[0]
+    if productive.casefold() == "#sleep pc":
         sleep_pc(curr_time)
-    if productive == "#shutdown pc":
-       shutdown_pc(curr_time)
+        return
+    if productive.casefold() == "#shutdown pc":
+        shutdown_pc(curr_time)
+        return
     
     if productive.startswith("www."):
         webbrowser.open(productive.strip("www."))
         output = (f"    Opened productive website for {added} at {curr_time}\n") 
     else:
-        ShellExecute(0, 'open',productive,'','',1) 
+        helper_funcs.open_application(productive)
         output = (f"    Opened productive application for {added} at {curr_time}\n") 
     with open(vars.log_path, "a") as log:
         log.write(output)

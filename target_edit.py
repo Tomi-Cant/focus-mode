@@ -849,11 +849,11 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir= vars.root_dir,   
             title="Select a program executable",
-            filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
+            filetypes=[("Applications", "*"), ("All files", "*.*")],
         )
         
         if file_path:
-            executable = file_path.split("\\")[-1]
+            executable = os.path.basename(file_path)
             if vars.session_temp.get('time_list', {}) and vars.time_var in vars.time_group:
                 programs = vars.time_group[vars.time_var]['programs']
                 if executable not in programs:
@@ -996,7 +996,7 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir=vars.root_dir,
             title="Select an application",
-            filetypes=[("Applications", "*.exe"), ("All files", "*.*")],
+            filetypes=[("Applications", "*"), ("All files", "*.*")],
         )
         if file_path:
             self.start_type_var.set("application")
@@ -1007,7 +1007,7 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir=vars.root_dir,
             title="Select an application",
-            filetypes=[("Applications", "*.exe"), ("All files", "*.*")],
+            filetypes=[("Applications", "*"), ("All files", "*.*")],
         )
         if file_path:
             self.finish_type_var.set("application")
@@ -1395,12 +1395,11 @@ class FocusModeUI:
         file_path = filedialog.askopenfilename(
             initialdir=vars.root_dir,
             title="Select a program executable",
-            filetypes=[ ("All files", "*.*"),("Executable files", "*.exe")]
+            filetypes=[("Applications", "*"), ("All files", "*.*")],
         )
         if file_path!='':
-            if messagebox.askokcancel("Testing", "Opening Website for confirmation..."):
-                from win32api import ShellExecute
-                ShellExecute(0, 'open',file_path,'','',1) 
+            if messagebox.askokcancel("Testing", "Open this application for confirmation?"):
+                helper_funcs.open_application(file_path)
             if messagebox.askyesno("New Addition", "Would you like to add this to the list of replacements?"):                
                 vars.time_group[vars.time_var]["productive"].append(file_path)
                 vars.time_group[vars.time_var]["select_type"]= 'Queue' if not self.shuffle_select.winfo_ismapped() else "Random"

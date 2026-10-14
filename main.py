@@ -1,8 +1,6 @@
 # Made By: Tomi Banjoko
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
-
-import win32gui
 import datetime
 import proc_funcs
 import time
@@ -13,6 +11,7 @@ import webbrowser
 from helper_funcs import time_seperator, cull_times, find_last_run
 import helper_funcs
 import vars
+import window_to_process
 
 
 def run_custom_action(action, action_name="finish"):
@@ -93,17 +92,16 @@ def main():
     while set_times != []:  # main loop goes through each time pair
         curr_time = datetime.datetime.now()
         no_list = vars.time_group[set_temp[index]]['programs']
-        converted_list= vars.time_group[set_temp[index]]['converted']
+        converted_list = vars.time_group[set_temp[index]].get('converted', [])
         vars.time_var= vars.time_group[set_temp[index]]
-        win = win32gui.GetForegroundWindow()
-        window = win32gui.GetWindowText(win)
+        window, win = window_to_process.get_active_window()
         
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
             group_key = set_temp[index]
             if group_key not in started_groups:
                 run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
                 started_groups.add(group_key)
-            closed = proc_funcs.convert_to_exe(
+            closed = proc_funcs.close_matching_windows(
                 converted_list, curr_time, index, set_temp)
             closed = proc_funcs.close_by_process(
                 no_list, curr_time, set_temp[index]) or closed

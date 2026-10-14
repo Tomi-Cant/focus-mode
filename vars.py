@@ -22,7 +22,11 @@ time_var:str = ''
 
 #declaring paths
 def get_data_dir():
-    app_data = os.path.join(os.environ["LOCALAPPDATA"], "FocusUp")
+    base_dir = os.environ.get(
+        "XDG_DATA_HOME",
+        os.path.join(os.path.expanduser("~"), ".local", "share"),
+    )
+    app_data = os.path.join(base_dir, "FocusUp")
     os.makedirs(app_data, exist_ok=True)
     return app_data
 def get_self_dir():
@@ -115,7 +119,7 @@ def normalize_time_groups(raw_groups):
     
 parent_path = get_data_dir()
 self_path = get_self_dir()
-root_dir= parent_path[:parent_path.find("\\")+1]
+root_dir = os.path.expanduser("~")
 log_path = get_log_path()
 json_path = get_blacklist_path()
 config_path = get_config_path()

@@ -1,5 +1,4 @@
 cryptography
 psutil
-pywin32
+pygame
 vdf
-pyuac

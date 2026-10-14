@@ -3,6 +3,7 @@
 # Date: 08/12/2025
 import tkinter as tk
 import random
+import subprocess
 import vars
 from pygame import mixer
 from tkinter import messagebox
@@ -70,43 +71,60 @@ def find_last_run(curr_time ):
     return found
 
 def find_steam_games():
-    import vdf, winreg
-    try:
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
-            steam_path, _ = winreg.QueryValueEx(key, "InstallPath")
-            
-    except FileNotFoundError:
+    import vdf
+
+    home = os.path.expanduser("~")
+    steam_roots = [
+        os.path.join(home, ".steam", "steam"),
+        os.path.join(home, ".local", "share", "Steam"),
+        os.path.join(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+    ]
+
+    paths = []
+    for steam_root in steam_roots:
+        steamapps = os.path.join(steam_root, "steamapps")
+        if os.path.isdir(steamapps) and steamapps not in paths:
+            paths.append(steamapps)
+        library_file = os.path.join(steamapps, "libraryfolders.vdf")
+        if os.path.isfile(library_file):
+            try:
+                with open(library_file, "r", encoding="utf-8") as file:
+                    library_data = vdf.load(file).get("libraryfolders", {})
+                for library in library_data.values():
+                    library_path = library.get("path") if isinstance(library, dict) else library
+                    if library_path:
+                        library_steamapps = os.path.join(library_path, "steamapps")
+                        if os.path.isdir(library_steamapps) and library_steamapps not in paths:
+                            paths.append(library_steamapps)
+            except (OSError, ValueError):
+                continue
+    if not paths:
         return None
-    
-    steam_path= steam_path + r"\steamapps"
-    paths=[steam_path]
-    try:
-        with open(steam_path+r"\libraryfolders.vdf", 'r', encoding='utf-8') as f:
-            for line in f:
-                if '"path"' in line:
-                    path = line.split('"')[3]
-                    path = path.replace("\\\\", "\\")
-                    path = path + r"\steamapps"
-                    if path not in paths:
-                        paths.append(path)
-                        
-        
-    except FileNotFoundError:
-        pass
+
     games = ["Steam"]
     for path in paths:
         for file in os.listdir(path):
             if file.endswith(".acf"):
-                with open(os.path.join(path, file), 'r', encoding='utf-8') as f:
-                    data = vdf.load(f)
-                    name = data.get('AppState', {}).get('name')
+                try:
+                    with open(os.path.join(path, file), "r", encoding="utf-8") as acf_file:
+                        data = vdf.load(acf_file)
+                    name = data.get("AppState", {}).get("name")
                     if name and name not in games:
                         games.append(name)
+                except (OSError, ValueError):
+                    continue
     return games
 
 def find_epic_games():
     import json
-    path= r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
+    path = os.path.join(
+        os.path.expanduser("~"),
+        ".config",
+        "Epic",
+        "EpicGamesLauncher",
+        "Data",
+        "Manifests",
+    )
     games = ["Epic Games Launcher"]
     if not os.path.exists(path):
         return None
@@ -118,6 +136,10 @@ def find_epic_games():
                 if name and name not in games:
                     games.append(name)
     return games
+
+
+def open_application(target):
+    subprocess.Popen([target], start_new_session=True)
 
 def play_audio():
     available_audio = get_audio()
