@@ -130,7 +130,7 @@ def play_audio():
     if channel.get_busy():
         return
 
-    selected_audio = load_audio(available_audio)
+    selected_audio = load_audio(random.choice(available_audio))
     selected_audio.set_volume(vars.configs["volume"])
     channel.play(selected_audio, maxtime=4000)
     
@@ -150,10 +150,10 @@ def check_audio_files():
     with open(vars.config_path, "w") as f:
         json.dump(vars.configs, f)
 
-def load_audio(audio_paths) ->mixer.Sound:
+def load_audio(audio_path) ->mixer.Sound:
     if not mixer.get_init():
         mixer.init()
-    return mixer.Sound(random.choice(audio_paths))
+    return mixer.Sound(audio_path)
     
 def play_voice(voice_path):
     if not os.path.exists(voice_path):
@@ -163,6 +163,27 @@ def play_voice(voice_path):
     sound = mixer.Sound(voice_path)
     sound.play(maxtime=4000)
     
+def time_check(end_times, idx, curr_time):
+    till_end = int((end_times[idx] - curr_time).total_seconds() )
+    
+    if till_end in vars.time_group[vars.time_var]["warning_times"]:
+        # play audio on warning times
+        play_warning_audio(till_end)
+        return True
+def play_warning_audio(time):        
+    warning_audio = vars.configs.get("warning_audio", {})
+    audio_path = warning_audio.get(str(int(time))+ "_left", None)
+    if audio_path and os.path.exists(audio_path):
+        audio =load_audio(audio_path)
+        audio.set_volume(vars.configs["volume"])
+        channel = mixer.Channel(1)
+        if channel.get_busy():
+            return
+        channel.play(audio, maxtime=4000)
+    else:
+        with open(vars.log_path, "a") as log:
+            log.write(f"        !Warning audio file not found for {time} seconds left\n")
+
 def contact_support():    
     import webbrowser
     support_email = "focusedupofficial@gmail.com"

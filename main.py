@@ -89,7 +89,7 @@ def main():
     started_groups = set()
     for group in set_temp:
         vars.time_group[group]["time_left"]=vars.time_group[group]["allowed_time"]
-        
+    
     while set_times != []:  # main loop goes through each time pair
         curr_time = datetime.datetime.now()
         no_list = vars.time_group[set_temp[index]]['programs']
