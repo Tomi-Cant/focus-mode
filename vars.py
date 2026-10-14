@@ -12,6 +12,8 @@ root: tk.Tk = None #type:ignore
 
 selected_days = ["Monday", "Tuesday", "Wednesday",
                  "Thursday", "Friday", "Saturday", "Sunday"]
+warning_time_minutes = (45, 30, 25, 20, 15, 10, 5, 1)
+default_warning_times = [minutes * 60 for minutes in warning_time_minutes]
 title_text = ""
 help_open = False
 time_selected = False
@@ -99,6 +101,10 @@ def normalize_time_groups(raw_groups):
 
         data = dict(value)
         data["name"] = group_name
+        warning_times = data.get("warning_times", default_warning_times)
+        if not isinstance(warning_times, list):
+            warning_times = default_warning_times
+        data["warning_times"] = warning_times
         if not data.get("start_time") and _looks_like_time(str(key)):
             data["start_time"] = str(key)
         elif not data.get("start_time"):

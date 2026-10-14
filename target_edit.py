@@ -411,8 +411,23 @@ class FocusModeUI:
         days_frame.columnconfigure(0, weight=1)
         days_frame.columnconfigure(1, weight=1)
 
+        warnings_frame = ttk.LabelFrame(settings_frame, text="Warnings Before End", padding=8)
+        warnings_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        self.warning_vars = {
+            minutes: tk.BooleanVar(value=True)
+            for minutes in vars.warning_time_minutes
+        }
+        for index, minutes in enumerate(vars.warning_time_minutes):
+            ttk.Checkbutton(
+                warnings_frame,
+                text=f"{minutes} min",
+                variable=self.warning_vars[minutes],
+            ).grid(row=index // 4, column=index % 4, sticky=tk.W, padx=8, pady=3)
+        for column in range(4):
+            warnings_frame.columnconfigure(column, weight=1)
+
         start_frame = ttk.LabelFrame(settings_frame, text="When Started", padding=8)
-        start_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        start_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         self.start_var = tk.StringVar(value="Nothing")
         self.start_options = ["Nothing", "Custom"]
         ttk.OptionMenu(
@@ -460,7 +475,7 @@ class FocusModeUI:
         self.update_custom_start_controls()
 
         finish_frame = ttk.LabelFrame(settings_frame, text="When Finished", padding=8)
-        finish_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        finish_frame.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         self.finish_var = tk.StringVar(value="Nothing")
         self.finish_options = ["Nothing", "Shutdown PC", "Sleep PC", "Custom"]
         ttk.OptionMenu(
@@ -1046,6 +1061,7 @@ class FocusModeUI:
                 vars.time_group[group_name] = {
                     "name": group_name,
                     "start_time": start_time,
+                    "warning_times": vars.default_warning_times.copy(),
                     "programs": [],
                     "end_time": "23:59",
                     "days": vars.selected_days.copy(),
@@ -1450,6 +1466,9 @@ class FocusModeUI:
             self.allowed_hours.set(allowed_time)
             for day in vars.selected_days:
                 self.day_vars[day].set(day in time_data.get('days', []))
+            warning_times = time_data.get('warning_times', vars.default_warning_times)
+            for minutes, var in self.warning_vars.items():
+                var.set(minutes * 60 in warning_times)
             
             # Update program list
             self.program_listbox.delete(0, tk.END)
@@ -1588,6 +1607,12 @@ class FocusModeUI:
                 # Save days
                 enabled_days = [day for day, var in self.day_vars.items() if var.get()==1]
                 time_data["days"] = enabled_days
+
+                time_data["warning_times"] = [
+                    minutes * 60
+                    for minutes, var in self.warning_vars.items()
+                    if var.get()
+                ]
 
                 # Save allowed time
                 allowed_time = self.allowed_hours.get()

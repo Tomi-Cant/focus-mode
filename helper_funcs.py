@@ -166,7 +166,10 @@ def play_voice(voice_path):
 def time_check(end_times, idx, curr_time):
     till_end = int((end_times[idx] - curr_time).total_seconds() )
     
-    if till_end in vars.time_group[vars.time_var]["warning_times"]:
+    warning_times = vars.time_group[vars.time_var].get(
+        "warning_times", vars.default_warning_times
+    )
+    if till_end in warning_times:
         # play audio on warning times
         play_warning_audio(till_end)
         return True
