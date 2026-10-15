@@ -17,43 +17,38 @@ from tkinter import messagebox
 def close_matching_windows(no_list, curr_time, index, set_temp):
     closed = False
     allowed_time = vars.time_group[set_temp[index]]["time_left"]
-    for proc in window_to_process.process_search(no_list):
-        if allowed_time > 0:
-            allowed_time-=.5
-            return False
+    if allowed_time > 0:
+        return False
     added = vars.time_group[set_temp[index]].get("converted", [])
-    temp = [program.casefold() for program in no_list]
-    open_windows = window_to_process.check_windows(temp)
+    targets = list(no_list) + list(added)
+    open_windows = window_to_process.check_windows(targets)
     for i in open_windows:
         try:
             window_closed = window_to_process.close_window(i['hwnd'])
             closed = window_closed or closed
             if window_closed:
                 productive_open(i['title'], curr_time, set_temp[index])
-        except:
-                pass
-        
-        with open(vars.log_path, "a") as log:
-            log.write(f"    Closed {i['title']} {curr_time}\n")
-        if i['name'] not in added:    
-            added.append(i['name'])
-        vars.time_group[set_temp[index]]['converted'] = added
-        
-        with open(vars.json_path, "w") as f:
-            json.dump(vars.session_temp, f, indent=2)  # updates json file
+                with open(vars.log_path, "a", encoding="utf-8") as log:
+                    log.write(f"    Closed {i['title']} {curr_time}\n")
+                if i['name'] not in added:
+                    added.append(i['name'])
+                vars.time_group[set_temp[index]]['converted'] = added
+                with open(vars.json_path, "w", encoding="utf-8") as f:
+                    json.dump(vars.session_temp, f, indent=2)
+        except (OSError, KeyError, TypeError):
+            continue
     return closed
 
 
 def close_by_process(no_list, curr_time,time_index):
     closed = False
     if no_list == []:
-        return 
-    # checks if process is banned with error catches
-    allowed_time = vars.time_group[time_index]["time_left"]
+        return False
     for proc in window_to_process.process_search(no_list):
+        allowed_time = vars.time_group[time_index]["time_left"]
         if allowed_time > 0:
-            allowed_time-=.5
-            return
+            vars.time_group[time_index]["time_left"] = max(0, allowed_time - .5)
+            return False
 
         with open(vars.log_path, "a") as log:
             try:
@@ -73,18 +68,15 @@ def close_by_process(no_list, curr_time,time_index):
     return closed
 
 def close_by_title(added, window, win, time_index,curr_time):
-    if window in added or find_minecraft(window,added) != []: 
+    if window_to_process.window_matches_targets(window, win, added) or find_minecraft(window,added) != []:
         if vars.time_group[time_index]["time_left"] > 0:
             vars.time_group[time_index]["time_left"]-=.5
             return False
         closed = False
-        try:
-            closed = window_to_process.close_window(win)
-            if not closed:
-                return False
-            productive_open(window, curr_time, time_index)
-        except:
-            pass
+        closed = window_to_process.close_window(win)
+        if not closed:
+            return False
+        productive_open(window, curr_time, time_index)
        
         with open(vars.log_path, "a") as log:
             log.write(f"    Closed {window} {curr_time}\n")

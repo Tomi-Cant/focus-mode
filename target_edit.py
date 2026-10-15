@@ -32,6 +32,25 @@ class FocusModeUI:
         
         # Create main UI
         self.create_main_view()
+
+    def bind_mousewheel(self, widget, target):
+        def scroll(event):
+            if event.num == 4:
+                amount = -1
+            elif event.num == 5:
+                amount = 1
+            elif event.delta:
+                amount = -int(event.delta / 120)
+                if amount == 0:
+                    amount = -1 if event.delta > 0 else 1
+            else:
+                return
+            target.yview_scroll(amount, "units")
+            return "break"
+
+        widget.bind("<MouseWheel>", scroll, add="+")
+        widget.bind("<Button-4>", scroll, add="+")
+        widget.bind("<Button-5>", scroll, add="+")
     
     def create_main_view(self):
         self.clear_window()
@@ -165,7 +184,8 @@ class FocusModeUI:
         self.blacklist_display.config(yscrollcommand=scrollbar.set)
         self.blacklist_display.pack(in_=list_frame, side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
-        scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
+        self.bind_mousewheel(self.blacklist_display, self.blacklist_display)
+        self.bind_mousewheel(scrollbar, self.blacklist_display)
 
         scrollbar.pack(in_=list_frame, side=tk.RIGHT, fill=tk.Y)
 
@@ -278,6 +298,7 @@ class FocusModeUI:
             canvas = tk.Canvas(tab, bg=palette["canvas"], highlightthickness=0)
             scrollbar = ttk.Scrollbar(tab, orient=tk.VERTICAL, command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
+            self.bind_mousewheel(scrollbar, canvas)
             canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -293,6 +314,7 @@ class FocusModeUI:
                     window, width=event.width
                 ),
             )
+            self.bind_mousewheel(canvas, canvas)
             
             return canvas, content
 
@@ -607,14 +629,8 @@ class FocusModeUI:
         ).grid(row=0, column=1, sticky="ew", padx=(3, 0))
 
         def bind_tab_mousewheel(widget, canvas):
-            if not isinstance(widget, tk.Listbox):
-                widget.bind(
-                    "<MouseWheel>",
-                    lambda event, target=canvas: target.yview_scroll(
-                        -int(event.delta / 120), "units"
-                    ),
-                    add="+",
-                )
+            target = widget if isinstance(widget, tk.Listbox) else canvas
+            self.bind_mousewheel(widget, target)
             for child in widget.winfo_children():
                 bind_tab_mousewheel(child, canvas)
 
@@ -753,7 +769,8 @@ class FocusModeUI:
         self.blacklist_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.blacklist_display.bind("<<ListboxSelect>>", self.select)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
+        self.bind_mousewheel(self.blacklist_display, self.blacklist_display)
+        self.bind_mousewheel(scrollbar, self.blacklist_display)
 
         self.intro = tk.Toplevel(self.root)
         self.intro.geometry("450x200+775+100")
@@ -1114,8 +1131,9 @@ class FocusModeUI:
         
         self.replacement_list= tk.Listbox(self.list_frame, height=15, width =50)
         scrollbar = ttk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.replacement_list.yview)
-        scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
         self.replacement_list.config(yscrollcommand=scrollbar.set)
+        self.bind_mousewheel(self.replacement_list, self.replacement_list)
+        self.bind_mousewheel(scrollbar, self.replacement_list)
         scrollbar.pack(side="right",fill='y')
         self.update_replacement_listbox()
         ttk.Button(button_frame, text="Change Type", 
@@ -1162,6 +1180,7 @@ class FocusModeUI:
         scrollbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=button_canvas.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         button_canvas.configure(yscrollcommand=scrollbar.set)
+        self.bind_mousewheel(scrollbar, button_canvas)
 
         button_frame = ttk.Frame(button_canvas)
         button_canvas.create_window((0, 0), window=button_frame, anchor="nw")
@@ -1173,10 +1192,7 @@ class FocusModeUI:
             "<Configure>",
             lambda event: button_canvas.itemconfigure("all", width=event.width),
         )
-        button_canvas.bind(
-            "<MouseWheel>",
-            lambda event: button_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"),
-        )
+        self.bind_mousewheel(button_canvas, button_canvas)
 
         active_bool = tk.BooleanVar(value=vars.configs.get("enabled", False))
         ttk.Checkbutton(
@@ -1289,8 +1305,9 @@ class FocusModeUI:
             
             listbox = tk.Listbox(dialog, selectmode=tk.MULTIPLE)
             scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=listbox.yview)
-            scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
             listbox.config(yscrollcommand=scrollbar.set)
+            self.bind_mousewheel(listbox, listbox)
+            self.bind_mousewheel(scrollbar, listbox)
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             
@@ -1324,8 +1341,9 @@ class FocusModeUI:
             
             listbox = tk.Listbox(dialog, selectmode=tk.MULTIPLE)
             scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=listbox.yview)
-            scrollbar.bind("<MouseWheel>", lambda event: self.blacklist_display.yview_scroll(int(-1*(event.delta/120)), "units"))
             listbox.config(yscrollcommand=scrollbar.set)
+            self.bind_mousewheel(listbox, listbox)
+            self.bind_mousewheel(scrollbar, listbox)
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             

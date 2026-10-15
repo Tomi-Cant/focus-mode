@@ -24,6 +24,36 @@ def get_window_process(hwnd):
         return None
 
 
+def _normalize_title(title):
+    return "-".join(str(title).split()).casefold()
+
+
+def _normalize_process_name(name):
+    basename = os.path.basename(str(name).replace("\\", "/")).casefold()
+    if basename.endswith(".exe"):
+        basename = basename[:-4]
+    return "".join(character for character in basename if character.isalnum())
+
+
+def window_matches_targets(title, hwnd, targets):
+    target_titles = {_normalize_title(target) for target in targets}
+    if _normalize_title(title) in target_titles:
+        return True
+
+    target_processes = {_normalize_process_name(target) for target in targets}
+    target_processes.discard("")
+    if not target_processes:
+        return False
+
+    process = get_window_process(hwnd)
+    if process is None:
+        return False
+    try:
+        return _normalize_process_name(process.name()) in target_processes
+    except psutil.Error:
+        return False
+
+
 def enum_taskbar_windows():
     if shutil.which("wmctrl") is None:
         return []
@@ -86,11 +116,19 @@ def close_window(hwnd):
     """Request a graceful close using the current desktop's window manager."""
     if hwnd is None:
         return False
+    try:
+        raw_id = str(hwnd).strip()
+        window_id = int(raw_id, 16) if raw_id.lower().startswith("0x") else int(raw_id, 10)
+        if window_id < 0:
+            return False
+        wmctrl_id = hex(window_id)
+    except (TypeError, ValueError):
+        return False
     if shutil.which("wmctrl") is None:
         return False
     try:
         result = subprocess.run(
-            ["wmctrl", "-ic", str(hwnd)],
+            ["wmctrl", "-ic", wmctrl_id],
             capture_output=True,
             text=True,
             check=False,
@@ -103,16 +141,21 @@ def close_window(hwnd):
 def check_windows(window_titles: list[str]):
     windows = enum_taskbar_windows()
     processes = []
-    target_titles = {title.casefold() for title in window_titles}
+    target_titles = {_normalize_title(title) for title in window_titles}
+    target_processes = {_normalize_process_name(name) for name in window_titles}
+    target_processes.discard("")
     for w in windows:
-        if w['title'].casefold() in target_titles:
+        if (
+            _normalize_title(w.get("title", "")) in target_titles
+            or _normalize_process_name(w.get("name", "")) in target_processes
+        ):
             processes.append(w)
     return processes
 
 
 def process_search(executable_file_names: list[str]):
     def normalize_name(name):
-        return os.path.basename(str(name)).casefold()
+        return os.path.basename(str(name).replace("\\", "/")).casefold()
 
     target_names = {normalize_name(name) for name in executable_file_names}
     for proc in psutil.process_iter(["name", "exe", "cmdline"]):

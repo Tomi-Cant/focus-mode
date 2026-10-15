@@ -92,7 +92,6 @@ def main():
     while set_times != []:  # main loop goes through each time pair
         curr_time = datetime.datetime.now()
         no_list = vars.time_group[set_temp[index]]['programs']
-        converted_list = vars.time_group[set_temp[index]].get('converted', [])
         vars.time_var= vars.time_group[set_temp[index]]
         window, win = window_to_process.get_active_window()
         
@@ -102,11 +101,13 @@ def main():
                 run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
                 started_groups.add(group_key)
             closed = proc_funcs.close_matching_windows(
-                converted_list, curr_time, index, set_temp)
-            closed = proc_funcs.close_by_process(
-                no_list, curr_time, set_temp[index]) or closed
-            closed = proc_funcs.close_by_title(
-                no_list, window, win, set_temp[index], curr_time) or closed
+                no_list, curr_time, index, set_temp)
+            if not closed:
+                closed = proc_funcs.close_by_title(
+                    no_list, window, win, set_temp[index], curr_time)
+            if not closed :
+                closed = proc_funcs.close_by_process(
+                    no_list, curr_time, set_temp[index])
             if closed:
                 helper_funcs.play_audio()
 
