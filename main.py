@@ -81,7 +81,7 @@ def main():
         time_seperator(start_times[i])[1])) for i in range(len(start_times))]
     end_times = [datetime.datetime.now().replace(hour=int(time_seperator(end_temp[i])[0]), minute=int(time_seperator(end_temp[i])[1])) for i in range(len(end_temp))]
     if is_same_day:
-            for i in range(len(set_temp)):
+            for i in range(len(set_temp)-1,0,-1):
                 cull_times(set_times, end_times, i, curr_time, set_temp)  
     with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")

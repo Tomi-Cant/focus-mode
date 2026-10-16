@@ -28,9 +28,9 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
     temp =[]
     for i in no_list:
         
-        if not i.endswith(".exe"):
+        if not i.endswith(".exe") :
             temp.append(i.lower())
-        else:
+        if i.endswith(".exe") and i not in added:
             added.append(i)  
     open_windows = window_to_process.check_windows(temp)
     for i in open_windows:

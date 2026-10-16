@@ -53,7 +53,7 @@ def verify_license(license_path: str) -> dict | None:
             dir_path :str =f"{vars.root_dir}\\Program Files\\Focused Up"
             create_task.create_scheduled_task(
                 task_name="FocusedUpTask",
-                script_path=f"{vars.root_dir}\\main.exe"
+                script_path=f"{vars.root_dir}\\FocusedUpScript.exe"
             )
             license_file["task_made"] = True
             with open(license_path, "w") as f:
