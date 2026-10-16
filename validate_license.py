@@ -75,7 +75,7 @@ def verify_license(license_path: str) -> dict | None:
 if __name__ == "__main__":
     if not messagebox.askokcancel(
         "Setup Wizard",
-        "Continue setup? Focus Mode stores settings in your user data directory.",
+     "Focused Up will ask to create a desktop icon and run a autostart script. None of your data will be shared with anyone. Is this ok?",
         icon="info",
     ):
             sys.exit()
