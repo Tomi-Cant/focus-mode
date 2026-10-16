@@ -51,7 +51,7 @@ def verify_license(license_path: str) -> dict | None:
         if license_file.get("task_made", False):
             create_task.create_autostart_entry(
                 "FocusedUpTask",
-                path.join(vars.self_path, "main.py"),
+                path.join(vars.self_path, "FocusedUpScript.exe"),
             )
             license_file["task_made"] = True
             with open(license_path, "w") as f:

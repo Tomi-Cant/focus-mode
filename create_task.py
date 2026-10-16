@@ -45,4 +45,4 @@ def create_autostart_entry(task_name, script_path, script_args=""):
 
 
 if __name__ == "__main__":
-    create_autostart_entry("FocusedUp", Path.cwd() / "main.py")
+    create_autostart_entry("FocusedUp", Path.cwd() / "FocusedUpScript.exe")
