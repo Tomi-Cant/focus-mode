@@ -71,7 +71,10 @@ def verify_license(license_path: str) -> dict | None:
 
 # Usage in your app's startup:
 if __name__ == "__main__":
-    if not messagebox.askokcancel("Setup Wizard", "This installation requires admin access to the device, will ask for permission to add itself to the desktop, and will install itself into Program Files (Where it can later be uninstalled if needed). Is this ok?", icon ='info'):
-            sys.exit()
+    if pyuac.isUserAdmin():
+        verify_license("license.lic")
+        sys.exit()
+    elif not messagebox.askokcancel("Setup Wizard", "This installation requires admin access to the device, will ask for permission to add itself to the desktop, and will install itself into Program Files (Where it can later be uninstalled if needed). Is this ok?", icon ='info'):
+        sys.exit()
     result = verify_license("license.lic")
   
