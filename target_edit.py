@@ -17,11 +17,16 @@ from Button import Button
 import vars
 
 
+def _strip_non_ascii(text: str) -> str:
+    return text.encode("ascii", "ignore").decode("ascii")
+
+
 class FocusModeUI:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Focus Mode")
+        self.root.title("Focused Up")
+        self.root.iconbitmap("focused_up_logo.ico")
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -853,7 +858,13 @@ class FocusModeUI:
         )
         
         if file_path:
-            executable = file_path.split("\\")[-1]
+            executable = _strip_non_ascii(file_path.split("\\")[-1])
+            if not executable or executable.lower() == ".exe":
+                messagebox.showwarning(
+                    "Invalid program",
+                    "The program name must contain at least one ASCII character.",
+                )
+                return
             if vars.session_temp.get('time_list', {}) and vars.time_var in vars.time_group:
                 programs = vars.time_group[vars.time_var]['programs']
                 if executable not in programs:
@@ -1300,9 +1311,15 @@ class FocusModeUI:
             def add_selected_games():
                 selected_indices = listbox.curselection()
                 for index in selected_indices:
-                    game_path = steam_games[index]
-                    if game_path not in vars.time_group[vars.time_var]['programs']:
-                        vars.time_group[vars.time_var]['programs'].append(game_path)
+                    game = _strip_non_ascii(steam_games[index])
+                    if not game:
+                        messagebox.showwarning(
+                            "Invalid program",
+                            "A selected program name contained no ASCII characters and was skipped.",
+                        )
+                        continue
+                    if game not in vars.time_group[vars.time_var]['programs']:
+                        vars.time_group[vars.time_var]['programs'].append(game)
                 
                 self.update_time_display()
                 dialog.destroy()
@@ -1335,9 +1352,15 @@ class FocusModeUI:
             def add_selected_games():
                 selected_indices = listbox.curselection()
                 for index in selected_indices:
-                    game_path = epic_games[index]
-                    if game_path not in vars.time_group[vars.time_var]['programs']:
-                        vars.time_group[vars.time_var]['programs'].append(game_path)
+                    game = _strip_non_ascii(epic_games[index])
+                    if not game:
+                        messagebox.showwarning(
+                            "Invalid program",
+                            "A selected program name contained no ASCII characters and was skipped.",
+                        )
+                        continue
+                    if game not in vars.time_group[vars.time_var]['programs']:
+                        vars.time_group[vars.time_var]['programs'].append(game)
                 
                 self.update_time_display()
                 dialog.destroy()
@@ -1476,7 +1499,7 @@ class FocusModeUI:
                 self.program_listbox.insert(tk.END, program)
     
     def add_program(self):
-        program = self.program_entry.get().strip()
+        program = _strip_non_ascii(self.program_entry.get().strip())
         if program == "":
             messagebox.showwarning("Input Error", "Program name cannot be empty")
             return
