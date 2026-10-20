@@ -42,7 +42,10 @@ def initalize_app() -> None:
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The scheduled task could not be created. Setup was not completed.")
         return
-    
+    files_added = subprocess.run(["robocopy", f"{dir_path}\\FocusedUpScript\\assets", f"{vars.root_dir}\\Program Files\\Focused Up\\FocusedUpScript\\assets\\audio", "/s"], creationflags=subprocess.CREATE_NO_WINDOW)
+    if files_added.returncode >= 8:
+        messagebox.showerror("Setup Incomplete", "The audio files could not be copied. Setup was not completed.")
+        return
     if messagebox.askyesno("Desktop Icon?", "Would you like to add this app to your desktop screen for easier access?"):
         target = path.join(dir_path, "Focused Up.exe")
         ps = f'''

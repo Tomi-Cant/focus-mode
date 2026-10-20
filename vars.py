@@ -33,7 +33,8 @@ def get_log_path():
     return os.path.join(get_data_dir(), "log.txt")
 def get_config_path():
     return os.path.join(get_data_dir(), "config.json")
-
+def get_audio_path():
+    return os.path.join(get_data_dir(), "assets", "audio")
 def save_config(data):
     with open(get_blacklist_path(), "w") as f:
         json.dump(data, f, indent=2)
@@ -119,7 +120,7 @@ root_dir= parent_path[:parent_path.find("\\")+1]
 log_path = get_log_path()
 json_path = get_blacklist_path()
 config_path = get_config_path()
-
+audio_path = get_audio_path()
 #initializing data files
 if not os.path.exists(json_path):
     with open(json_path, "w", encoding="utf-8") as f:
@@ -130,7 +131,9 @@ if not os.path.exists(log_path):
 if not os.path.exists(config_path):
     with open(config_path, "w", encoding= "utf-8") as f:
         json.dump({"active": [],"owned": [],"enabled": False,"volume": 1},f, indent = 4)
-        
+if not os.path.exists(audio_path):
+    os.makedirs(audio_path, exist_ok=True)        
+    
 with open(json_path, "r", encoding="utf-8") as f:
     session_temp :dict = json.load(f)
 original_time_list = session_temp.get('time_list', {})

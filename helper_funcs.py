@@ -138,13 +138,14 @@ def get_audio() -> list[str] :
     return vars.configs.get("active", [])
 
 def check_audio_files():     
-    audio_sets = os.path.join(vars.self_path, "assets", "audio")
+    audio_sets = vars.audio_path
     audio_files = vars.configs.get("owned", [])
     for folder, _, files in os.walk(audio_sets):
         for file in files:
             audio_path = os.path.join(folder, file)
-            if file.lower().endswith(".mp3") and audio_path not in audio_files:
-                audio_files.append(audio_path)
+            if file.lower().endswith(".mp3") or file.lower().endswith(".m4a"): 
+                if audio_path not in audio_files:
+                    audio_files.append(audio_path)
     vars.configs["owned"] = audio_files
     import json
     with open(vars.config_path, "w") as f:
