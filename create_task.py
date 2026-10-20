@@ -92,7 +92,7 @@ def create_scheduled_task(
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-
+    
     if result.returncode != 0:
         print(f"Failed to create task '{task_name}'.")
         if messagebox.askokcancel("Fatal Error!", f"Something has gone horribly wrong with setup. Please contact support at 'focusedupofficial@gmail.com' with the following error:\n\n{result.stderr}"):
@@ -106,6 +106,7 @@ def create_scheduled_task(
 if __name__ == "__main__":
     # Example usage
     create_scheduled_task(
-        task_name="FocusModeTask1",
-        script_path=f"{Path.cwd()}\\main.exe"
+        task_name="FocusedUpTask",
+        script_path='wscript.exe',
+        script_args=f'"C:\\Program Files\\Focused Up\\FocusedUpScript\\run_focus.vbs" "C:\\Program Files\\Focused Up\\FocusedUpScript\\StartProcess.bat"',
     )

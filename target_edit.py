@@ -1156,7 +1156,8 @@ class FocusModeUI:
 
         owns_expansion = vars.configs.get("owned", [])
         if not owns_expansion:
-            messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addon. Please purchase the addon to access this feature.")
+            if messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addons. Please purchase a relevant addon to access this feature."):
+                webbrowser.open("https://tomibanjoko.gumroad.com/l/focusedupaddons")
             dialog.destroy()
             return
 

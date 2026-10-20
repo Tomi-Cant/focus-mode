@@ -36,7 +36,8 @@ def initalize_app() -> None:
     
     task_created = create_task.create_scheduled_task(
         task_name="FocusedUpTask",
-        script_path=f"{dir_path}\\FocusedUpScript\\FocusedUpScript.exe"
+        script_path='wscript.exe',
+        script_args=f'"{dir_path}\\FocusedUpScript\\silent_run.vbs" "{dir_path}\\FocusedUpScript\\StartProcess.bat"',
     )
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The scheduled task could not be created. Setup was not completed.")
@@ -58,7 +59,7 @@ def initalize_app() -> None:
 
     with open (vars.config_path, "r") as f:
         config = json.load(f)
-        config["first_run"] = True
+        config["version"] = 1.0
     with open (vars.config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
@@ -68,7 +69,7 @@ def initalize_app() -> None:
 if __name__ == "__main__":
     with open(  vars.config_path, "r") as f:
         config = json.load(f)
-        if config.get("first_run", False):
+        if config.get("version") == 1.0:
             target_edit.main()
             sys.exit()
     if pyuac.isUserAdmin():
