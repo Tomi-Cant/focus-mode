@@ -105,9 +105,9 @@ def main():
                 run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
                 started_groups.add(group_key)
             closed = proc_funcs.convert_to_exe(
-                converted_list, curr_time, index, set_temp)
+                no_list, curr_time, index, set_temp)
             closed = proc_funcs.close_by_process(
-                no_list, curr_time, set_temp[index]) or closed
+                converted_list, curr_time, set_temp[index]) or closed
             closed = proc_funcs.close_by_title(
                 no_list, window, win, set_temp[index], curr_time) or closed
             if closed:

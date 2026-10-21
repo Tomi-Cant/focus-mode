@@ -44,7 +44,7 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
                 pass
         
         with open(vars.log_path, "a") as log:
-            log.write(f"    Closed {i['title']} {curr_time}\n")
+            log.write(f"    Closed {i['title']} at {curr_time}\n")
         if i['name'] not in added:    
             added.append(i['name'])
         vars.time_group[set_temp[index]]['converted'] = added
@@ -70,7 +70,7 @@ def close_by_process(no_list, curr_time,time_index):
                 proc.kill()
                 closed = True
                 productive_open(proc.info['name'], curr_time, time_index)
-                log.write(f"    Closed {proc.name()} {curr_time}\n")
+                log.write(f"    .Closed {proc.name()} at {curr_time}\n")
                 continue
             except psutil.NoSuchProcess:
                 log.write(f"Process '{proc.info['name']}' no longer exists.")
@@ -96,7 +96,7 @@ def close_by_title(added, window, win, time_index,curr_time):
             pass
        
         with open(vars.log_path, "a") as log:
-            log.write(f"    Closed {window} {curr_time}\n")
+            log.write(f"    ,Closed {window} at {curr_time}\n")
         return closed
     return False
         
@@ -104,13 +104,13 @@ def sleep_pc(curr_time):
     print("slept")
     subprocess.run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"], creationflags=subprocess.CREATE_NO_WINDOW)
     with open(vars.log_path, "a") as log:
-                log.write(f"    PC slept {curr_time}\n")
+                log.write(f"    PC slept at {curr_time}\n")
                 
 def shutdown_pc(curr_time):
     print("shutdown")
     subprocess.run(["shutdown", "/s", "/t", "0"], creationflags=subprocess.CREATE_NO_WINDOW)
     with open(vars.log_path, "a") as log:
-                log.write(f"    PC shutdown {curr_time}\n")      
+                log.write(f"    PC shutdown at {curr_time}\n")      
                          
 def find_minecraft(title, added):
     if  'minecraft' in added or "Minecraft" in added:
