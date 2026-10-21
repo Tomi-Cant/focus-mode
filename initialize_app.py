@@ -62,7 +62,7 @@ def initalize_app() -> None:
 
     with open (vars.config_path, "r") as f:
         config = json.load(f)
-        config["version"] = 1.0
+        config["version"] = 1.1
     with open (vars.config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
@@ -72,7 +72,7 @@ def initalize_app() -> None:
 if __name__ == "__main__":
     with open(  vars.config_path, "r") as f:
         config = json.load(f)
-        if config.get("version") == 1.0:
+        if config.get("version") == 1.1:
             target_edit.main()
             sys.exit()
     if pyuac.isUserAdmin():
