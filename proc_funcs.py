@@ -124,7 +124,7 @@ def productive_open(added, curr_time, time_index):
     
     output=''
     select_type=vars.time_group[time_index]["select_type"]
-    if vars.time_group[time_index]["productive"] == "":
+    if vars.time_group[time_index]["productive"] == []:
          # write a window message that says no productive target for this time slot
         messagebox.showwarning("No productive app set!", "You did not set up an app to open when the last one was closed.",icon='warning')
         output = (f"    No productive application/website for this time slot")
