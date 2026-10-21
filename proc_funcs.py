@@ -22,6 +22,8 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
     for proc in window_to_process.process_search(no_list):
         if allowed_time > 0:
             allowed_time-=.5
+            with open(vars.json_path, "w") as f:
+                json.dump(vars.session_temp, f, indent=2) 
             return False
     # converts application titles to their .exe counterpart
     added = vars.time_group[set_temp[index]].get("converted", [])
