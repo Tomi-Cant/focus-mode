@@ -143,7 +143,7 @@ def check_audio_files():
     for folder, _, files in os.walk(audio_sets):
         for file in files:
             audio_path = os.path.join(folder, file)
-            if file.lower().endswith(".mp3") or file.lower().endswith(".m4a"): 
+            if file.lower().endswith(".mp3") or file.lower().endswith(".wav"): 
                 if audio_path not in audio_files:
                     audio_files.append(audio_path)
     vars.configs["owned"] = audio_files
@@ -176,17 +176,19 @@ def time_check(end_times, idx, curr_time):
         return True
 def play_warning_audio(time):        
     warning_audio = vars.configs.get("warning_audio", {})
-    audio_path = warning_audio.get(str(int(time))+ "_left", None)
-    if audio_path and os.path.exists(audio_path):
-        audio =load_audio(audio_path)
+    audio_path = warning_audio.get(str(int(time /60)) + " mins.mp3", str(int(time /60)) + " mins.mp3")
+    abs_path = os.path.join(vars.audio_path,'warnings', audio_path) 
+    if audio_path and os.path.exists(abs_path):
+        audio =load_audio(abs_path)
         audio.set_volume(vars.configs["volume"])
         channel = mixer.Channel(1)
         if channel.get_busy():
             return
-        channel.play(audio, maxtime=4000)
+        channel.play(audio, maxtime=5500)
+        
     else:
         with open(vars.log_path, "a") as log:
-            log.write(f"        !Warning audio file not found for {time} seconds left\n")
+            log.write(f"        !Warning audio file not found for {int(time / 60)} minutes left\n")
 
 def contact_support():    
     import webbrowser
@@ -195,3 +197,5 @@ def contact_support():
     body = "Please describe your issue here."
     mailto_link = f"mailto:{support_email}?subject={subject}&body={body}"
     webbrowser.open(mailto_link) 
+if __name__ == "__main__":
+    play_warning_audio(300)

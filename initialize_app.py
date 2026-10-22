@@ -42,7 +42,7 @@ def initalize_app() -> None:
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The scheduled task could not be created. Setup was not completed.")
         return
-    files_added = subprocess.run(["robocopy", f"{dir_path}\\FocusedUpScript\\assets", f"{vars.root_dir}\\Program Files\\Focused Up\\FocusedUpScript\\assets\\audio", "/s"], creationflags=subprocess.CREATE_NO_WINDOW)
+    files_added = subprocess.run(["robocopy", f"{dir_path}\\FocusedUpScript\\assets", f"{vars.audio_path}\\warnings", "/s"], creationflags=subprocess.CREATE_NO_WINDOW)
     if files_added.returncode >= 8:
         messagebox.showerror("Setup Incomplete", "The audio files could not be copied. Setup was not completed.")
         return
@@ -62,7 +62,7 @@ def initalize_app() -> None:
 
     with open (vars.config_path, "r") as f:
         config = json.load(f)
-        config["version"] = 1.1
+        config["version"] = 1.2
     with open (vars.config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
@@ -72,7 +72,7 @@ def initalize_app() -> None:
 if __name__ == "__main__":
     with open(  vars.config_path, "r") as f:
         config = json.load(f)
-        if config.get("version") == 1.1:
+        if config.get("version") == 1.2:
             target_edit.main()
             sys.exit()
     if pyuac.isUserAdmin():
