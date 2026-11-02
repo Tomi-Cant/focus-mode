@@ -7,7 +7,6 @@ import win32process
 import psutil
 
 
-
 def get_window_process(hwnd):
     """Return psutil.Process for a given window handle, or None."""
     try:
@@ -53,15 +52,17 @@ def enum_taskbar_windows():
 
 
 def check_windows(window_titles: list[str]):
-    windows = enum_taskbar_windows()
-    processes = []
-    for w in windows:
-        if w['title'].lower() in window_titles:
-            processes.append(w)
-    return processes
+    matching_titles = {title.casefold() for title in window_titles}
+    return [
+        window
+        for window in enum_taskbar_windows()
+        if window["title"].casefold() in matching_titles
+    ]
 
 
 def process_search(executable_file_names: list[str]):
+    matching_names = {name.casefold() for name in executable_file_names}
     for proc in psutil.process_iter(['name']):
-        if proc.info['name'] in executable_file_names:
+        process_name = proc.info.get('name')
+        if process_name and process_name.casefold() in matching_names:
             yield proc

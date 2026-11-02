@@ -3,6 +3,7 @@
 # Date: 08/12/2025
 
 # pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "Focused Up" initialize_app.py      
+# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "FocusedUpScript" main.py
 import win32gui
 import datetime
 import proc_funcs
@@ -104,12 +105,15 @@ def main():
             if group_key not in started_groups:
                 run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
                 started_groups.add(group_key)
+            closed_process_names = set()
             closed = proc_funcs.convert_to_exe(
-                no_list, curr_time, index, set_temp)
+                no_list, curr_time, index, set_temp, closed_process_names)
             closed = proc_funcs.close_by_process(
-                converted_list, curr_time, set_temp[index]) or closed
+                converted_list, curr_time, set_temp[index],
+                skip_productive_for=closed_process_names) or closed
             closed = proc_funcs.close_by_title(
-                no_list, window, win, set_temp[index], curr_time) or closed
+                no_list, window, win, set_temp[index], curr_time,
+                trigger_productive=not closed_process_names) or closed
             if closed:
                 helper_funcs.play_audio()
 

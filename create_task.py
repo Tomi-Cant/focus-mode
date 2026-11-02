@@ -3,6 +3,7 @@
 # Date: 08/12/2025   
 import subprocess
 import sys
+import os
 from pathlib import Path
 from tkinter import messagebox
 import helper_funcs
@@ -104,9 +105,9 @@ def create_scheduled_task(
 
 
 if __name__ == "__main__":
-    # Example usage
+    script_dir = Path(os.environ["ProgramFiles"]) / "Focused Up" / "FocusedUpScript"
     create_scheduled_task(
         task_name="FocusedUpTask",
         script_path='wscript.exe',
-        script_args=f'"C:\\Program Files\\Focused Up\\FocusedUpScript\\run_focus.vbs" "C:\\Program Files\\Focused Up\\FocusedUpScript\\StartProcess.bat"',
+        script_args=f'"{script_dir / "silent_run.vbs"}" "{script_dir / "StartProcess.bat"}"',
     )

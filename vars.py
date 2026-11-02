@@ -22,7 +22,7 @@ time_var:str = ''
 
 #declaring paths
 def get_data_dir():
-    app_data = os.path.join(os.environ["LOCALAPPDATA"], "FocusUp")
+    app_data = os.path.join(os.environ["LOCALAPPDATA"], "Focused Up")
     os.makedirs(app_data, exist_ok=True)
     return app_data
 def get_self_dir():

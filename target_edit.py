@@ -26,7 +26,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        self.root.iconbitmap("focused_up_logo.ico")
+        self.root.iconbitmap("../focused_up_logo.ico")
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -422,11 +422,15 @@ class FocusModeUI:
             minutes: tk.BooleanVar(value=True)
             for minutes in vars.warning_time_minutes
         }
+        warning_state = (
+            tk.NORMAL if vars.configs.get("audio", False) is True else tk.DISABLED
+        )
         for index, minutes in enumerate(vars.warning_time_minutes):
             ttk.Checkbutton(
                 warnings_frame,
                 text=f"{minutes} min",
                 variable=self.warning_vars[minutes],
+                state=warning_state,
             ).grid(row=index // 4, column=index % 4, sticky=tk.W, padx=8, pady=3)
         for column in range(4):
             warnings_frame.columnconfigure(column, weight=1)
@@ -866,7 +870,7 @@ class FocusModeUI:
                 )
                 return
             if vars.session_temp.get('time_list', {}) and vars.time_var in vars.time_group:
-                programs = vars.time_group[vars.time_var]['programs']
+                programs = vars.time_group[vars.time_var]['converted']
                 if executable not in programs:
                     programs.append(executable)
                     self.update_time_display()

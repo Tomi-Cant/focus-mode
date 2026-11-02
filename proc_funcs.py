@@ -14,9 +14,27 @@ import webbrowser
 
 import random
 
-from tkinter import messagebox
+import tkinter as tk
 
-def convert_to_exe( no_list, curr_time, index, set_temp):
+
+NO_PRODUCTIVE_WARNING_DURATION_MS = 5000
+
+
+def show_no_productive_warning():
+    popup = tk.Tk()
+    popup.title("No productive app set!")
+    popup.resizable(False, False)
+    tk.Label(
+        popup,
+        text="You did not set up an app to open when the last one was closed.",
+        padx=20,
+        pady=15,
+    ).pack()
+    popup.after(NO_PRODUCTIVE_WARNING_DURATION_MS, popup.destroy)
+    popup.mainloop()
+
+
+def convert_to_exe(no_list, curr_time, index, set_temp, closed_process_names=None):
     closed = False
     allowed_time = vars.time_group[set_temp[index]]["time_left"]
     for proc in window_to_process.process_search(no_list):
@@ -40,6 +58,8 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
             PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
             closed = True
             productive_open(i['title'], curr_time, set_temp[index])
+            if closed_process_names is not None:
+                closed_process_names.add(i['name'].casefold())
         except:
                 pass
         
@@ -54,10 +74,13 @@ def convert_to_exe( no_list, curr_time, index, set_temp):
     return closed
 
 
-def close_by_process(no_list, curr_time,time_index):
+def close_by_process(no_list, curr_time, time_index, skip_productive_for=None):
     closed = False
     if no_list == []:
         return 
+    skip_productive_for = {
+        name.casefold() for name in (skip_productive_for or set())
+    }
     # checks if process is banned with error catches
     allowed_time = vars.time_group[time_index]["time_left"]
     for proc in window_to_process.process_search(no_list):
@@ -69,7 +92,8 @@ def close_by_process(no_list, curr_time,time_index):
             try:
                 proc.kill()
                 closed = True
-                productive_open(proc.info['name'], curr_time, time_index)
+                if proc.info['name'].casefold() not in skip_productive_for:
+                    productive_open(proc.info['name'], curr_time, time_index)
                 log.write(f"    .Closed {proc.name()} at {curr_time}\n")
                 continue
             except psutil.NoSuchProcess:
@@ -82,7 +106,7 @@ def close_by_process(no_list, curr_time,time_index):
                         f"An unexpected error occurred while trying to terminate process '{proc.info['name']}': {e}\n")
     return closed
 
-def close_by_title(added, window, win, time_index,curr_time):
+def close_by_title(added, window, win, time_index, curr_time, trigger_productive=True):
     if window in added or find_minecraft(window,added) != []: 
         if vars.time_group[time_index]["time_left"] > 0:
             vars.time_group[time_index]["time_left"]-=.5
@@ -91,7 +115,8 @@ def close_by_title(added, window, win, time_index,curr_time):
         try:
             PostMessage(win, win32con.WM_CLOSE, 0, 0)
             closed = True
-            productive_open(window, curr_time, time_index)
+            if trigger_productive:
+                productive_open(window, curr_time, time_index)
         except:
             pass
        
@@ -125,9 +150,12 @@ def productive_open(added, curr_time, time_index):
     output=''
     select_type=vars.time_group[time_index]["select_type"]
     if vars.time_group[time_index]["productive"] == []:
-         # write a window message that says no productive target for this time slot
-        messagebox.showwarning("No productive app set!", "You did not set up an app to open when the last one was closed.",icon='warning')
-        output = (f"    No productive application/website for this time slot")
+        output = f"    No productive application/website for this time slot at {curr_time}\n"
+        with open(vars.log_path, "a") as log:
+            log.write(output)
+        show_no_productive_warning()
+        
+        return
     if select_type == "Random":
         productive = vars.time_group[time_index]["productive"][random.randint(0, len(vars.time_group[time_index]["productive"])-1)]
     if select_type == "Queue":
@@ -145,4 +173,3 @@ def productive_open(added, curr_time, time_index):
         output = (f"    Opened productive application for {added} at {curr_time}\n") 
     with open(vars.log_path, "a") as log:
         log.write(output)
-

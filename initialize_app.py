@@ -3,6 +3,7 @@
 # Date: 08/12/2025
 
 import json
+import os
 import subprocess
 import vars
 import os.path as path
@@ -21,14 +22,13 @@ if sys.stdout is None:
 if sys.stderr is None:
     sys.stderr = DummyStream()
     
-PUBLIC_KEY_HEX = "2aa3b0cd6993482ed51a9b5e10004eb601cda72aaae88fad360efc95aa634ad7"
 import pyuac
 @pyuac.main_requires_admin
 def initalize_app() -> None:
     if not pyuac.isUserAdmin():
         return
-    curr_dir=path.abspath(path.dirname(sys.executable))
-    dir_path :str =f"{vars.root_dir}\\Program Files\\Focused Up"
+    curr_dir=path.abspath(path.dirname(path.dirname(sys.executable)))
+    dir_path: str = path.join(os.environ["ProgramFiles"], "Focused Up")
     copy_result = subprocess.run(["robocopy", curr_dir, dir_path , "/s"],creationflags=subprocess.CREATE_NO_WINDOW)
     if copy_result.returncode >= 8:
         messagebox.showerror("Setup Incomplete", "The application files could not be copied. Setup was not completed.")
@@ -37,15 +37,12 @@ def initalize_app() -> None:
     task_created = create_task.create_scheduled_task(
         task_name="FocusedUpTask",
         script_path='wscript.exe',
-        script_args=f'"{dir_path}\\FocusedUpScript\\silent_run.vbs" "{dir_path}\\FocusedUpScript\\StartProcess.bat"',
+        script_args=f'"{dir_path}\\SilentRun.vbs" "{dir_path}\\StartProcess.bat"',
     )
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The scheduled task could not be created. Setup was not completed.")
         return
-    files_added = subprocess.run(["robocopy", f"{dir_path}\\FocusedUpScript\\assets", f"{vars.audio_path}\\warnings", "/s"], creationflags=subprocess.CREATE_NO_WINDOW)
-    if files_added.returncode >= 8:
-        messagebox.showerror("Setup Incomplete", "The audio files could not be copied. Setup was not completed.")
-        return
+    
     if messagebox.askyesno("Desktop Icon?", "Would you like to add this app to your desktop screen for easier access?"):
         target = path.join(dir_path, "Focused Up.exe")
         ps = f'''
@@ -62,7 +59,7 @@ def initalize_app() -> None:
 
     with open (vars.config_path, "r") as f:
         config = json.load(f)
-        config["version"] = 1.2
+        config["version"] = 1.0
     with open (vars.config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
@@ -72,7 +69,7 @@ def initalize_app() -> None:
 if __name__ == "__main__":
     with open(  vars.config_path, "r") as f:
         config = json.load(f)
-        if config.get("version") == 1.2:
+        if config.get("version") == 1.0:
             target_edit.main()
             sys.exit()
     if pyuac.isUserAdmin():

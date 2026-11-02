@@ -8,8 +8,6 @@ from pygame import mixer
 from tkinter import messagebox
 import os
 
-
-
 def cull_times(start, end, indx, time,set_temp):
     """Remove time entries that have passed their end time"""
     if time >= end[indx]:
@@ -139,8 +137,10 @@ def get_audio() -> list[str] :
 
 def check_audio_files():     
     audio_sets = vars.audio_path
-    audio_files = vars.configs.get("owned", [])
+    audio_files = []
     for folder, _, files in os.walk(audio_sets):
+        if folder.lower().endswith("warnings"):
+            continue
         for file in files:
             audio_path = os.path.join(folder, file)
             if file.lower().endswith(".mp3") or file.lower().endswith(".wav"): 
@@ -176,7 +176,7 @@ def time_check(end_times, idx, curr_time):
         return True
 def play_warning_audio(time):        
     warning_audio = vars.configs.get("warning_audio", {})
-    audio_path = warning_audio.get(str(int(time /60)) + " mins.mp3", str(int(time /60)) + " mins.mp3")
+    audio_path = warning_audio.get(str(int(time /60)) + " mins.mp3", '')
     abs_path = os.path.join(vars.audio_path,'warnings', audio_path) 
     if audio_path and os.path.exists(abs_path):
         audio =load_audio(abs_path)
