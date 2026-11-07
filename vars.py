@@ -106,6 +106,7 @@ def normalize_time_groups(raw_groups):
         if not isinstance(warning_times, list):
             warning_times = default_warning_times
         data["warning_times"] = warning_times
+        data.setdefault("no_productive_silenced", False)
         if not data.get("start_time") and _looks_like_time(str(key)):
             data["start_time"] = str(key)
         elif not data.get("start_time"):
@@ -138,9 +139,8 @@ if original_time_list != time_group:
     db.save_blacklist(time_group)
 configs = db.load_app_config(
     defaults={
-        "enabled": False,
+        
         "volume": 1,
-        "version": 1.0,
         "idle_threshold_seconds": 60,
         "sample_interval_seconds": 10,
         "foreground_weight": 1.0,

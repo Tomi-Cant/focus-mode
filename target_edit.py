@@ -1087,6 +1087,7 @@ class FocusModeUI:
                     'allowed_hours': 0.0,
                     'time_left': 0.0,
                     'on_start': 0,
+                    'no_productive_silenced': False,
                     'on_finish': 0,  #either 0: nothing, 1: shutdown, 2: sleep 
                     'enabled': True
                 }

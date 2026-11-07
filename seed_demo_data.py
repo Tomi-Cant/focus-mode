@@ -4,7 +4,7 @@ Usage:
     python seed_demo_data.py                  # writes into the real Focused Up DB (backs it up first)
     python seed_demo_data.py --db demo.db     # write to another file (tables are created if missing)
     python seed_demo_data.py --no-samples     # only daily_usage + app_settings, skip raw samples
-    python seed_demo_data.py --end 2026-11-06 # last day of the week (default: yesterday)
+    python seed_demo_data.py --end 2026-11-07 # last day of the week (default: today)
 
 Everything comes from one list of fake sessions, so daily_usage and the raw samples agree.
 Re-running replaces the seeded dates instead of duplicating them.
@@ -159,7 +159,7 @@ def ensure_tables(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--db", help="database file (default: the app's usage.db)")
-    parser.add_argument("--end", help="last day of the week, YYYY-MM-DD (default: yesterday)")
+    parser.add_argument("--end", help="last day of the week, YYYY-MM-DD (default: today)")
     parser.add_argument("--days", type=int, default=7)
     parser.add_argument("--no-samples", action="store_true", help="skip raw samples")
     parser.add_argument("--seed", type=int, default=7, help="change for a different-looking week")
@@ -173,7 +173,7 @@ def main():
         print(f"Backed up existing database to {backup}")
     ensure_tables(path)
 
-    end_day = date.fromisoformat(args.end) if args.end else date.today() - timedelta(days=1)
+    end_day = date.fromisoformat(args.end) if args.end else date.today()
     days = [end_day - timedelta(days=n) for n in range(args.days - 1, -1, -1)]
     rng = random.Random(args.seed)   # fixed seed, so the data is the same every run
 

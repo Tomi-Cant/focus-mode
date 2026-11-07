@@ -204,9 +204,10 @@ def _overlay(table_name, key, database_path=None):
 
 
 def get_app_setting(process_name, database_path=None):
-    setting = _overlay("app_settings", process_name, database_path)
+    normalized_name = str(process_name).strip().casefold()
+    setting = _overlay("app_settings", normalized_name, database_path)
     return setting if setting is not None else {
-        "process_name": str(process_name),
+        "process_name": normalized_name,
         "category": "uncategorized",
         "excluded": 0,
         "snooze_until": None,

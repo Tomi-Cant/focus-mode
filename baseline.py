@@ -25,7 +25,7 @@ def get_baseline(process_name, window_days=7, database_path=None):
             """
             SELECT excluded FROM app_settings WHERE process_name = ?
             """,
-            (process_name,),
+            (str(process_name).strip().casefold(),),
         ).fetchone()
         if setting and setting[0]:
             return None, None

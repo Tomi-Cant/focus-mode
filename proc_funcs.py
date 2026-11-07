@@ -21,7 +21,21 @@ NO_PRODUCTIVE_WARNING_DURATION_MS = 5000
 PROTECTED_PROCESS_NAMES = {"focusedupsampler.exe", "focusedupsampler", "focusedsampler.exe"}
 
 
-def show_no_productive_warning():
+def show_no_productive_warning(time_group_key=None):
+    if time_group_key is None:
+        popup = tk.Tk()
+        popup.title("No productive app set!")
+        popup.resizable(False, False)
+        tk.Label(
+            popup,
+            text="You did not set up an app to open when the last one was closed.",
+            padx=20,
+            pady=15,
+        ).pack()
+        popup.after(NO_PRODUCTIVE_WARNING_DURATION_MS, popup.destroy)
+        popup.mainloop()
+        return
+
     popup = tk.Tk()
     popup.title("No productive app set!")
     popup.resizable(False, False)
@@ -31,7 +45,22 @@ def show_no_productive_warning():
         padx=20,
         pady=15,
     ).pack()
-    popup.after(NO_PRODUCTIVE_WARNING_DURATION_MS, popup.destroy)
+
+    def silence_indefinitely():
+        rule = vars.time_group[time_group_key]
+        rule["no_productive_silenced"] = True
+        import db
+        db.save_blacklist(vars.time_group)
+        popup.destroy()
+
+    tk.Button(popup, text="OK", command=popup.destroy).pack(
+        side="left", padx=(20, 5), pady=(0, 15)
+    )
+    tk.Button(
+        popup,
+        text="Silence indefinitely",
+        command=silence_indefinitely,
+    ).pack(side="right", padx=(5, 20), pady=(0, 15))
     popup.mainloop()
 
 
@@ -157,7 +186,8 @@ def productive_open(added, curr_time, time_index):
         output = f"    No productive application/website for this time slot at {curr_time}\n"
         with open(vars.log_path, "a") as log:
             log.write(output)
-        show_no_productive_warning()
+        if not vars.time_group[time_index].get("no_productive_silenced", False):
+            show_no_productive_warning(time_index)
         
         return
     if select_type == "Random":

@@ -55,7 +55,7 @@ def initalize_app() -> None:
         messagebox.showerror("Setup Incomplete", "The usage scheduler task could not be created. Setup was not completed.")
         return
     if messagebox.askyesno("Desktop Icon?", "Would you like to add this app to your desktop screen for easier access?"):
-        target = path.join(dir_path, "Focused Up.exe")
+        target = path.join(dir_path,"Focused Up", "Focused Up.exe")
         ps = f'''
         $desktop = [Environment]::GetFolderPath("Desktop")
         $s = (New-Object -ComObject WScript.Shell).CreateShortcut("$desktop\\Focused Up.lnk")

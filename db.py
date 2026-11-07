@@ -56,7 +56,9 @@ CREATE TABLE IF NOT EXISTS ban_rules (
     days_json TEXT NOT NULL DEFAULT '[]',
     processes_json TEXT NOT NULL DEFAULT '[]',
     legacy_key TEXT UNIQUE,
-    legacy_data_json TEXT NOT NULL DEFAULT '{}'
+    legacy_data_json TEXT NOT NULL DEFAULT '{}',
+    no_productive_silenced INTEGER NOT NULL DEFAULT 0
+        CHECK (no_productive_silenced IN (0, 1))
 );
 
 CREATE INDEX IF NOT EXISTS ban_rules_category_idx ON ban_rules (category);
@@ -237,9 +239,10 @@ def _import_legacy_blacklist(connection, path):
             """
             INSERT OR IGNORE INTO ban_rules (
                 category, start_hour, end_hour, allowed_minutes, updated_ts,
-                days_json, processes_json, legacy_key, legacy_data_json
+                days_json, processes_json, legacy_key, legacy_data_json,
+                no_productive_silenced
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(legacy_key) DO UPDATE SET
                 category = excluded.category,
                 start_hour = excluded.start_hour,
@@ -248,7 +251,8 @@ def _import_legacy_blacklist(connection, path):
                 updated_ts = excluded.updated_ts,
                 days_json = excluded.days_json,
                 processes_json = excluded.processes_json,
-                legacy_data_json = excluded.legacy_data_json
+                legacy_data_json = excluded.legacy_data_json,
+                no_productive_silenced = excluded.no_productive_silenced
             """,
             (
                 category,
@@ -260,6 +264,7 @@ def _import_legacy_blacklist(connection, path):
                 _encode_json(processes),
                 str(group_key),
                 _encode_json(rule),
+                int(bool(rule.get("no_productive_silenced", False))),
             ),
         )
 
@@ -352,6 +357,17 @@ def init_db(db_path=None):
     try:
         with connection:
             connection.executescript(_SCHEMA)
+            columns = {
+                row[1] for row in connection.execute("PRAGMA table_info(ban_rules)")
+            }
+            if "no_productive_silenced" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE ban_rules
+                    ADD COLUMN no_productive_silenced INTEGER NOT NULL DEFAULT 0
+                    CHECK (no_productive_silenced IN (0, 1))
+                    """
+                )
             if legacy_dir is not None:
                 _import_legacy_blacklist(
                     connection, legacy_dir / "blacklist.json"
@@ -393,7 +409,21 @@ def save_app_config(config, source="config"):
 def load_blacklist():
     """Load schedule groups from SQLite."""
     config = load_app_config("blacklist")
-    return config.get("time_list", {})
+    groups = config.get("time_list", {})
+    if not isinstance(groups, dict):
+        return {}
+
+    with sqlite3.connect(get_database_path()) as connection:
+        for group_key, silenced in connection.execute(
+            """
+            SELECT legacy_key, no_productive_silenced
+            FROM ban_rules
+            WHERE legacy_key IS NOT NULL
+            """
+        ):
+            if group_key in groups:
+                groups[group_key]["no_productive_silenced"] = bool(silenced)
+    return groups
 
 
 def save_blacklist(time_groups):
@@ -407,6 +437,23 @@ def save_blacklist(time_groups):
             """,
             (_encode_json(time_groups),),
         )
+        for group_key, rule in time_groups.items():
+            if not isinstance(rule, dict):
+                continue
+            connection.execute(
+                """
+                UPDATE ban_rules
+                SET no_productive_silenced = ?,
+                    legacy_data_json = ?
+                WHERE legacy_key = ?
+                """,
+                (
+                    int(bool(rule.get("no_productive_silenced", False))),
+                    _encode_json(rule),
+                    str(group_key),
+                ),
+            )
+        connection.commit()
 
 
 def load_audio_paths():

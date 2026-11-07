@@ -87,7 +87,7 @@ def suggestion_text(suggestion):
     return "Would you like Focused Up to help limit usage of %s?" % process_name
 
 
-def show_suggestion(parent=None, database_path=None):
+def show_suggestion(parent=None, database_path=None, standalone=False):
     """Show at most one pending suggestion per local day when it is safe."""
     import tkinter as tk
     from tkinter import ttk
@@ -102,9 +102,14 @@ def show_suggestion(parent=None, database_path=None):
         return False
     suggestion = suggestions[0]
 
-    window = tk.Toplevel(parent) if parent is not None else tk.Toplevel()
+    if standalone:
+        window = parent if parent is not None else tk.Tk()
+        window.deiconify()
+    else:
+        window = tk.Toplevel(parent) if parent is not None else tk.Toplevel()
     window.title("Focus suggestion")
-    window.transient(parent if parent is not None else window.master)
+    if not standalone:
+        window.transient(parent if parent is not None else window.master)
     window.grab_set()
     window.resizable(False, False)
 
@@ -130,6 +135,11 @@ def show_suggestion(parent=None, database_path=None):
 
     _shown_dates.add(today)
     window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() - width) // 2
+    y = (window.winfo_screenheight() - height) // 2
+    window.geometry("+%d+%d" % (x, y))
     window.focus_set()
     return True
 
@@ -138,7 +148,10 @@ if __name__ == "__main__":
     import tkinter as tk
 
     root = tk.Tk()
-    root.withdraw()
-    print("Suggestion shown:", show_suggestion(root))
-    if tk.TclVersion:
+    
+    shown = show_suggestion(root, standalone=True)
+    print("Suggestion shown:", shown, flush=True)
+    if shown:
         root.mainloop()
+    else:
+        root.destroy()
