@@ -11,6 +11,7 @@ import psutil
 import json
 import vars
 import webbrowser
+import db
 
 import random
 
@@ -98,6 +99,7 @@ def convert_to_exe(no_list, curr_time, index, set_temp, closed_process_names=Non
             log.write(f"    Closed {i['title']} at {curr_time}\n")
         if i['name'] not in added:    
             added.append(i['name'])
+        db.set_app_name(i['name'], i['title'])
         vars.time_group[set_temp[index]]['converted'] = added
         
         vars.save_config(vars.time_group)

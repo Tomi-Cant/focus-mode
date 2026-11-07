@@ -90,6 +90,13 @@ class FocusModeUI:
                 },
                 "dismissed",
             ),
+            on_ignore=lambda suggestion: suggestion_ui.set_suggestion_outcome(
+                {
+                    "id": suggestion["id"],
+                    "process_name": suggestion["process_name"],
+                },
+                "snoozed",
+            ),
         )
 
     def close_from_dashboard(self):

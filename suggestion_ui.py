@@ -1,6 +1,7 @@
 """Tkinter UI for reviewing generated Focused Up suggestions."""
 
 import os
+import re
 import sqlite3
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
@@ -11,21 +12,26 @@ from manual_buffer import queue_change
 
 _shown_dates = set()
 
-_APP_NAME_FALLBACKS = {
-    "chrome.exe": "Google Chrome",
-    "msedge.exe": "Microsoft Edge",
-    "firefox.exe": "Mozilla Firefox",
-    "discord.exe": "Discord",
-    "spotify.exe": "Spotify",
-    "steam.exe": "Steam",
-    "excel.exe": "Microsoft Excel",
-    "winword.exe": "Microsoft Word",
-    "powerpnt.exe": "Microsoft PowerPoint",
-    "code.exe": "Visual Studio Code",
-    "outlook.exe": "Microsoft Outlook",
-    "teams.exe": "Microsoft Teams",
-    "vlc.exe": "VLC Media Player",
-}
+def _capitalize_name(name):
+    return " ".join(
+        part[:1].upper() + part[1:].lower() if part else ""
+        for part in str(name).strip().split()
+        if part
+    )
+
+
+def humanize_application_name(process_name):
+    normalized_name = str(process_name).strip().casefold()
+    name = normalized_name
+    if name.endswith(".exe"):
+        name = name[:-4]
+
+    name = re.sub(r"[._-]+", " ", name).strip()
+    words = name.split()
+    if len(words) > 1 and words[-1] in {"windows", "win64", "win32"}:
+        words.pop()
+
+    return _capitalize_name(" ".join(words))
 
 
 def application_display_name(process_name, database_path=None):
@@ -45,9 +51,9 @@ def application_display_name(process_name, database_path=None):
     except sqlite3.OperationalError:
         row = None
     if row and row[0]:
-        return str(row[0])
+        return humanize_application_name(str(row[0]).strip())
 
-    display_name = _APP_NAME_FALLBACKS.get(normalized_name)
+    display_name = None
     if display_name is None:
         try:
             import psutil
@@ -74,7 +80,7 @@ def application_display_name(process_name, database_path=None):
 
     display_name = str(display_name or normalized_name.removesuffix(".exe")).strip()
     if display_name:
-        display_name = " ".join(part.capitalize() for part in display_name.split())
+        display_name = humanize_application_name(display_name)
     try:
         database_path.parent.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(database_path)) as connection:

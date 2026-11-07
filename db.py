@@ -4,6 +4,7 @@ import json
 import math
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -114,6 +115,44 @@ CREATE TABLE IF NOT EXISTS sampler_heartbeat (
     ts TEXT NOT NULL
 );
 """
+
+APP_NAME_FALLBACKS = {
+    "chrome.exe": "Google Chrome",
+    "msedge.exe": "Microsoft Edge",
+    "firefox.exe": "Mozilla Firefox",
+    "discord.exe": "Discord",
+    "spotify.exe": "Spotify",
+    "steam.exe": "Steam",
+    "excel.exe": "Microsoft Excel",
+    "winword.exe": "Microsoft Word",
+    "powerpnt.exe": "Microsoft PowerPoint",
+    "code.exe": "Visual Studio Code",
+    "outlook.exe": "Microsoft Outlook",
+    "teams.exe": "Microsoft Teams",
+    "vlc.exe": "VLC Media Player",
+    "minecraft.windows.exe": "Minecraft",
+}
+
+
+def set_app_name(process_name, display_name, db_path=None):
+    """Persist a converted process name without overwriting an existing name."""
+    normalized_name = str(process_name).strip().casefold()
+    display_name = str(display_name).strip()
+    if not normalized_name or not display_name:
+        return
+    db_path = Path(db_path) if db_path else get_database_path()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    updated_ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with closing(sqlite3.connect(db_path)) as connection:
+        with connection:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO app_names
+                    (process_name, display_name, updated_ts)
+                VALUES (?, ?, ?)
+                """,
+                (normalized_name, display_name, updated_ts),
+            )
 
 
 def _encode_json(value):
@@ -363,6 +402,18 @@ def init_db(db_path=None):
     try:
         with connection:
             connection.executescript(_SCHEMA)
+            updated_ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            connection.executemany(
+                """
+                INSERT OR IGNORE INTO app_names
+                    (process_name, display_name, updated_ts)
+                VALUES (?, ?, ?)
+                """,
+                [
+                    (process_name, display_name, updated_ts)
+                    for process_name, display_name in APP_NAME_FALLBACKS.items()
+                ],
+            )
             columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(ban_rules)")
             }

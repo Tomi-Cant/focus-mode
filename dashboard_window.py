@@ -126,6 +126,7 @@ class DashboardWindow:
         *,
         on_accept: Callable[[Mapping[str, str]], None] | None = None,
         on_dismiss: Callable[[Mapping[str, str]], None] | None = None,
+        on_ignore: Callable[[Mapping[str, str]], None] | None = None,
         on_manual_mode: Callable[[], None] | None = None,
         on_audio_settings: Callable[[], None] | None = None,
         on_close: Callable[[], None] | None = None,
@@ -156,6 +157,7 @@ class DashboardWindow:
         )
         self.on_accept = on_accept
         self.on_dismiss = on_dismiss
+        self.on_ignore = on_ignore
         self.on_manual_mode = on_manual_mode
         self.on_audio_settings = on_audio_settings
         self.on_close = on_close
@@ -310,7 +312,7 @@ class DashboardWindow:
         )
         self.dismiss_button.pack(side="left")
         self.enlarge_button = self._button(
-            actions, "View details", self._show_details
+            actions, "Ignore 3 days", self._ignore_suggestion
         )
         self.enlarge_button.pack(side="left")
 
@@ -590,6 +592,19 @@ class DashboardWindow:
             self.suggestion_index = 0
         self._refresh_suggestion()
 
+    def _ignore_suggestion(self) -> None:
+        suggestion = self._current_suggestion()
+        if suggestion is None:
+            return
+        if self.on_ignore:
+            self.on_ignore(suggestion)
+        self.suggestions.pop(self.suggestion_index)
+        if self.suggestions:
+            self.suggestion_index %= len(self.suggestions)
+        else:
+            self.suggestion_index = 0
+        self._refresh_suggestion()
+
     def _show_details(self) -> None:
         suggestion = self._current_suggestion()
         if suggestion is None:
@@ -671,6 +686,7 @@ def open_dashboard_window(
     *,
     on_accept: Callable[[Mapping[str, str]], None] | None = None,
     on_dismiss: Callable[[Mapping[str, str]], None] | None = None,
+    on_ignore: Callable[[Mapping[str, str]], None] | None = None,
     on_manual_mode: Callable[[], None] | None = None,
     on_audio_settings: Callable[[], None] | None = None,
     on_close: Callable[[], None] | None = None,
@@ -687,6 +703,7 @@ def open_dashboard_window(
         user_data,
         on_accept=on_accept,
         on_dismiss=on_dismiss,
+        on_ignore=on_ignore,
         on_manual_mode=on_manual_mode,
         on_audio_settings=on_audio_settings,
         on_close=on_close,
