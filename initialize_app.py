@@ -49,7 +49,7 @@ def initalize_app() -> None:
         messagebox.showerror("Setup Incomplete", "The usage sampler task could not be created. Setup was not completed.")
         return
     task_created = create_task.create_usage_scheduler_task(
-        f"{dir_path}\\FocusedUpUsageSchduler.exe"
+        f"{dir_path}\\FocusedUpUsageSchduler\\FocusedUpUsageSchduler.exe"
     )
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The usage scheduler task could not be created. Setup was not completed.")
