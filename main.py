@@ -40,7 +40,7 @@ def ensure_sampler_running():
     if stale:
         try:
             subprocess.run(
-                ["schtasks", "/run", "/tn", "Focused Up Sampler"],
+                ["schtasks", "/run", "/tn", "FocusedUpSampler"],
                 capture_output=True,
                 text=True,
                 creationflags=subprocess.CREATE_NO_WINDOW,

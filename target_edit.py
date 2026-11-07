@@ -28,7 +28,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        self.root.iconbitmap("focused_up_logo.ico")
+        self.root.iconbitmap("../focused_up_logo.ico")
         self.root.geometry("600x600+600+100")
         vars.root = root
         

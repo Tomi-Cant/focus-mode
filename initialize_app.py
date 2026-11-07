@@ -68,14 +68,14 @@ def initalize_app() -> None:
             messagebox.showerror("Setup Incomplete", "The desktop shortcut could not be created. Setup was not completed.")
             return
 
-    vars.configs["version"] = 1.0
+    vars.configs["version"] = 2.0
     vars.save_configs(vars.configs)
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
     target_edit.main()
     
 # Usage in your app's startup:
 if __name__ == "__main__":
-    if vars.configs.get("version") == 1.0:
+    if vars.configs.get("version") == 2.0:
         target_edit.main()
         sys.exit()
     if pyuac.isUserAdmin():

@@ -106,7 +106,7 @@ def create_scheduled_task(
 
 def create_sampler_task(
     sampler_path: str,
-    task_name: str = "Focused Up Sampler",
+    task_name: str = "FocusedUpSampler",
 ):
     """Create the separate, continuously running usage sampler task."""
     xml_content = '''<?xml version="1.0" encoding="UTF-16"?>
@@ -153,7 +153,7 @@ def create_sampler_task(
 
 def create_usage_scheduler_task(
     scheduler_path: str,
-    task_name: str = "Focused Up Usage Scheduler",
+    task_name: str = "FocusedUpUsageScheduler",
 ):
     """Create a daily, highest-privilege task for usage maintenance."""
     xml_content = '''<?xml version="1.0" encoding="UTF-16"?>
