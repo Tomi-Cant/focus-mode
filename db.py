@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS suggestions (
     features_json TEXT NOT NULL DEFAULT '{}',
     outcome TEXT NOT NULL DEFAULT 'pending'
         CHECK (outcome IN ('accepted', 'dismissed', 'snoozed', 'pending'))
+    ,ignore_until TEXT
 );
 
 CREATE INDEX IF NOT EXISTS suggestions_outcome_idx ON suggestions (outcome);
@@ -402,6 +403,13 @@ def init_db(db_path=None):
     try:
         with connection:
             connection.executescript(_SCHEMA)
+            suggestion_columns = {
+                row[1] for row in connection.execute("PRAGMA table_info(suggestions)")
+            }
+            if "ignore_until" not in suggestion_columns:
+                connection.execute(
+                    "ALTER TABLE suggestions ADD COLUMN ignore_until TEXT"
+                )
             updated_ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
             connection.executemany(
                 """

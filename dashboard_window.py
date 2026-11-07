@@ -95,6 +95,18 @@ def _as_string_list(value: Any) -> list[str]:
     return [str(value)]
 
 
+def _as_insight_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return [item for item in value if item is not None and (
+            not isinstance(item, str) or item.strip()
+        )]
+    return [value]
+
+
 def _normalise_suggestions(value: Any) -> list[dict[str, str]]:
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
         return []
@@ -143,13 +155,13 @@ class DashboardWindow:
         self.suggestions = _normalise_suggestions(
             incoming.get("suggestions", DEFAULT_DATA["suggestions"])
         )
-        self.highlights = _as_string_list(
+        self.highlights = _as_insight_list(
             incoming.get(
                 "highlights",
                 incoming.get("high_points", DEFAULT_DATA["highlights"]),
             )
         )
-        self.lowlights = _as_string_list(
+        self.lowlights = _as_insight_list(
             incoming.get(
                 "lowlights",
                 incoming.get("low_points", DEFAULT_DATA["lowlights"]),
@@ -327,6 +339,21 @@ class DashboardWindow:
         section.columnconfigure(0, weight=1, uniform="insights")
         section.columnconfigure(1, weight=1, uniform="insights")
 
+        if not self.highlights and not self.lowlights:
+            tk.Label(
+                section,
+                text=(
+                    "No highlights or lowlights could be generated at "
+                    "the moment. Check back in a few days."
+                ),
+                bg=COLORS["background"],
+                fg=COLORS["ink"],
+                font=(FONT, 13),
+                justify="center",
+                wraplength=600,
+            ).grid(row=1, column=0, columnspan=2, pady=(30, 0))
+            return
+
         tk.Label(
             section,
             text="Your week at a glance",
@@ -335,22 +362,26 @@ class DashboardWindow:
             font=(FONT, 16, "bold"),
         ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 12))
 
-        self._insight_card(
-            section,
-            "High points",
-            "What is going well",
-            self.highlights,
-            COLORS["green"],
-            COLORS["green_soft"],
-        ).grid(row=1, column=0, sticky="nsew", padx=(0, 7))
-        self._insight_card(
-            section,
-            "Low points",
-            "Where there is room to improve",
-            self.lowlights,
-            COLORS["red"],
-            COLORS["red_soft"],
-        ).grid(row=1, column=1, sticky="nsew", padx=(7, 0))
+        column = 0
+        if self.highlights:
+            self._insight_card(
+                section,
+                "Highlights",
+                "What changed",
+                self.highlights,
+                COLORS["green"],
+                COLORS["green_soft"],
+            ).grid(row=1, column=column, sticky="nsew", columnspan=2 if not self.lowlights else 1, padx=(0, 7))
+            column += 1
+        if self.lowlights:
+            self._insight_card(
+                section,
+                "Lowlights",
+                "What changed",
+                self.lowlights,
+                COLORS["red"],
+                COLORS["red_soft"],
+            ).grid(row=1, column=column, sticky="nsew", columnspan=2 if not self.highlights else 1, padx=(7, 0))
 
     def _insight_card(
         self,
@@ -372,7 +403,7 @@ class DashboardWindow:
         card.columnconfigure(1, weight=1)
         marker = tk.Label(
             card,
-            text="+" if title == "High points" else "-",
+            text="+" if title == "Highlights" else "-",
             bg=accent_soft,
             fg=accent,
             width=2,
@@ -396,15 +427,29 @@ class DashboardWindow:
             anchor="w",
         ).grid(row=1, column=1, sticky="ew", pady=(2, 13))
 
-        display_items = items or ["No data available yet."]
-        for index, item in enumerate(display_items, start=2):
+        for index, item in enumerate(items, start=0):
+            if isinstance(item, Mapping):
+                label = item.get("label")
+                item = item.get("message") or item.get("text") or item.get("title") or ""
+            else:
+                label = None
+            row = 2 + index * 2
             tk.Label(
                 card,
                 text="•",
                 bg=COLORS["surface"],
                 fg=accent,
                 font=(FONT, 12, "bold"),
-            ).grid(row=index, column=0, sticky="n", pady=3)
+            ).grid(row=row, column=0, rowspan=2, sticky="n", pady=3)
+            if label:
+                tk.Label(
+                    card,
+                    text=label,
+                    bg=COLORS["surface"],
+                    fg=accent,
+                    font=(FONT, 9, "bold"),
+                    anchor="w",
+                ).grid(row=row, column=1, sticky="ew")
             tk.Label(
                 card,
                 text=item,
@@ -414,7 +459,12 @@ class DashboardWindow:
                 justify="left",
                 anchor="nw",
                 wraplength=280,
-            ).grid(row=index, column=1, sticky="ew", pady=3)
+            ).grid(
+                row=row + (1 if label else 0),
+                column=1,
+                sticky="ew",
+                pady=(2, 3),
+            )
         return card
 
     def _build_footer_actions(self) -> None:

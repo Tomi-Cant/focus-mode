@@ -302,6 +302,15 @@ def _apply_change(connection, table_name, key, payload, op):
     else:
         payload.setdefault("id", int(key))
         unique = "id"
+    if op == "set":
+        existing_row = connection.execute(
+            "SELECT * FROM %s WHERE %s = ?" % (table_name, unique),
+            (payload[unique],),
+        ).fetchone()
+        if existing_row is not None:
+            merged_payload = dict(existing_row)
+            merged_payload.update(payload)
+            payload = merged_payload
 
     fields = [column for column in payload if column in columns]
     values = [payload[column] for column in fields]

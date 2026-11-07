@@ -19,6 +19,7 @@ from Button import Button
 import vars
 import usage_scheduler
 import manual_buffer
+import insights
 
 
 def _strip_non_ascii(text: str) -> str:
@@ -65,13 +66,14 @@ class FocusModeUI:
             }
             for suggestion in database_suggestions
         ]
+        generated_insights = insights.generate_insights()
         self.dashboard = open_dashboard_window(
             parent=self.root,
             user_data={
                 "name": "there",
                 "suggestions": dashboard_suggestions,
-                "highlights": ["Placeholder highlight"],
-                "lowlights": ["Placeholder lowlight"],
+                "highlights": generated_insights["highlights"],
+                "lowlights": generated_insights["lowlights"],
             },
             on_manual_mode=self.open_manual_mode,
             on_audio_settings=self.open_dashboard_audio_settings,

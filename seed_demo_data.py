@@ -184,6 +184,23 @@ def main():
         if not args.no_samples:
             all_samples += sample_rows(day, blocks, windows)
 
+    # Give demo Minecraft a deliberate multi-day direction so trend and streak
+    # insights can exercise different eligible states.
+    minecraft_factors = {0: 1.35, 1: 1.20, 2: 1.05, 3: 0.90, 4: 0.75, 5: 0.62, 6: 0.48}
+    minecraft_dates = {
+        day.isoformat(): minecraft_factors[day.weekday()]
+        for day in days
+    }
+    all_daily = [
+        (
+            row_date,
+            process,
+            fg_minutes * minecraft_dates[row_date] if process == MC else fg_minutes,
+            open_minutes * minecraft_dates[row_date] if process == MC else open_minutes,
+        )
+        for row_date, process, fg_minutes, open_minutes in all_daily
+    ]
+
     first, last = days[0].isoformat(), days[-1].isoformat()
     with sqlite3.connect(path) as conn:
         # Replace the seeded date range so re-running never duplicates rows

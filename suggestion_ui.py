@@ -142,12 +142,13 @@ def _pending_suggestions(database_path=None):
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
             """
-            SELECT id, ts, process_name, type, features_json, outcome
+            SELECT id, ts, process_name, type, features_json, outcome, ignore_until
             FROM suggestions
             WHERE substr(ts, 1, 10) = ? AND outcome = 'pending'
+                AND (ignore_until IS NULL OR ignore_until <= ?)
             ORDER BY id DESC
             """,
-            (today,),
+            (today, datetime.now(timezone.utc).isoformat(timespec="seconds")),
         ).fetchall()
     return [dict(row) for row in rows]
 
@@ -157,24 +158,26 @@ def set_suggestion_outcome(suggestion, outcome, database_path=None):
     if outcome not in {"accepted", "dismissed", "snoozed"}:
         raise ValueError("Invalid suggestion outcome: %s" % outcome)
 
+    ignore_until = None
+    if outcome == "snoozed":
+        ignore_until = (
+            datetime.now(timezone.utc) + timedelta(days=3)
+        ).isoformat(timespec="seconds")
     queue_change(
         "suggestions",
         "set",
         suggestion["id"],
-        {"outcome": outcome},
+        {"outcome": outcome, "ignore_until": ignore_until},
         database_path=database_path,
     )
     if outcome == "snoozed":
-        snooze_until = (
-            datetime.now(timezone.utc) + timedelta(days=3)
-        ).isoformat(timespec="seconds")
         queue_change(
             "app_settings",
             "set",
             suggestion["process_name"],
             {
                 "process_name": suggestion["process_name"],
-                "snooze_until": snooze_until,
+                "snooze_until": ignore_until,
             },
             database_path=database_path,
         )
