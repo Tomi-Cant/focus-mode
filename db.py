@@ -46,6 +46,12 @@ CREATE TABLE IF NOT EXISTS suggestions (
 
 CREATE INDEX IF NOT EXISTS suggestions_outcome_idx ON suggestions (outcome);
 
+CREATE TABLE IF NOT EXISTS app_names (
+    process_name TEXT PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    updated_ts TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS ban_rules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     category TEXT NOT NULL,

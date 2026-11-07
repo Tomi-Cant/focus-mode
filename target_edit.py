@@ -11,6 +11,8 @@ from tkinter import dialog
 from urllib.parse import urlparse
 import helper_funcs
 import webbrowser
+from dashboard_window import open_dashboard_window
+import suggestion_ui
 
 # Import custom modules
 from Button import Button
@@ -28,7 +30,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        self.root.iconbitmap("../focused_up_logo.ico")
+        # self.root.iconbitmap("../focused_up_logo.ico")
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -36,9 +38,91 @@ class FocusModeUI:
         self.time_buttons_frame = None
         self.blacklist_buttons_frame = None
         self.current_view = "main"
-        
-        # Create main UI
+
+        self.dashboard = None
+        self._open_dashboard()
+
+    def _open_dashboard(self):
+        self.root.withdraw()
+        database_suggestions = suggestion_ui._pending_suggestions()
+        dashboard_suggestions = [
+            {
+                "id": suggestion["id"],
+                "process_name": suggestion["process_name"],
+                "type": suggestion["type"],
+                "features_json": suggestion["features_json"],
+                "app_name": suggestion_ui.application_display_name(
+                    suggestion["process_name"]
+                ),
+                "title": (
+                    "Limit category usage"
+                    if suggestion["type"] == "category_time_window_ban"
+                    else "Limit %s usage"
+                    % suggestion_ui.application_display_name(suggestion["process_name"])
+                ),
+                "body": suggestion_ui.suggestion_text(suggestion),
+                "tag": "Suggestion",
+            }
+            for suggestion in database_suggestions
+        ]
+        self.dashboard = open_dashboard_window(
+            parent=self.root,
+            user_data={
+                "name": "there",
+                "suggestions": dashboard_suggestions,
+                "highlights": ["Placeholder highlight"],
+                "lowlights": ["Placeholder lowlight"],
+            },
+            on_manual_mode=self.open_manual_mode,
+            on_audio_settings=self.open_dashboard_audio_settings,
+            on_close=self.close_from_dashboard,
+            on_accept=lambda suggestion: suggestion_ui.set_suggestion_outcome(
+                {
+                    "id": suggestion["id"],
+                    "process_name": suggestion["process_name"],
+                },
+                "accepted",
+            ),
+            on_dismiss=lambda suggestion: suggestion_ui.set_suggestion_outcome(
+                {
+                    "id": suggestion["id"],
+                    "process_name": suggestion["process_name"],
+                },
+                "dismissed",
+            ),
+        )
+
+    def close_from_dashboard(self):
+        self.dashboard = None
+        self.root.quit()
+
+    def _close_dashboard(self):
+        if self.dashboard is not None:
+            self.dashboard.window.destroy()
+            self.dashboard = None
+
+    def _restore_target_edit(self):
+        if self.root.state() == "withdrawn":
+            self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+        self.root.update_idletasks()
+
+    def open_manual_mode(self):
+        self._close_dashboard()
+        self._restore_target_edit()
         self.create_main_view()
+
+    def open_dashboard_audio_settings(self):
+        self._close_dashboard()
+        self._restore_target_edit()
+        self.create_main_view()
+        self.open_audio_settings()
+
+    def return_to_dashboard(self):
+        self.clear_window()
+        self._close_dashboard()
+        self._open_dashboard()
     
     def create_main_view(self):
         self.clear_window()
@@ -134,6 +218,13 @@ class FocusModeUI:
             7,
             "Sound Settings",
             self.open_audio_settings,
+            palette["slate"],
+            palette["slate_hover"],
+        )
+        add_action_button(
+            8,
+            "Dashboard",
+            self.return_to_dashboard,
             palette["slate"],
             palette["slate_hover"],
         )

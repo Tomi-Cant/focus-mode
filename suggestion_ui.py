@@ -11,6 +11,101 @@ from manual_buffer import queue_change
 
 _shown_dates = set()
 
+_APP_NAME_FALLBACKS = {
+    "chrome.exe": "Google Chrome",
+    "msedge.exe": "Microsoft Edge",
+    "firefox.exe": "Mozilla Firefox",
+    "discord.exe": "Discord",
+    "spotify.exe": "Spotify",
+    "steam.exe": "Steam",
+    "excel.exe": "Microsoft Excel",
+    "winword.exe": "Microsoft Word",
+    "powerpnt.exe": "Microsoft PowerPoint",
+    "code.exe": "Visual Studio Code",
+    "outlook.exe": "Microsoft Outlook",
+    "teams.exe": "Microsoft Teams",
+    "vlc.exe": "VLC Media Player",
+}
+
+
+def application_display_name(process_name, database_path=None):
+    normalized_name = str(process_name).strip().casefold()
+    database_path = Path(database_path) if database_path else get_database_path()
+
+    try:
+        with closing(sqlite3.connect(database_path)) as connection:
+            row = connection.execute(
+                """
+                SELECT display_name
+                FROM app_names
+                WHERE process_name = ?
+                """,
+                (normalized_name,),
+            ).fetchone()
+    except sqlite3.OperationalError:
+        row = None
+    if row and row[0]:
+        return str(row[0])
+
+    display_name = _APP_NAME_FALLBACKS.get(normalized_name)
+    if display_name is None:
+        try:
+            import psutil
+
+            for process in psutil.process_iter(["name", "exe"]):
+                info = process.info
+                if str(info.get("name") or "").casefold() != normalized_name:
+                    continue
+                executable = info.get("exe")
+                if executable:
+                    try:
+                        import win32api
+
+                        display_name = win32api.GetFileVersionInfo(
+                            executable,
+                            "\\StringFileInfo\\040904b0\\FileDescription",
+                        )
+                    except Exception:
+                        display_name = None
+                if display_name:
+                    break
+        except Exception:
+            pass
+
+    display_name = str(display_name or normalized_name.removesuffix(".exe")).strip()
+    if display_name:
+        display_name = " ".join(part.capitalize() for part in display_name.split())
+    try:
+        database_path.parent.mkdir(parents=True, exist_ok=True)
+        with closing(sqlite3.connect(database_path)) as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_names (
+                    process_name TEXT PRIMARY KEY,
+                    display_name TEXT NOT NULL,
+                    updated_ts TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO app_names (process_name, display_name, updated_ts)
+                VALUES (?, ?, ?)
+                ON CONFLICT(process_name) DO UPDATE SET
+                    display_name = excluded.display_name,
+                    updated_ts = excluded.updated_ts
+                """,
+                (
+                    normalized_name,
+                    display_name,
+                    datetime.now().astimezone().isoformat(timespec="seconds"),
+                ),
+            )
+            connection.commit()
+    except sqlite3.Error:
+        pass
+    return display_name or normalized_name
+
 
 def get_database_path():
     return Path(os.environ["LOCALAPPDATA"]) / "Focused Up" / "usage.db"
@@ -45,7 +140,6 @@ def _pending_suggestions(database_path=None):
             FROM suggestions
             WHERE substr(ts, 1, 10) = ? AND outcome = 'pending'
             ORDER BY id DESC
-            LIMIT 1
             """,
             (today,),
         ).fetchall()
@@ -84,7 +178,9 @@ def suggestion_text(suggestion):
     process_name = suggestion["process_name"]
     if suggestion["type"] == "category_time_window_ban":
         return "Would you like Focused Up to set a time-window ban for the game category?"
-    return "Would you like Focused Up to help limit usage of %s?" % process_name
+    return "Would you like Focused Up to help limit usage of %s?" % application_display_name(
+        process_name
+    )
 
 
 def show_suggestion(parent=None, database_path=None, standalone=False):

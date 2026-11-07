@@ -195,6 +195,7 @@ def _overlay(table_name, key, database_path=None):
                 "category": "uncategorized",
                 "excluded": 0,
                 "snooze_until": None,
+                "display_name": None,
             }
         else:
             real = {}
@@ -211,6 +212,7 @@ def get_app_setting(process_name, database_path=None):
         "category": "uncategorized",
         "excluded": 0,
         "snooze_until": None,
+        "display_name": None,
     }
 
 
