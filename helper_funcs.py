@@ -147,9 +147,7 @@ def check_audio_files():
                 if audio_path not in audio_files:
                     audio_files.append(audio_path)
     vars.configs["owned"] = audio_files
-    import json
-    with open(vars.config_path, "w") as f:
-        json.dump(vars.configs, f)
+    vars.save_configs(vars.configs)
 
 def load_audio(audio_path) ->mixer.Sound:
     if not mixer.get_init():

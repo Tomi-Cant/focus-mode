@@ -42,7 +42,18 @@ def initalize_app() -> None:
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The scheduled task could not be created. Setup was not completed.")
         return
-    
+    task_created =create_task.create_sampler_task(
+        f"{dir_path}\\FocusedUpSampler\\FocusedUpSampler.exe"
+    )
+    if not task_created:
+        messagebox.showerror("Setup Incomplete", "The usage sampler task could not be created. Setup was not completed.")
+        return
+    task_created = create_task.create_usage_scheduler_task(
+        f"{dir_path}\\FocusedUpUsageSchduler.exe"
+    )
+    if not task_created:
+        messagebox.showerror("Setup Incomplete", "The usage scheduler task could not be created. Setup was not completed.")
+        return
     if messagebox.askyesno("Desktop Icon?", "Would you like to add this app to your desktop screen for easier access?"):
         target = path.join(dir_path, "Focused Up.exe")
         ps = f'''
@@ -57,21 +68,16 @@ def initalize_app() -> None:
             messagebox.showerror("Setup Incomplete", "The desktop shortcut could not be created. Setup was not completed.")
             return
 
-    with open (vars.config_path, "r") as f:
-        config = json.load(f)
-        config["version"] = 1.0
-    with open (vars.config_path, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=4)
+    vars.configs["version"] = 1.0
+    vars.save_configs(vars.configs)
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
     target_edit.main()
     
 # Usage in your app's startup:
 if __name__ == "__main__":
-    with open(  vars.config_path, "r") as f:
-        config = json.load(f)
-        if config.get("version") == 1.0:
-            target_edit.main()
-            sys.exit()
+    if vars.configs.get("version") == 1.0:
+        target_edit.main()
+        sys.exit()
     if pyuac.isUserAdmin():
         initalize_app()   
         sys.exit()

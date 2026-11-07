@@ -104,6 +104,106 @@ def create_scheduled_task(
     return result.returncode == 0
 
 
+def create_sampler_task(
+    sampler_path: str,
+    task_name: str = "Focused Up Sampler",
+):
+    """Create the separate, continuously running usage sampler task."""
+    xml_content = '''<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>Focused Up usage sampler</Description></RegistrationInfo>
+  <Triggers>
+    <LogonTrigger><Enabled>true</Enabled></LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <RestartOnFailure><Interval>PT1M</Interval><Count>5</Count></RestartOnFailure>
+  </Settings>
+  <Actions Context="Author">
+    <Exec><Command>{sampler_path}</Command></Exec>
+  </Actions>
+</Task>'''.format(sampler_path=sampler_path.replace("&", "&amp;"))
+
+    xml_path = Path.cwd() / f"{task_name.replace(' ', '_')}.xml"
+    xml_path.write_text(xml_content, encoding="utf-16")
+    result = subprocess.run(
+        ["schtasks", "/create", "/tn", task_name, "/xml", str(xml_path), "/f"],
+        capture_output=True,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    if result.returncode != 0:
+        print(result.stderr or result.stdout)
+        xml_path.unlink(missing_ok=True)
+        return False
+    xml_path.unlink(missing_ok=True)
+    return result.returncode == 0
+
+
+def create_usage_scheduler_task(
+    scheduler_path: str,
+    task_name: str = "Focused Up Usage Scheduler",
+):
+    """Create a daily, highest-privilege task for usage maintenance."""
+    xml_content = '''<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>Aggregates Focused Up usage data daily</Description></RegistrationInfo>
+  <Triggers>
+    <LogonTrigger><Enabled>true</Enabled></LogonTrigger>
+    <CalendarTrigger>
+      <StartBoundary>2026-08-25T00:05:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <RestartOnFailure><Interval>PT1M</Interval><Count>5</Count></RestartOnFailure>
+  </Settings>
+  <Actions Context="Author">
+    <Exec><Command>{scheduler_path}</Command><Arguments>--once</Arguments></Exec>
+  </Actions>
+</Task>'''.format(scheduler_path=scheduler_path.replace("&", "&amp;"))
+
+    xml_path = Path.cwd() / f"{task_name.replace(' ', '_')}.xml"
+    xml_path.write_text(xml_content, encoding="utf-16")
+    result = subprocess.run(
+        ["schtasks", "/create", "/tn", task_name, "/xml", str(xml_path), "/f"],
+        capture_output=True,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    if result.returncode != 0:
+        print(result.stderr or result.stdout)
+        xml_path.unlink(missing_ok=True)
+        return False
+    xml_path.unlink(missing_ok=True)
+    return result.returncode == 0
+
+
 if __name__ == "__main__":
     script_dir = Path(os.environ["ProgramFiles"]) / "Focused Up" / "FocusedUpScript"
     create_scheduled_task(

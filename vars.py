@@ -8,6 +8,8 @@ import json
 import tkinter as tk
 import re
 
+import db
+
 root: tk.Tk = None #type:ignore
 
 selected_days = ["Monday", "Tuesday", "Wednesday",
@@ -36,18 +38,16 @@ def get_config_path():
 def get_audio_path():
     return os.path.join(get_data_dir(), "assets", "audio")
 def save_config(data):
-    with open(get_blacklist_path(), "w") as f:
-        json.dump(data, f, indent=2)
+    db.save_blacklist(data)
+
 
 def load_blacklist():
-    path = get_blacklist_path()
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "r") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    return db.load_blacklist()
+
+
+def save_configs(data):
+    db.save_app_config(data, source="config")
+    db.save_audio_paths(data.get("owned", []), data.get("active", []))
 
 
 def _looks_like_time(value):
@@ -121,28 +121,38 @@ log_path = get_log_path()
 json_path = get_blacklist_path()
 config_path = get_config_path()
 audio_path = get_audio_path()
-#initializing data files
-if not os.path.exists(json_path):
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump({"time_list": {}}, f, indent=4)
+# Initializing local state now uses SQLite. JSON files are only migration inputs.
+db.init_db()
 if not os.path.exists(log_path):
     with open(log_path, "w", encoding="utf-8") as f:
         f.write("Log initialized\n")
-if not os.path.exists(config_path):
-    with open(config_path, "w", encoding= "utf-8") as f:
-        json.dump({"active": [],"owned": [],"enabled": False,"volume": 1},f, indent = 4)
 if not os.path.exists(audio_path):
     os.makedirs(audio_path, exist_ok=True)        
-    
-with open(json_path, "r", encoding="utf-8") as f:
-    session_temp :dict = json.load(f)
-original_time_list = session_temp.get('time_list', {})
+
+session_temp = {"time_list": db.load_blacklist()}
+original_time_list = session_temp["time_list"]
 time_group : dict = normalize_time_groups(original_time_list)
 session_temp['time_list'] = time_group
 
 if original_time_list != time_group:
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(session_temp, f, indent=2)
-with open(config_path, "r", encoding= "utf-8") as f:
-    configs :dict = json.load(f)
-
+    db.save_blacklist(time_group)
+configs = db.load_app_config(
+    defaults={
+        "enabled": False,
+        "volume": 1,
+        "version": 1.0,
+        "idle_threshold_seconds": 60,
+        "sample_interval_seconds": 10,
+        "foreground_weight": 1.0,
+        "open_weight": 0.25,
+        "category_caps_minutes": {
+            "game": 120,
+            "social": 90,
+            "video": 120,
+            "work": 480,
+            "browser": 180,
+            "other": 240,
+        },
+    },
+)
+configs["owned"], configs["active"] = db.load_audio_paths()

@@ -18,6 +18,7 @@ import tkinter as tk
 
 
 NO_PRODUCTIVE_WARNING_DURATION_MS = 5000
+PROTECTED_PROCESS_NAMES = {"focusedupsampler.exe", "focusedupsampler", "focusedsampler.exe"}
 
 
 def show_no_productive_warning():
@@ -40,8 +41,7 @@ def convert_to_exe(no_list, curr_time, index, set_temp, closed_process_names=Non
     for proc in window_to_process.process_search(no_list):
         if allowed_time > 0:
             allowed_time-=.5
-            with open(vars.json_path, "w") as f:
-                json.dump(vars.session_temp, f, indent=2) 
+            vars.save_config(vars.time_group)
             return False
     # converts application titles to their .exe counterpart
     added = vars.time_group[set_temp[index]].get("converted", [])
@@ -54,6 +54,8 @@ def convert_to_exe(no_list, curr_time, index, set_temp, closed_process_names=Non
             added.append(i)  
     open_windows = window_to_process.check_windows(temp)
     for i in open_windows:
+        if i["name"].casefold() in PROTECTED_PROCESS_NAMES:
+            continue
         try:
             PostMessage(i['hwnd'], win32con.WM_CLOSE, 0, 0)
             closed = True
@@ -69,8 +71,7 @@ def convert_to_exe(no_list, curr_time, index, set_temp, closed_process_names=Non
             added.append(i['name'])
         vars.time_group[set_temp[index]]['converted'] = added
         
-        with open(vars.json_path, "w") as f:
-            json.dump(vars.session_temp, f, indent=2)  # updates json file
+        vars.save_config(vars.time_group)
     return closed
 
 
@@ -84,6 +85,9 @@ def close_by_process(no_list, curr_time, time_index, skip_productive_for=None):
     # checks if process is banned with error catches
     allowed_time = vars.time_group[time_index]["time_left"]
     for proc in window_to_process.process_search(no_list):
+        process_name = proc.info.get("name", "")
+        if process_name.casefold() in PROTECTED_PROCESS_NAMES:
+            continue
         if allowed_time > 0:
             allowed_time-=.5
             return

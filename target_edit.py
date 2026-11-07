@@ -15,6 +15,8 @@ import webbrowser
 # Import custom modules
 from Button import Button
 import vars
+import usage_scheduler
+import manual_buffer
 
 
 def _strip_non_ascii(text: str) -> str:
@@ -26,7 +28,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        self.root.iconbitmap("../focused_up_logo.ico")
+        self.root.iconbitmap("focused_up_logo.ico")
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -1287,10 +1289,8 @@ class FocusModeUI:
         self._save_audio_settings()
 
     def _save_audio_settings(self):
-        with open(vars.config_path, 'w') as f:
-            json.dump(vars.configs, f, indent=2)
-        
-        
+        vars.save_configs(vars.configs)
+
     def find_steam_games_helper(self):  
         steam_games= helper_funcs.find_steam_games()
         if not steam_games:
@@ -1646,9 +1646,7 @@ class FocusModeUI:
                 allowed_time = self.allowed_hours.get()
                 time_data['allowed_time'] = float(allowed_time)*360
 
-                # Save to JSON
-                with open(vars.json_path, "w", encoding="utf-8") as f:
-                    json.dump(vars.session_temp, f, indent=2)
+                vars.save_config(vars.time_group)
 
                 self.update_time_list()
                 selected_index = list(vars.time_group).index(vars.time_var)
@@ -1702,16 +1700,14 @@ class FocusModeUI:
     
     def exit(self):
         try:
-            with open(vars.json_path, "w", encoding="utf-8") as f:
-                json.dump(vars.session_temp, f, indent=2)
+            vars.save_config(vars.time_group)
             self.root.quit()
         except Exception as e:
             messagebox.showerror("Error", f"Error saving: {str(e)}")
 
 
 def main():
-    
-    
+    manual_buffer.check_day_rollover()
     root = tk.Tk()
     app = FocusModeUI(root)
     root.mainloop()

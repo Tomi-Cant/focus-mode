@@ -15,6 +15,38 @@ import webbrowser
 from helper_funcs import time_seperator, cull_times, find_last_run
 import helper_funcs
 import vars
+import manual_buffer
+
+
+def ensure_sampler_running():
+    database_path = vars.db.get_database_path()
+    stale = True
+    try:
+        heartbeat = manual_buffer._last_run_date(database_path)
+        # The sampler heartbeat uses its own SQLite table in sampler.py.
+        import sqlite3
+        from contextlib import closing
+        from datetime import timedelta
+        with closing(sqlite3.connect(database_path)) as connection:
+            row = connection.execute(
+                "SELECT ts FROM sampler_heartbeat WHERE id = 1"
+            ).fetchone()
+        if row:
+            last = datetime.datetime.fromisoformat(row[0].replace("Z", "+00:00"))
+            stale = datetime.datetime.now(datetime.timezone.utc) - last > timedelta(minutes=3)
+    except Exception:
+        stale = True
+
+    if stale:
+        try:
+            subprocess.run(
+                ["schtasks", "/run", "/tn", "Focused Up Sampler"],
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        except Exception:
+            pass
 
 
 def run_custom_action(action, action_name="finish"):
@@ -58,6 +90,9 @@ def run_finish_action(action, curr_time):
 
 
 def main():
+    manual_buffer.check_day_rollover()
+    ensure_sampler_running()
+    vars.time_group = manual_buffer.load_effective_time_groups()
     index = 0
     finish_action = 0
     time_list = vars.time_group
@@ -133,8 +168,7 @@ def main():
         time_list.update(i)
     with open(vars.log_path, "a") as log:
         log.write(f"|Target Time Reached|\n")
-    with open(vars.json_path, "w") as f:
-        json.dump({"time_list": vars.time_group}, f, indent=2)  # updates json file
+    vars.save_config(vars.time_group)
         
     run_finish_action(finish_action, curr_time)
     

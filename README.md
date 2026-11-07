@@ -2,6 +2,15 @@
 
 Focused Up helps you make room for work, study, and the things that matter by keeping distracting apps out of the way.
 
+## Focused Up usage database
+
+The new Focused Up database layer stores its SQLite database at
+`%LOCALAPPDATA%\Focused Up\usage.db`. On initialization, it imports existing
+schedule data from `%LOCALAPPDATA%\Focused Up\blacklist.json` and app settings
+from `%LOCALAPPDATA%\Focused Up\config.json`. Original schedule fields and
+unknown settings are retained in the database so the migration does not discard
+data that is not represented by the new rule columns.
+
 ## What you can do
 
 - **Create focus schedules** for the times and days that work for you.
