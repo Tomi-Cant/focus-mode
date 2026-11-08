@@ -4,7 +4,9 @@ import os
 import sqlite3
 from pathlib import Path
 
-from manual_buffer import get_app_setting, queue_change
+import manual_buffer
+
+ 
 
 
 DEFAULT_CATEGORIES = {
@@ -42,7 +44,7 @@ def get_category(process_name, database_path=None):
     database_path = Path(database_path) if database_path else get_database_path()
     name = str(process_name).strip().lower()
 
-    setting = get_app_setting(name, database_path=database_path)
+    setting = manual_buffer.get_app_setting(name, database_path=database_path)
     saved_category = setting.get("category")
     if saved_category and str(saved_category).lower() != "uncategorized":
         return str(saved_category).lower()
@@ -55,7 +57,7 @@ def set_category(process_name, category, database_path=None):
     value = str(category).strip().lower()
     if value not in {"game", "social", "video", "work", "browser", "other"}:
         raise ValueError("Invalid category: %s" % category)
-    queue_change(
+    manual_buffer.queue_change(
         "app_settings",
         "set",
         name,

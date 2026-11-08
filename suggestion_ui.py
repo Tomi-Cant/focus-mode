@@ -187,8 +187,25 @@ def set_suggestion_outcome(suggestion, outcome, database_path=None):
             database_path=database_path,
         )
     if outcome == "accepted":
+        try:
+            import anomaly_to_ban_rule
+            anomaly_to_ban_rule.queue_from_suggestion(
+                suggestion,
+                display_name=application_display_name(
+                    suggestion["process_name"], database_path
+                ),
+                database_path=database_path or get_database_path(),
+            )
+        except Exception as error:
+            try:
+                log = Path(database_path or get_database_path()).parent / "crash.log"
+                with log.open("a", encoding="utf-8") as f:
+                    f.write("queue_from_suggestion: %s\n" % error)
+            except OSError:
+                pass
         create_accepted_usage_limit(suggestion, database_path=database_path)
         manual_buffer.flush_pending(database_path)
+        
 
 
 def _peak_hour(features):

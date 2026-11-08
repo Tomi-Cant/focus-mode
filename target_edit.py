@@ -19,7 +19,6 @@ import suggestion_ui
 # Import custom modules
 from Button import Button
 import vars
-import usage_scheduler
 import manual_buffer
 import insights
 import focused_up_intro
@@ -134,6 +133,7 @@ class FocusModeUI:
                 "snoozed",
             ),
             )
+            
         except Exception as error:
             self._log_startup_error("Dashboard could not open", error)
             self.root.deiconify()

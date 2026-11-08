@@ -5,13 +5,13 @@ import threading
 import time
 import argparse
 from contextlib import closing
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-
+import anomaly_to_ban_rule
 from aggregate import aggregate_day
 from bans import adjust_bans_weekly, check_ban, finalize_ban_window
 from categories import get_category
-from db import get_database_path
+from db import get_database_path 
 from sampler import sample_once
 from suggest import apply_usage_config, generate_suggestions
 
@@ -146,19 +146,31 @@ def start_usage_scheduler(config, database_path=None):
     thread.start()
     return thread, stop_event
 
-
 def run_usage_scheduler_once(database_path=None):
     """Run aggregation and suggestion maintenance once for the current day."""
     database_path = Path(database_path) if database_path else get_database_path()
     today = datetime.now().date()
+
     aggregate_day(today.isoformat(), database_path=database_path)
     generate_suggestions(database_path=database_path, date=today.isoformat())
-
+    
+    # Turn any new usage_limit suggestions into pending ban rules
+    conn = sqlite3.connect(database_path)
+    
+    try:
+        with conn:  # commits on success, rolls back on error
+            for sid, process_name, kind, details, display in anomaly_to_ban_rule.fetch_suggestions(conn):
+                rule = anomaly_to_ban_rule.suggestion_to_rule(display, kind, details)
+                if anomaly_to_ban_rule.rule_exists(conn, rule["name"]):
+                    continue  # already pending or already a ban rule
+                anomaly_to_ban_rule.add_to_pending(conn, rule)
+    finally:
+        conn.close()  # 'with conn' doesn't close the connection itself # 'with conn' doesn't close the connection itself
+   
     if today.weekday() == 0:
         if _last_weekly_adjustment(database_path) != today.isoformat():
             adjust_bans_weekly(database_path=database_path)
             _record_weekly_adjustment(database_path, today.isoformat())
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
