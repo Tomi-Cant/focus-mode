@@ -125,7 +125,7 @@ def queue_change(table_name, op, key, payload=None, database_path=None):
             if row is not None:
                 existing = (row["op"], _payload(row["payload_json"]))
 
-            merged = dict(payload)  # pyright: ignore
+            merged = dict(payload or {})  # pyright: ignore
             if op == "set" and existing and existing[0] == "set":  # pyright: ignore
                 merged_payload = dict(existing[1])
                 merged_payload.update(payload) #pyright: ignore
@@ -388,8 +388,7 @@ def flush_pending(database_path=None):
 
         _MIRROR.clear()
 
-    # TODO: invoke baseline recompute when its existing hook is added.
-    # TODO: invoke suggestion generation when its existing hook is added.
+  
     return True
 
 

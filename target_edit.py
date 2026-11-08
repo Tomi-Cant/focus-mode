@@ -82,6 +82,8 @@ class FocusModeUI:
                 {
                     "id": suggestion["id"],
                     "process_name": suggestion["process_name"],
+                    "type": suggestion["type"],
+                    "features_json": suggestion["features_json"],
                 },
                 "accepted",
             ),

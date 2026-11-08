@@ -194,11 +194,8 @@ class DashboardWindow:
             highlightthickness=0,
             borderwidth=0,
         )
-        scrollbar = tk.Scrollbar(
-            self.window, orient="vertical", command=self.canvas.yview
-        )
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
+        
+        
         self.canvas.pack(side="left", fill="both", expand=True)
 
         self.content = tk.Frame(self.canvas, bg=COLORS["background"])
@@ -213,10 +210,7 @@ class DashboardWindow:
                 self.content_window, width=event.width
             ),
         )
-        self.canvas.bind_all(
-            "<MouseWheel>",
-            lambda event: self.canvas.yview_scroll(int(-event.delta / 120), "units"),
-        )
+       
 
     def _build_header(self) -> None:
         header = tk.Frame(self.content, bg=COLORS["background"])
@@ -225,7 +219,7 @@ class DashboardWindow:
 
         tk.Label(
             header,
-            text=f"Good to see you, {self.name}",
+            text=f"Good to see you,",
             bg=COLORS["background"],
             fg=COLORS["ink"],
             font=(FONT, 24, "bold"),

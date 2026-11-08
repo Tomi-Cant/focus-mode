@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from aggregate import aggregate_day
-from bans import adjust_bans_weekly
+from bans import adjust_bans_weekly, check_ban, finalize_ban_window
+from categories import get_category
 from db import get_database_path
 from sampler import sample_once
 from suggest import apply_usage_config, generate_suggestions
@@ -60,6 +61,7 @@ def run_usage_scheduler(config, database_path=None, stop_event=None, sleep=time.
     interval = max(1, int(config.get("sample_interval_seconds", 10)))
     idle_threshold = max(0, int(config.get("idle_threshold_seconds", 60)))
     current_date = None
+    previous_hour = datetime.now().astimezone().hour
 
     while not stop_event.is_set():
         try:
@@ -68,6 +70,33 @@ def run_usage_scheduler(config, database_path=None, stop_event=None, sleep=time.
                 snapshot_gui=(int(time.monotonic()) % 300 < interval),
                 idle_threshold=idle_threshold,
             )
+
+            now = datetime.now().astimezone()
+            with closing(sqlite3.connect(database_path)) as connection:
+                connection.row_factory = sqlite3.Row
+                daily_usage_exists = connection.execute(
+                    """
+                    SELECT 1 FROM sqlite_master
+                    WHERE type = 'table' AND name = 'daily_usage'
+                    """
+                ).fetchone()
+                active_processes = (
+                    [
+                        row["process_name"]
+                        for row in connection.execute(
+                            """
+                            SELECT DISTINCT process_name
+                            FROM daily_usage
+                            WHERE date = ?
+                            """,
+                            (now.date().isoformat(),),
+                        ).fetchall()
+                    ]
+                    if daily_usage_exists else []
+                )
+            for process_name in active_processes:
+                if get_category(process_name, database_path=database_path) != "uncategorized":
+                    check_ban(process_name, now=now, database_path=database_path)
 
             today = datetime.now().date()
             if current_date != today.isoformat():
@@ -82,6 +111,25 @@ def run_usage_scheduler(config, database_path=None, stop_event=None, sleep=time.
                 if last_adjustment != today.isoformat():
                     adjust_bans_weekly(database_path=database_path)
                     _record_weekly_adjustment(database_path, today.isoformat())
+            current_hour = datetime.now().astimezone().hour
+            if current_hour != previous_hour:
+                import manual_buffer
+
+                with closing(sqlite3.connect(database_path)) as connection:
+                    rules = connection.execute(
+                        """
+                        SELECT category, end_hour FROM ban_rules
+                        WHERE end_hour = ?
+                        """,
+                        (current_hour,),
+                    ).fetchall()
+                for rule in rules:
+                    finalize_ban_window(
+                        rule["category"],
+                        now=datetime.now().astimezone(),
+                        database_path=database_path,
+                    )
+                previous_hour = current_hour
         except Exception as error:
             log_crash(database_path, str(error))
         stop_event.wait(interval)

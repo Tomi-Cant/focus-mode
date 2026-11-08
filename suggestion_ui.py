@@ -1,12 +1,14 @@
 """Tkinter UI for reviewing generated Focused Up suggestions."""
 
 import os
+import json
 import re
 import sqlite3
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import manual_buffer
 from manual_buffer import queue_change
 
 
@@ -165,9 +167,12 @@ def set_suggestion_outcome(suggestion, outcome, database_path=None):
         ).isoformat(timespec="seconds")
     queue_change(
         "suggestions",
-        "set",
+        "delete" if outcome == "accepted" else "set",
         suggestion["id"],
-        {"outcome": outcome, "ignore_until": ignore_until},
+        None if outcome == "accepted" else {
+            "outcome": outcome,
+            "ignore_until": ignore_until,
+        },
         database_path=database_path,
     )
     if outcome == "snoozed":
@@ -181,6 +186,73 @@ def set_suggestion_outcome(suggestion, outcome, database_path=None):
             },
             database_path=database_path,
         )
+    if outcome == "accepted":
+        create_accepted_usage_limit(suggestion, database_path=database_path)
+        manual_buffer.flush_pending(database_path)
+
+
+def _peak_hour(features):
+    histogram = features.get("time_of_day_histogram")
+    if isinstance(histogram, dict):
+        populated = [
+            (int(hour), int(count))
+            for hour, count in histogram.items()
+            if str(hour).isdigit() and int(count) > 0
+        ]
+        if populated:
+            return max(populated, key=lambda item: (item[1], -item[0]))[0]
+    return 18
+
+
+def create_accepted_usage_limit(suggestion, database_path=None):
+    """Create a buffered adaptive ban from an accepted app suggestion."""
+    try:
+        features = json.loads(suggestion.get("features_json") or "{}")
+    except (TypeError, json.JSONDecodeError):
+        features = {}
+
+    process_name = str(suggestion.get("process_name") or "")
+    category = str(features.get("category") or "other").casefold()
+    if suggestion.get("type") == "category_time_window_ban":
+        category = str(process_name or features.get("category") or "game").casefold()
+    peak = _peak_hour(features)
+    start_hour = peak
+    end_hour = (peak + 2) % 24
+    if end_hour == start_hour:
+        end_hour = (start_hour + 1) % 24
+
+    from bans import category_baseline
+
+    try:
+        baseline = category_baseline(category, database_path=database_path)
+    except sqlite3.Error:
+        baseline = None
+    initial_allowance = max(15.0, round((float(baseline or 60.0) * 0.70) / 5) * 5)
+    window_minutes = 120
+
+    if initial_allowance >= window_minutes:
+        return None
+
+    queue_change(
+        "ban_rules",
+        "set",
+        category,
+        {
+            "category": category,
+            "start_hour": start_hour,
+            "end_hour": end_hour,
+            "allowed_minutes": initial_allowance,
+            "updated_ts": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "processes_json": json.dumps(features.get("processes", [process_name]), separators=(",", ":")),
+        },
+        database_path=database_path,
+    )
+    return {
+        "category": category,
+        "start_hour": start_hour,
+        "end_hour": end_hour,
+        "allowed_minutes": initial_allowance,
+    }
 
 
 def suggestion_text(suggestion):

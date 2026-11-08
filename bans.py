@@ -19,6 +19,7 @@ ATTEMPT_THRESHOLD = 10
 ALLOWANCE_FLOOR_MINUTES = 15.0
 EASE_PERCENT = 0.10
 TIGHTEN_PERCENT = 0.15
+ALLOWANCE_INCREMENTS = (5, 15, 30)
 
 
 def get_database_path():
@@ -220,3 +221,86 @@ def adjust_bans_weekly(database_path=None, now=None):
             changes.append((category, attempts, allowance))
         connection.commit()
     return changes
+
+
+def allowance_increment(attempts, exhausted=False, remaining_ratio=None, rng=None):
+    """Choose one supported signed allowance change for a finished window."""
+    from adaptive_allowance import encouragement
+
+    attempts = max(0, int(attempts))
+    remaining_ratio = (
+        max(0.0, min(1.0, float(remaining_ratio)))
+        if remaining_ratio is not None else 0.0
+    )
+    allowance = 100.0
+    used = allowance * (1.0 - remaining_ratio)
+    return encouragement(
+        exhausted=exhausted,
+        used_minutes=used,
+        allowance_minutes=allowance,
+        attempts=attempts,
+        rng=rng,
+    )
+
+
+def _window_duration_minutes(rule):
+    start = int(rule["start_hour"])
+    end = int(rule["end_hour"])
+    if end <= start:
+        end += 24
+    return (end - start) * 60
+
+
+def finalize_ban_window(category, now=None, database_path=None, rng=None):
+    """Apply the adaptive allowance policy once a category window finishes."""
+    database_path = Path(database_path) if database_path else get_database_path()
+    now = now or datetime.now().astimezone()
+    with closing(_connect(database_path)) as connection:
+        rule = connection.execute(
+            """
+            SELECT category, start_hour, end_hour, allowed_minutes
+            FROM ban_rules WHERE category = ?
+            """,
+            (category,),
+        ).fetchone()
+        if rule is None:
+            return None
+        attempts = connection.execute(
+            """
+            SELECT COUNT(*) FROM ban_attempts
+            WHERE category = ? AND ts >= ?
+            """,
+            (category, now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")),
+        ).fetchone()[0]
+
+    allowance = float(rule["allowed_minutes"])
+    used = _used_minutes(category, now.date().isoformat(), database_path)
+    exhausted = used >= allowance
+    remaining_ratio = max(0.0, 1.0 - (used / allowance)) if allowance > 0 else 0.0
+    from adaptive_allowance import apply_adjustment
+
+    allowance, _adjustment = apply_adjustment(
+        allowance_minutes=allowance,
+        window_minutes=_window_duration_minutes(rule),
+        used_minutes=used,
+        attempts=attempts,
+        exhausted=exhausted,
+        floor_minutes=ALLOWANCE_FLOOR_MINUTES,
+        rng=rng,
+    )
+    if allowance is None:
+        with closing(_connect(database_path)) as connection:
+            connection.execute("DELETE FROM ban_rules WHERE category = ?", (category,))
+            connection.commit()
+        return None
+
+    with closing(_connect(database_path)) as connection:
+        connection.execute(
+            """
+            UPDATE ban_rules SET allowed_minutes = ?, updated_ts = ?
+            WHERE category = ?
+            """,
+            (allowance, now.isoformat(timespec="seconds"), category),
+        )
+        connection.commit()
+    return allowance

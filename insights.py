@@ -209,7 +209,7 @@ def _friendly_subject(process_name):
         return process_name.removesuffix(".exe").replace("_", " ").replace(".", " ").title()
 
 
-def generate_insights(database_path=None, date=None, maximum=3):
+def generate_insights(database_path=None, date=None, maximum=2):
     """Select available highlight and lowlight candidates with stable random choice."""
     database_path = Path(database_path) if database_path else Path(
         __import__("os").environ["LOCALAPPDATA"]
