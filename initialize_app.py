@@ -8,10 +8,113 @@ import subprocess
 import vars
 import os.path as path
 subprocess.run(["pip","install", "-r","requirements.txt"], creationflags=subprocess.CREATE_NO_WINDOW)
-from tkinter import messagebox
+import tkinter as tk
+from tkinter import messagebox, ttk
 import create_task
 import sys
 import target_edit
+
+CURRENT_APP_VERSION = "2.0"
+
+
+def show_setup_welcome(root, admin_confirmation=False):
+    agreed = False
+
+    def agree():
+        nonlocal agreed
+        agreed = True
+        root.destroy()
+
+    def decline():
+        root.destroy()
+
+    frame = ttk.Frame(root, padding=20)
+    frame.grid(sticky="nsew")
+    ttk.Label(
+        frame,
+        text="Setup Wizard",
+        font=("Segoe UI", 14, "bold"),
+    ).grid(row=0, column=0, sticky="w")
+    description = (
+        "Confirm that Focused Up can create scheduled tasks that periodically "
+        "sample your PC activity habits to provide usage insights and controls."
+        if admin_confirmation else
+        "This installation requires administrator access, permission to add "
+        "a desktop shortcut, and installation into Program Files. Continue?"
+    )
+    ttk.Label(
+        frame,
+        text=(
+            description
+        ),
+        wraplength=420,
+        justify="left",
+    ).grid(row=1, column=0, pady=(10, 18), sticky="w")
+
+    buttons = ttk.Frame(frame)
+    buttons.grid(row=2, column=0, sticky="e")
+    primary_text = "Start" if admin_confirmation else "I Agree"
+    ttk.Button(buttons, text=primary_text, command=agree).grid(row=0, column=0, padx=(0, 8))
+    ttk.Button(buttons, text="Cancel", command=decline).grid(row=0, column=1)
+
+    root.update_idletasks()
+    width, height = 460, 190
+    x = (root.winfo_screenwidth() - width) // 2
+    y = (root.winfo_screenheight() - height) // 2
+    root.geometry(f"{width}x{height}+{x}+{y}")
+    root.protocol("WM_DELETE_WINDOW", lambda: None)
+    root.focus_force()
+    root.lift()
+    root.mainloop()
+    return agreed
+
+
+def ask_desktop_icon():
+    choice = None
+    root = tk.Tk()
+    root.title("Focused Up Setup")
+    root.resizable(False, False)
+    root.attributes("-topmost", True)
+
+    def choose(create_icon):
+        nonlocal choice
+        choice = create_icon
+        root.destroy()
+
+    frame = ttk.Frame(root, padding=20)
+    frame.grid(sticky="nsew")
+    ttk.Label(
+        frame,
+        text="Desktop Shortcut",
+        font=("Segoe UI", 14, "bold"),
+    ).grid(row=0, column=0, sticky="w")
+    ttk.Label(
+        frame,
+        text="Would you like to add Focused Up to your desktop for easier access?",
+        wraplength=420,
+        justify="left",
+    ).grid(row=1, column=0, pady=(10, 18), sticky="w")
+
+    buttons = ttk.Frame(frame)
+    buttons.grid(row=2, column=0, sticky="e")
+    ttk.Button(buttons, text="Add Icon", command=lambda: choose(True)).grid(
+        row=0, column=0, padx=(0, 8)
+    )
+    ttk.Button(buttons, text="Skip", command=lambda: choose(False)).grid(
+        row=0, column=1
+    )
+
+    root.update_idletasks()
+    width, height = 460, 190
+    x = (root.winfo_screenwidth() - width) // 2
+    y = (root.winfo_screenheight() - height) // 2
+    root.geometry(f"{width}x{height}+{x}+{y}")
+    root.protocol("WM_DELETE_WINDOW", lambda: None)
+    root.focus_force()
+    root.lift()
+    root.mainloop()
+    return choice
+
 
 class DummyStream:
     def write(self, data): pass
@@ -54,7 +157,7 @@ def initalize_app() -> None:
     if not task_created:
         messagebox.showerror("Setup Incomplete", "The usage scheduler task could not be created. Setup was not completed.")
         return
-    if messagebox.askyesno("Desktop Icon?", "Would you like to add this app to your desktop screen for easier access?"):
+    if ask_desktop_icon() is True:
         target = path.join(dir_path,"Focused Up", "Focused Up.exe")
         ps = f'''
         $desktop = [Environment]::GetFolderPath("Desktop")
@@ -68,21 +171,28 @@ def initalize_app() -> None:
             messagebox.showerror("Setup Incomplete", "The desktop shortcut could not be created. Setup was not completed.")
             return
 
-    vars.configs["version"] = 2.0
+    vars.configs["version"] = CURRENT_APP_VERSION
     vars.save_configs(vars.configs)
+    saved_configs = vars.db.load_app_config()
+    if saved_configs.get("version") != CURRENT_APP_VERSION:
+        messagebox.showerror("Setup Incomplete", "The application version could not be saved.")
+        return
     messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
     target_edit.main()
     
 # Usage in your app's startup:
 if __name__ == "__main__":
-    if vars.configs.get("version") == 2.0:
+    installed_version = str(vars.configs.get("version", "")).rstrip("0").rstrip(".")
+    required_version = CURRENT_APP_VERSION.rstrip("0").rstrip(".")
+    
+    if installed_version == required_version:
         target_edit.main()
         sys.exit()
-    if pyuac.isUserAdmin():
-        initalize_app()   
+    root = tk.Tk()
+    root.title("Focused Up Setup")
+    root.resizable(False, False)
+    root.attributes("-topmost", True)
+    if not show_setup_welcome(root, admin_confirmation=pyuac.isUserAdmin()):
         sys.exit()
-    elif not messagebox.askokcancel("Setup Wizard", "This installation requires admin access to the device, will ask for permission to add itself to the desktop, and will install itself into Program Files (Where it can later be uninstalled if needed). Is this ok?", icon ='info'):
-        sys.exit()
-    
-    result = initalize_app()
+    initalize_app()
   

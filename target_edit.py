@@ -31,7 +31,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        # self.root.iconbitmap("../focused_up_logo.ico")
+        self.root.iconbitmap("../focused_up_logo.ico")
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -1263,13 +1263,7 @@ class FocusModeUI:
         dialog.transient(self.root)
         dialog.minsize(380, 260)
 
-        owns_expansion = vars.configs.get("owned", [])
-        if not owns_expansion:
-            if messagebox.askyesno("Addon Has Not Been Purchased ", "Audio Settings are part of the Voice Packs addons. Please purchase a relevant addon to access this feature."):
-                webbrowser.open("https://tomibanjoko.gumroad.com/l/focusedupaddons")
-            dialog.destroy()
-            return
-
+        
         main = ttk.Frame(dialog, padding=12)
         main.pack(fill=tk.BOTH, expand=True)
 

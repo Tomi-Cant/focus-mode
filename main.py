@@ -2,8 +2,10 @@
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
 
-# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "Focused Up" initialize_app.py      
-# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "FocusedUpScript" main.py
+# pyinstaller --noconfirm --clean "Focused Up.spec"
+# pyinstaller --noconfirm --clean FocusedUpScript.spec
+# pyinstaller --noconfirm --clean FocusedUpSampler.spec
+# pyinstaller --noconfirm --clean FocusedUpUsageScheduler.spec
 import win32gui
 import datetime
 import proc_funcs

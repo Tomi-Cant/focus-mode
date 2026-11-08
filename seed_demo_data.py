@@ -135,6 +135,27 @@ def sample_rows(day, blocks, windows):
     return rows
 
 
+def vary_minecraft(blocks, windows, factor):
+    """Scale Minecraft's foreground blocks and open window by a demo-data factor."""
+    varied_blocks = []
+    for app, begin, end in blocks:
+        if app == MC:
+            duration = max(5, round((end - begin) * factor))
+            varied_blocks.append((app, begin, min(begin + duration, MAX_END)))
+        else:
+            varied_blocks.append((app, begin, end))
+
+    varied_windows = dict(windows)
+    if MC in varied_windows:
+        start, end = varied_windows[MC]
+        width = max(5, round((end - start) * factor))
+        center = (start + end) // 2
+        start = max(0, center - width // 2)
+        end = min(24 * 60 - 1, start + width)
+        varied_windows[MC] = (start, end)
+    return varied_blocks, varied_windows
+
+
 def default_db_path():
     try:
         import db  # the app's own module, if it's next to this script
@@ -177,29 +198,19 @@ def main():
     days = [end_day - timedelta(days=n) for n in range(args.days - 1, -1, -1)]
     rng = random.Random(args.seed)   # fixed seed, so the data is the same every run
 
+    # Vary Minecraft by day rather than weekday so rerunning with a custom
+    # end date always creates an easy-to-read mix of spikes, dips, and recoveries.
+    minecraft_factors = [1.35, 0.65, 1.10, 0.45, 0.75, 1.10, 1.45]
+    while len(minecraft_factors) < args.days:
+        minecraft_factors.extend([0.60, 1.20, 0.80, 1.40])
+
     all_daily, all_samples = [], []
-    for day in days:
+    for index, day in enumerate(days):
         blocks, windows = build_day(day, rng)
+        blocks, windows = vary_minecraft(blocks, windows, minecraft_factors[index])
         all_daily += daily_rows(day, blocks, windows)
         if not args.no_samples:
             all_samples += sample_rows(day, blocks, windows)
-
-    # Give demo Minecraft a deliberate multi-day direction so trend and streak
-    # insights can exercise different eligible states.
-    minecraft_factors = {0: 1.35, 1: 1.20, 2: 1.05, 3: 0.90, 4: 0.75, 5: 0.62, 6: 0.48}
-    minecraft_dates = {
-        day.isoformat(): minecraft_factors[day.weekday()]
-        for day in days
-    }
-    all_daily = [
-        (
-            row_date,
-            process,
-            fg_minutes * minecraft_dates[row_date] if process == MC else fg_minutes,
-            open_minutes * minecraft_dates[row_date] if process == MC else open_minutes,
-        )
-        for row_date, process, fg_minutes, open_minutes in all_daily
-    ]
 
     first, last = days[0].isoformat(), days[-1].isoformat()
     with sqlite3.connect(path) as conn:

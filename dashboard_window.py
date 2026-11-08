@@ -148,6 +148,8 @@ class DashboardWindow:
         self.window.title("Your dashboard")
         self.window.geometry("980x780")
         self.window.minsize(760, 650)
+        self.window.iconbitmap("../focused_up_logo.ico")
+
         self.window.configure(bg=COLORS["background"])
 
         incoming = dict(user_data or {})
