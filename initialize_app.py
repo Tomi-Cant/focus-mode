@@ -14,7 +14,7 @@ import create_task
 import sys
 import target_edit
 
-CURRENT_APP_VERSION = "2.0"
+CURRENT_APP_VERSION = "v2.0"
 
 
 def show_setup_welcome(root, admin_confirmation=False):
@@ -184,7 +184,9 @@ def initalize_app() -> None:
 if __name__ == "__main__":
     installed_version = str(vars.configs.get("version", "")).rstrip("0").rstrip(".")
     required_version = CURRENT_APP_VERSION.rstrip("0").rstrip(".")
-    
+    vars.log_path = vars.get_log_path()
+    with open(vars.log_path, "a", encoding="utf-8") as log:
+        log.write(f"req: {required_version}, installed: {installed_version}\n")
     if installed_version == required_version:
         target_edit.main()
         sys.exit()
