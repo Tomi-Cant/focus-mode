@@ -158,7 +158,7 @@ def generate_suggestions(database_path=None, date=None):
 
     suggestions = []
     with closing(_connect(database_path)) as connection:
-        if len(game_apps) >= 2:
+        if len(game_apps) >=2:
             category_key = "game"
             if not _recently_suggested(database_path, category=category_key):
                 features = {

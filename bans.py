@@ -33,8 +33,10 @@ def _connect(database_path):
 
 
 def _window_contains_hour(rule, hour):
-    start = int(rule["start_hour"])
-    end = int(rule["end_hour"])
+    start_value = rule["start_time"] if "start_time" in rule.keys() else f'{rule["start_hour"]:02d}:00'
+    end_value = rule["end_time"] if "end_time" in rule.keys() else f'{rule["end_hour"]:02d}:00'
+    start = int(str(start_value).split(":", 1)[0])
+    end = int(str(end_value).split(":", 1)[0])
     if start <= end:
         return start <= hour < end
     return hour >= start or hour < end
@@ -116,9 +118,8 @@ def check_ban(process_name, now=None, database_path=None):
     with closing(_connect(database_path)) as connection:
         rule = connection.execute(
             """
-            SELECT category, start_hour, end_hour, allowed_minutes
-            FROM ban_rules WHERE category = ?
-            ORDER BY updated_ts DESC LIMIT 1
+            SELECT name, start_time, end_time, alowed_time
+            FROM ban_rules WHERE name = ?
             """,
             (category,),
         ).fetchone()
@@ -127,7 +128,7 @@ def check_ban(process_name, now=None, database_path=None):
         return False
 
     used = _used_minutes(category, now.date().isoformat(), database_path)
-    if used < float(rule["allowed_minutes"]):
+    if used < float(rule["alowed_time"]) / 60:
         return False
 
     with closing(_connect(database_path)) as connection:
@@ -155,13 +156,17 @@ def create_ban(category, start_hour, end_hour, database_path=None, updated_ts=No
         connection.execute(
             """
             UPDATE ban_rules SET
-                start_hour = ?,
-                end_hour = ?,
-                allowed_minutes = ?,
-                updated_ts = ?
-            WHERE category = ?
+                start_time = ?,
+                end_time = ?,
+                alowed_time = ?
+            WHERE name = ?
             """,
-            (start_hour, end_hour, allowance, updated_ts, category),
+            (
+                f"{int(start_hour):02d}:00",
+                f"{int(end_hour):02d}:00",
+                allowance * 60,
+                category,
+            ),
         )
         if connection.execute(
             "SELECT changes()"
@@ -169,10 +174,10 @@ def create_ban(category, start_hour, end_hour, database_path=None, updated_ts=No
             connection.execute(
                 """
                 INSERT INTO ban_rules
-                    (category, start_hour, end_hour, allowed_minutes, updated_ts)
-                VALUES (?, ?, ?, ?, ?)
+                    (name, start_time, end_time, alowed_time)
+                VALUES (?, ?, ?, ?)
                 """,
-                (category, start_hour, end_hour, allowance, updated_ts),
+                (category, f"{int(start_hour):02d}:00", f"{int(end_hour):02d}:00", allowance * 60),
             )
         connection.commit()
     return allowance
@@ -188,11 +193,11 @@ def adjust_bans_weekly(database_path=None, now=None):
     with closing(_connect(database_path)) as connection:
         rules = connection.execute(
             """
-            SELECT category, allowed_minutes FROM ban_rules
+            SELECT name, alowed_time FROM ban_rules
             """
         ).fetchall()
         for rule in rules:
-            category = rule["category"]
+            category = rule["name"]
             attempts = connection.execute(
                 """
                 SELECT COUNT(*) FROM ban_attempts
@@ -202,8 +207,9 @@ def adjust_bans_weekly(database_path=None, now=None):
             ).fetchone()[0]
 
             baseline = category_baseline(category, database_path)
-            ceiling = baseline if baseline is not None else float(rule["allowed_minutes"])
-            allowance = float(rule["allowed_minutes"])
+            allowance_seconds = float(rule["alowed_time"])
+            ceiling = baseline if baseline is not None else allowance_seconds / 60
+            allowance = allowance_seconds / 60
             if attempts > ATTEMPT_THRESHOLD:
                 allowance *= 1.0 + EASE_PERCENT
             elif attempts == 0:
@@ -213,10 +219,10 @@ def adjust_bans_weekly(database_path=None, now=None):
             allowance = min(ceiling, allowance)
             connection.execute(
                 """
-                UPDATE ban_rules SET allowed_minutes = ?, updated_ts = ?
-                WHERE category = ?
+                UPDATE ban_rules SET alowed_time = ?, time_left = ?
+                WHERE name = ?
                 """,
-                (allowance, now.isoformat(timespec="seconds"), category),
+                (allowance * 60, allowance * 60, category),
             )
             changes.append((category, attempts, allowance))
         connection.commit()
@@ -244,8 +250,10 @@ def allowance_increment(attempts, exhausted=False, remaining_ratio=None, rng=Non
 
 
 def _window_duration_minutes(rule):
-    start = int(rule["start_hour"])
-    end = int(rule["end_hour"])
+    start_value = rule["start_time"] if "start_time" in rule.keys() else f'{rule["start_hour"]:02d}:00'
+    end_value = rule["end_time"] if "end_time" in rule.keys() else f'{rule["end_hour"]:02d}:00'
+    start = int(str(start_value).split(":", 1)[0])
+    end = int(str(end_value).split(":", 1)[0])
     if end <= start:
         end += 24
     return (end - start) * 60
@@ -258,8 +266,8 @@ def finalize_ban_window(category, now=None, database_path=None, rng=None):
     with closing(_connect(database_path)) as connection:
         rule = connection.execute(
             """
-            SELECT category, start_hour, end_hour, allowed_minutes
-            FROM ban_rules WHERE category = ?
+            SELECT name, start_time, end_time, alowed_time
+            FROM ban_rules WHERE name = ?
             """,
             (category,),
         ).fetchone()
@@ -273,7 +281,7 @@ def finalize_ban_window(category, now=None, database_path=None, rng=None):
             (category, now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")),
         ).fetchone()[0]
 
-    allowance = float(rule["allowed_minutes"])
+    allowance = float(rule["alowed_time"]) / 60
     used = _used_minutes(category, now.date().isoformat(), database_path)
     exhausted = used >= allowance
     remaining_ratio = max(0.0, 1.0 - (used / allowance)) if allowance > 0 else 0.0
@@ -297,10 +305,10 @@ def finalize_ban_window(category, now=None, database_path=None, rng=None):
     with closing(_connect(database_path)) as connection:
         connection.execute(
             """
-            UPDATE ban_rules SET allowed_minutes = ?, updated_ts = ?
-            WHERE category = ?
+            UPDATE ban_rules SET alowed_time = ?, time_left = ?
+                WHERE name = ?
             """,
-            (allowance, now.isoformat(timespec="seconds"), category),
+            (allowance * 60, allowance * 60, category),
         )
         connection.commit()
     return allowance

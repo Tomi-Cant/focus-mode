@@ -28,6 +28,7 @@ from collections.abc import Callable, Mapping, Sequence
 from tkinter import messagebox
 from typing import Any
 from pathlib import Path
+import app_icon
 
 
 COLORS = {
@@ -150,17 +151,7 @@ class DashboardWindow:
         self.window.title("Your dashboard")
         self.window.geometry("980x780")
         self.window.minsize(760, 650)
-        icon_candidates = [
-            Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "focused_up_logo.ico",
-            Path(__file__).resolve().parent / "focused_up_logo.ico",
-        ]
-        for icon_path in icon_candidates:
-            if icon_path.is_file():
-                try:
-                    self.window.iconbitmap(icon_path)
-                except tk.TclError:
-                    pass
-                break
+        app_icon.apply(self.window)
 
         self.window.configure(bg=COLORS["background"])
 

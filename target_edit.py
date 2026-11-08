@@ -23,6 +23,7 @@ import usage_scheduler
 import manual_buffer
 import insights
 import focused_up_intro
+import app_icon
 
 
 def _strip_non_ascii(text: str) -> str:
@@ -34,12 +35,7 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        icon_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "focused_up_logo.ico"
-        if icon_path.is_file():
-            try:
-                self.root.iconbitmap(icon_path)
-            except tk.TclError:
-                pass
+        app_icon.apply(self.root)
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -1024,15 +1020,15 @@ class FocusModeUI:
                     "The program name must contain at least one ASCII character.",
                 )
                 return
-            if vars.session_temp.get('time_list', {}) and vars.time_var in vars.time_group:
-                programs = vars.time_group[vars.time_var]['converted']
-                if executable not in programs:
-                    programs.append(executable)
-                    self.update_time_display()
-                    messagebox.showinfo("Success", f"Added {executable} to blacklist")
-                else:
-                    messagebox.showwarning("Duplicate", f"{executable} is already in the list")
-   
+            self._ensure_time_group()
+            programs = vars.time_group[vars.time_var]['programs']
+            if executable not in programs:
+                programs.append(executable)
+                self.update_time_display()
+                messagebox.showinfo("Success", f"Added {executable} to blacklist")
+            else:
+                messagebox.showwarning("Duplicate", f"{executable} is already in the list")
+                
     def add_to_time_list(self):
         self.create_time_settings_view()
         self.new_time_group()
@@ -1046,7 +1042,39 @@ class FocusModeUI:
         if " - " in cleaned:
             return cleaned.split(" - ", 1)[0].strip()
         return cleaned
-    
+    def _ensure_time_group(self):
+        """Make sure a time group is selected. If none exist, create an all-day one."""
+        if not vars.time_group:
+            name = "All Day"
+            vars.time_group[name] = {
+                "name": name,
+                "start_time": "00:00",
+                "end_time": "23:59",
+                "warning_times": vars.default_warning_times.copy(),
+                "programs": [],
+                "days": vars.selected_days.copy(),
+                "productive": [],
+                "select_type": "Queue",
+                "allowed_hours": 0.0,
+                "time_left": 0.0,
+                "on_start": 0,
+                "no_productive_silenced": False,
+                "on_finish": 0,
+                "enabled": True,
+            }
+            vars.time_var = name
+        elif vars.time_var not in vars.time_group:
+            vars.time_var = next(iter(vars.time_group))
+        else:
+            return True
+
+        # Sync the Time Settings widgets with the new/selected group
+        self.update_time_list()
+        index = list(vars.time_group).index(vars.time_var)
+        self.time_listbox.selection_clear(0, tk.END)
+        self.time_listbox.selection_set(index)
+        self.update_time_display()
+        return True
     def remove_from_timelist(self):
         if self.current_view == "time_settings":
             selection = self.select_time(None)
@@ -1462,6 +1490,7 @@ class FocusModeUI:
                 listbox.insert(tk.END, game)
             
             def add_selected_games():
+                self._ensure_time_group()
                 selected_indices = listbox.curselection()
                 for index in selected_indices:
                     game = _strip_non_ascii(steam_games[index])
@@ -1656,15 +1685,13 @@ class FocusModeUI:
         if program == "":
             messagebox.showwarning("Input Error", "Program name cannot be empty")
             return
-        if program and vars.time_var:
-            if vars.time_var in vars.session_temp.get('time_list', {}):
-                programs = vars.time_group[vars.time_var]['programs']
-                if program not in programs:
-                    programs.append(program)
-                    self.program_entry.delete(0, tk.END)
-                    self.update_time_display()
-                    messagebox.showinfo("Success", f"Added {program}")
-    
+        self._ensure_time_group()
+        programs = vars.time_group[vars.time_var]['programs']
+        if program not in programs:
+            programs.append(program)
+            self.program_entry.delete(0, tk.END)
+            self.update_time_display()
+            messagebox.showinfo("Success", f"Added {program}")
     def remove_program(self):
         program = self.select_program(None)
         programs = vars.time_group[vars.time_var]['programs']

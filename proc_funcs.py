@@ -8,7 +8,7 @@ from win32gui import PostMessage
 from win32api import ShellExecute
 import win32con
 import psutil
-import json
+import threading
 import vars
 import webbrowser
 import db
@@ -17,26 +17,28 @@ import random
 
 import tkinter as tk
 
+import time
 
+NO_PRODUCTIVE_COOLDOWN_S = 5 * 60
+_last_no_productive_warning = {}   # time_group_key -> time.monotonic() of last popup
+_warning_lock = threading.Lock()
+
+
+def _warning_allowed(time_group_key):
+    """Returns True (and starts the cooldown) if the warning may be shown now."""
+    now = time.monotonic()
+    with _warning_lock:
+        last = _last_no_productive_warning.get(time_group_key)
+        if last is not None and now - last < NO_PRODUCTIVE_COOLDOWN_S:
+            return False
+        _last_no_productive_warning[time_group_key] = now
+        return True
+    
 NO_PRODUCTIVE_WARNING_DURATION_MS = 5000
 PROTECTED_PROCESS_NAMES = {"focusedupsampler.exe", "focusedupsampler", "focusedsampler.exe"}
 
 
 def show_no_productive_warning(time_group_key=None):
-    if time_group_key is None:
-        popup = tk.Tk()
-        popup.title("No productive app set!")
-        popup.resizable(False, False)
-        tk.Label(
-            popup,
-            text="You did not set up an app to open when the last one was closed.",
-            padx=20,
-            pady=15,
-        ).pack()
-        popup.after(NO_PRODUCTIVE_WARNING_DURATION_MS, popup.destroy)
-        popup.mainloop()
-        return
-
     popup = tk.Tk()
     popup.title("No productive app set!")
     popup.resizable(False, False)
@@ -47,6 +49,28 @@ def show_no_productive_warning(time_group_key=None):
         pady=15,
     ).pack()
 
+    if time_group_key is not None:
+        def silence_indefinitely():
+            rule = vars.time_group[time_group_key]
+            rule["no_productive_silenced"] = True
+            db.save_blacklist(vars.time_group)
+            popup.destroy()
+
+        tk.Button(popup, text="OK", command=popup.destroy).pack(
+            side="left", padx=(20, 5), pady=(0, 15)
+        )
+        tk.Button(
+            popup,
+            text="Silence indefinitely",
+            command=silence_indefinitely,
+        ).pack(side="right", padx=(5, 20), pady=(0, 15))
+
+    # auto-close after 5 seconds in every case
+    popup.after(NO_PRODUCTIVE_WARNING_DURATION_MS, popup.destroy)
+    popup.mainloop()
+
+   
+  
     def silence_indefinitely():
         rule = vars.time_group[time_group_key]
         rule["no_productive_silenced"] = True
@@ -193,7 +217,12 @@ def productive_open(added, curr_time, time_index):
         with open(vars.log_path, "a") as log:
             log.write(output)
         if not vars.time_group[time_index].get("no_productive_silenced", False):
-            show_no_productive_warning(time_index)
+            if _warning_allowed(time_index):
+                threading.Thread(
+                    target=show_no_productive_warning,
+                    args=(time_index,),
+                    daemon=True,
+                ).start()
         
         return
     if select_type == "Random":

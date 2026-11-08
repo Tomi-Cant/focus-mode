@@ -12,11 +12,13 @@ from tkinter import messagebox, ttk
 import create_task
 import sys
 import target_edit
+import app_icon
 
 CURRENT_APP_VERSION = 2.0
 
 
 def show_setup_welcome(root, admin_confirmation=False):
+    app_icon.apply(root)
     agreed = False
 
     def agree():

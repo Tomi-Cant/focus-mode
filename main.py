@@ -4,10 +4,9 @@
 
 # pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "Focused Up" initialize_app.py      
 # pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "FocusedUpScript" main.py
-# pyinstaller --noconfirm --clean "Focused Up.spec"
-# pyinstaller --noconfirm --clean FocusedUpScript.spec
-# pyinstaller --noconfirm --clean FocusedUpSampler.spec
-# pyinstaller --noconfirm --clean FocusedUpUsageScheduler.spec
+# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "FocusedUpSampler" .py      
+# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "FocusedUpUsageScheduler" usage_scheduler.py
+
 import win32gui
 import datetime
 import proc_funcs

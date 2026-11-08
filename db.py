@@ -55,21 +55,24 @@ CREATE TABLE IF NOT EXISTS app_names (
 );
 
 CREATE TABLE IF NOT EXISTS ban_rules (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    category TEXT NOT NULL,
-    start_hour INTEGER NOT NULL CHECK (start_hour BETWEEN 0 AND 23),
-    end_hour INTEGER NOT NULL CHECK (end_hour BETWEEN 0 AND 24),
-    allowed_minutes REAL NOT NULL DEFAULT 0 CHECK (allowed_minutes >= 0),
-    updated_ts TEXT NOT NULL,
-    days_json TEXT NOT NULL DEFAULT '[]',
-    processes_json TEXT NOT NULL DEFAULT '[]',
-    legacy_key TEXT UNIQUE,
-    legacy_data_json TEXT NOT NULL DEFAULT '{}',
-    no_productive_silenced INTEGER NOT NULL DEFAULT 0
-        CHECK (no_productive_silenced IN (0, 1))
+    name TEXT PRIMARY KEY,
+    program TEXT NOT NULL DEFAULT '[]',
+    start_time TEXT NOT NULL DEFAULT '00:00',
+    end_time TEXT NOT NULL DEFAULT '23:59',
+    days TEXT NOT NULL DEFAULT '[]',
+    productive TEXT NOT NULL DEFAULT '[]',
+    select_type TEXT NOT NULL DEFAULT '',
+    allowed_hours REAL NOT NULL DEFAULT 0 CHECK (allowed_hours >= 0),
+    time_left REAL NOT NULL DEFAULT 0 CHECK (time_left >= 0),
+    on_finish INTEGER NOT NULL DEFAULT 0 ,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+    alowed_time REAL NOT NULL DEFAULT 0 CHECK (alowed_time >= 0),
+    on_start INTEGER NOT NULL DEFAULT 0 ,
+    converted TEXT NOT NULL DEFAULT '[]',
+    warning_times TEXT NOT NULL DEFAULT '[]'
 );
 
-CREATE INDEX IF NOT EXISTS ban_rules_category_idx ON ban_rules (category);
+CREATE INDEX IF NOT EXISTS ban_rules_name_idx ON ban_rules (name);
 
 CREATE TABLE IF NOT EXISTS ban_attempts (
     ts TEXT NOT NULL,
@@ -103,12 +106,22 @@ CREATE TABLE IF NOT EXISTS pending_changes (
     op TEXT NOT NULL CHECK (op IN ('set', 'delete')),
     key TEXT NOT NULL,
     payload_json TEXT,
+    name TEXT,
+    program TEXT,
+    start_time TEXT,
+    end_time TEXT,
+    days TEXT,
+    productive TEXT,
+    select_type TEXT,
+    allowed_hours REAL,
+    time_left REAL,
+    on_finish INTEGER,
+    enabled INTEGER,
+    alowed_time REAL,
+    on_start INTEGER,
+    converted TEXT,
+    warning_times TEXT,
     UNIQUE(table_name, key)
-);
-
-CREATE TABLE IF NOT EXISTS buffer_state (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    last_run_date TEXT
 );
 
 CREATE TABLE IF NOT EXISTS sampler_heartbeat (
@@ -365,6 +378,164 @@ def _import_legacy_audio(connection, audio_dir, config):
         (_encode_json(sorted(valid_active_paths)),),
     )
 
+def _relax_ban_rules_checks(connection):
+    row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='ban_rules'"
+    ).fetchone()
+    if not row or "on_finish IN (0, 1)" not in row[0]:
+        return
+    cols = ("name, program, start_time, end_time, days, productive, "
+            "select_type, allowed_hours, time_left, on_finish, enabled, "
+            "alowed_time, on_start, converted, warning_times")
+    connection.execute("DROP INDEX IF EXISTS ban_rules_name_idx")
+    connection.execute("ALTER TABLE ban_rules RENAME TO ban_rules_old")
+    connection.executescript(_SCHEMA)   # recreates ban_rules with the new definition
+    connection.execute(
+        f"INSERT INTO ban_rules ({cols}) SELECT {cols} FROM ban_rules_old"
+    )
+    connection.execute("DROP TABLE ban_rules_old")
+    
+def _prepare_ban_rules_migration(connection):
+    required_columns = {
+        "name",
+        "program",
+        "start_time",
+        "end_time",
+        "days",
+        "productive",
+        "select_type",
+        "allowed_hours",
+        "time_left",
+        "on_finish",
+        "enabled",
+        "alowed_time",
+        "on_start",
+        "converted",
+        "warning_times",
+    }
+    table_exists = connection.execute(
+        """
+        SELECT 1 FROM sqlite_master
+        WHERE type = 'table' AND name = 'ban_rules'
+        """
+    ).fetchone()
+    if not table_exists:
+        return
+    columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(ban_rules)")
+    }
+    if columns == required_columns:
+        return
+
+    connection.execute("ALTER TABLE ban_rules RENAME TO ban_rules_legacy")
+
+
+def _finish_ban_rules_migration(connection):
+    table_exists = connection.execute(
+        """
+        SELECT 1 FROM sqlite_master
+        WHERE type = 'table' AND name = 'ban_rules_legacy'
+        """
+    ).fetchone()
+    if not table_exists:
+        return
+
+    legacy_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(ban_rules_legacy)")
+    }
+    legacy_required = {
+        "category",
+        "start_hour",
+        "end_hour",
+        "allowed_minutes",
+    }
+    if not legacy_required.issubset(legacy_columns):
+        connection.execute("DROP TABLE ban_rules_legacy")
+        return
+    optional_column = lambda name, default: name if name in legacy_columns else default
+    days_expression = optional_column("days_json", "'[]'")
+    processes_expression = optional_column("processes_json", "'[]'")
+    legacy_expression = optional_column("legacy_data_json", "'{}'")
+    rows = connection.execute(
+        f"""
+        SELECT category, start_hour, end_hour, allowed_minutes,
+               {days_expression}, {processes_expression}, {legacy_expression}
+        FROM ban_rules_legacy
+        """
+    ).fetchall()
+
+    for row in rows:
+        category, start_hour, end_hour, allowed_minutes, days_json, processes_json, legacy_json = row
+        try:
+            legacy_rule = json.loads(legacy_json or "{}")
+        except json.JSONDecodeError:
+            legacy_rule = {}
+        if not isinstance(legacy_rule, dict):
+            legacy_rule = {}
+
+        name = str(category or "").strip()
+        if not name:
+            continue
+        start_time = legacy_rule.get("start_time", f"{int(start_hour):02d}:00")
+        end_time = legacy_rule.get("end_time", f"{int(end_hour):02d}:00")
+        program = legacy_rule.get("programs", legacy_rule.get("program", processes_json))
+        if isinstance(program, str):
+            try:
+                program = json.loads(program)
+            except json.JSONDecodeError:
+                program = [program]
+
+        days = legacy_rule.get("days")
+        if not isinstance(days, list):
+            days = _json_list(days_json)
+        productive = legacy_rule.get("productive", [])
+        if not isinstance(productive, list):
+            productive = []
+        select_type = legacy_rule.get("select_type", "")
+        allowed_hours = legacy_rule.get("allowed_hours", 0)
+        alowed_time = legacy_rule.get("allowed_time", float(allowed_minutes) * 60)
+        time_left = legacy_rule.get("time_left", alowed_time)
+        converted = legacy_rule.get("converted", [])
+        warning_times = legacy_rule.get("warning_times", [])
+
+        connection.execute(
+            """
+            INSERT OR REPLACE INTO ban_rules (
+                name, program, start_time, end_time, days, productive,
+                select_type, allowed_hours, time_left, on_finish, enabled,
+                alowed_time, on_start, converted, warning_times
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                name,
+                _encode_json(program if isinstance(program, list) else []),
+                start_time,
+                end_time,
+                _encode_json(days),
+                _encode_json(productive),
+                str(select_type),
+                float(allowed_hours or 0),
+                float(time_left or 0),
+                int(bool(legacy_rule.get("on_finish", 0))),
+                int(bool(legacy_rule.get("enabled", True))),
+                float(alowed_time or 0),
+                int(bool(legacy_rule.get("on_start", 0))),
+                _encode_json(converted if isinstance(converted, list) else []),
+                _encode_json(warning_times if isinstance(warning_times, list) else []),
+            ),
+        )
+
+    connection.execute("DROP TABLE ban_rules_legacy")
+
+
+def _json_list(value):
+    try:
+        decoded = json.loads(value or "[]")
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return decoded if isinstance(decoded, list) else []
+
 
 def init_db(db_path=None):
     """Create the Focused Up database; JSON configuration is never imported."""
@@ -380,7 +551,39 @@ def init_db(db_path=None):
     connection = sqlite3.connect(db_path)
     try:
         with connection:
+            _prepare_ban_rules_migration(connection)
             connection.executescript(_SCHEMA)
+            _finish_ban_rules_migration(connection)
+            _relax_ban_rules_checks(connection)
+            connection.execute("DROP TABLE IF EXISTS buffer_state")
+            pending_columns = {
+                row[1] for row in connection.execute(
+                    "PRAGMA table_info(pending_changes)"
+                )
+            }
+            pending_ban_columns = {
+                "name": "TEXT",
+                "program": "TEXT",
+                "start_time": "TEXT",
+                "end_time": "TEXT",
+                "days": "TEXT",
+                "productive": "TEXT",
+                "select_type": "TEXT",
+                "allowed_hours": "REAL",
+                "time_left": "REAL",
+                "on_finish": "INTEGER",
+                "enabled": "INTEGER",
+                "alowed_time": "REAL",
+                "on_start": "INTEGER",
+                "converted": "TEXT",
+                "warning_times": "TEXT",
+            }
+            for column, definition in pending_ban_columns.items():
+                if column not in pending_columns:
+                    connection.execute(
+                        "ALTER TABLE pending_changes ADD COLUMN %s %s"
+                        % (column, definition)
+                    )
             suggestion_columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(suggestions)")
             }
@@ -400,17 +603,6 @@ def init_db(db_path=None):
                     for process_name, display_name in APP_NAME_FALLBACKS.items()
                 ],
             )
-            columns = {
-                row[1] for row in connection.execute("PRAGMA table_info(ban_rules)")
-            }
-            if "no_productive_silenced" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE ban_rules
-                    ADD COLUMN no_productive_silenced INTEGER NOT NULL DEFAULT 0
-                    CHECK (no_productive_silenced IN (0, 1))
-                    """
-                )
     finally:
         connection.close()
 
@@ -442,52 +634,121 @@ def save_app_config(config, source="config"):
 
 def load_blacklist():
     """Load schedule groups from SQLite."""
-    config = load_app_config("blacklist")
-    groups = config.get("time_list", {})
-    if not isinstance(groups, dict):
-        return {}
-
+    groups = {}
     with sqlite3.connect(get_database_path()) as connection:
-        for group_key, silenced in connection.execute(
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
             """
-            SELECT legacy_key, no_productive_silenced
+            SELECT name, program, start_time, end_time, days, productive,
+                   select_type, allowed_hours, time_left, on_finish, enabled,
+                   alowed_time, on_start, converted, warning_times
             FROM ban_rules
-            WHERE legacy_key IS NOT NULL
+            ORDER BY name
             """
-        ):
-            if group_key in groups:
-                groups[group_key]["no_productive_silenced"] = bool(silenced)
+        ).fetchall()
+
+    for row in rows:
+        rule = dict(row)
+        for column in ("program", "days", "productive", "converted", "warning_times"):
+            try:
+                rule[column] = json.loads(rule[column] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                rule[column] = []
+
+        groups[rule["name"]] = {
+            "name": rule["name"],
+            "programs": rule["program"],
+            "start_time": rule["start_time"],
+            "end_time": rule["end_time"],
+            "days": rule["days"],
+            "productive": rule["productive"],
+            "select_type": rule["select_type"],
+            "allowed_hours": rule["allowed_hours"],
+            "time_left": rule["time_left"],
+            "on_start": _load_action(rule["on_start"]),
+            "enabled": bool(rule["enabled"]),
+            "allowed_time": rule["alowed_time"],
+            "on_finish": _load_action(rule["on_finish"]),
+            "converted": rule["converted"],
+            "warning_times": rule["warning_times"],
+        }
     return groups
 
 
+def _store_action(value):
+    """on_start/on_finish can be 0/1/2 or a dict (custom action)."""
+    if isinstance(value, (bool, int)):
+        return int(value)
+    return _encode_json(value)
+
+
+def _load_action(value):
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return 0
+    return value or 0
+
+
 def save_blacklist(time_groups):
-    """Save schedule groups from SQLite."""
+    """Write every schedule group to ban_rules, one row per group."""
+    rows = []
+    for key, g in time_groups.items():
+        rows.append((
+            str(g.get("name") or key),
+            _encode_json(g.get("programs", [])),
+            g.get("start_time", "00:00"),
+            g.get("end_time", "23:59"),
+            _encode_json(g.get("days", [])),
+            _encode_json(g.get("productive", [])),
+            g.get("select_type", "") or "",
+            max(0.0, float(g.get("allowed_hours", 0) or 0)),
+            max(0.0, float(g.get("time_left", 0) or 0)),
+            _store_action(g.get("on_finish", 0)),
+            int(bool(g.get("enabled", True))),
+            max(0.0, float(g.get("allowed_time", 0) or 0)),
+            _store_action(g.get("on_start", 0)),
+            _encode_json(g.get("converted", [])),
+            _encode_json(g.get("warning_times", [])),
+        ))
+
+    names = [r[0] for r in rows]
     with sqlite3.connect(get_database_path()) as connection:
-        connection.execute(
-            """
-            INSERT INTO app_config (source, config_key, value_json)
-            VALUES ('blacklist', 'time_list', ?)
-            ON CONFLICT(source, config_key) DO UPDATE SET value_json = excluded.value_json
-            """,
-            (_encode_json(time_groups),),
-        )
-        for group_key, rule in time_groups.items():
-            if not isinstance(rule, dict):
-                continue
+        if names:
+            marks = ",".join("?" * len(names))
             connection.execute(
-                """
-                UPDATE ban_rules
-                SET no_productive_silenced = ?,
-                    legacy_data_json = ?
-                WHERE legacy_key = ?
-                """,
-                (
-                    int(bool(rule.get("no_productive_silenced", False))),
-                    _encode_json(rule),
-                    str(group_key),
-                ),
+                f"DELETE FROM ban_rules WHERE name NOT IN ({marks})", names
             )
-        connection.commit()
+        else:
+            connection.execute("DELETE FROM ban_rules")
+
+        connection.executemany(
+            """
+            INSERT INTO ban_rules (
+                name, program, start_time, end_time, days, productive,
+                select_type, allowed_hours, time_left, on_finish, enabled,
+                alowed_time, on_start, converted, warning_times
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                program = excluded.program,
+                start_time = excluded.start_time,
+                end_time = excluded.end_time,
+                days = excluded.days,
+                productive = excluded.productive,
+                select_type = excluded.select_type,
+                allowed_hours = excluded.allowed_hours,
+                time_left = excluded.time_left,
+                on_finish = excluded.on_finish,
+                enabled = excluded.enabled,
+                alowed_time = excluded.alowed_time,
+                on_start = excluded.on_start,
+                converted = excluded.converted,
+                warning_times = excluded.warning_times
+            """,
+            rows,
+        )
 
 
 def load_audio_paths():
@@ -532,7 +793,5 @@ def save_audio_paths(owned, active):
 
 
 if __name__ == "__main__":
-    # init_db()
-    # print("Focused Up database initialized.")
-    loaded_config = load_app_config()
-    print("Loaded config:", loaded_config["version"])
+    init_db()
+    print("Focused Up database initialized.")

@@ -2,7 +2,7 @@
 setlocal
 
 rem ===== CONFIG =====
-set "APP=%~dp0FocusedUpScript.exe"
+set "APP=%~dp0\FocusedUpScript\FocusedUpScript.exe"
 set "DELAY=5"
 set "MAX_RESTARTS=10"
 rem ==================

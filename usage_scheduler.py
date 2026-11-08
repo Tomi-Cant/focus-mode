@@ -118,14 +118,14 @@ def run_usage_scheduler(config, database_path=None, stop_event=None, sleep=time.
                 with closing(sqlite3.connect(database_path)) as connection:
                     rules = connection.execute(
                         """
-                        SELECT category, end_hour FROM ban_rules
-                        WHERE end_hour = ?
+                        SELECT name, end_time FROM ban_rules
+                        WHERE CAST(substr(end_time, 1, 2) AS INTEGER) = ?
                         """,
                         (current_hour,),
                     ).fetchall()
                 for rule in rules:
                     finalize_ban_window(
-                        rule["category"],
+                        rule["name"],
                         now=datetime.now().astimezone(),
                         database_path=database_path,
                     )

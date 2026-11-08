@@ -15,6 +15,23 @@ BAN_CHANGES_APPLY_IMMEDIATELY = True
 ALLOWED_TABLES = {"app_settings", "ban_rules", "suggestions"}
 _MIRROR = {}
 _LOCK = threading.Lock()
+_PENDING_BAN_COLUMNS = {
+    "name": "TEXT",
+    "program": "TEXT",
+    "start_time": "TEXT",
+    "end_time": "TEXT",
+    "days": "TEXT",
+    "productive": "TEXT",
+    "select_type": "TEXT",
+    "allowed_hours": "REAL",
+    "time_left": "REAL",
+    "on_finish": "INTEGER",
+    "enabled": "INTEGER",
+    "alowed_time": "REAL",
+    "on_start": "INTEGER",
+    "convertted": "TEXT",
+    "warning_tiimes": "TEXT",
+}
 
 
 def get_database_path():
@@ -59,14 +76,36 @@ def init_buffer(database_path=None):
                 op TEXT NOT NULL CHECK (op IN ('set', 'delete')),
                 key TEXT NOT NULL,
                 payload_json TEXT,
+                name TEXT,
+                program TEXT,
+                start_time TEXT,
+                end_time TEXT,
+                days TEXT,
+                productive TEXT,
+                select_type TEXT,
+                allowed_hours REAL,
+                time_left REAL,
+                on_finish INTEGER,
+                enabled INTEGER,
+                alowed_time REAL,
+                on_start INTEGER,
+                convertted TEXT,
+                warning_tiimes TEXT,
                 UNIQUE(table_name, key)
-            );
-            CREATE TABLE IF NOT EXISTS buffer_state (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                last_run_date TEXT
             );
             """
         )
+        existing = {row["name"] for row in connection.execute(
+            "PRAGMA table_info(pending_changes)"
+        )}
+        for column, definition in _PENDING_BAN_COLUMNS.items():
+            if column not in existing:
+                connection.execute(
+                    "ALTER TABLE pending_changes ADD COLUMN %s %s" % (
+                        column,
+                        definition,
+                    )
+                )
 
 
 def _payload(value):
@@ -77,6 +116,31 @@ def _encoded_payload(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
+def _database_payload(table_name, payload):
+    if table_name != "ban_rules":
+        return payload
+
+    encoded = dict(payload)
+    for column in ("program", "days", "productive", "convertted", "warning_tiimes"):
+        if column in encoded and not isinstance(encoded[column], str):
+            encoded[column] = json.dumps(
+                encoded[column],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+    return encoded
+
+
+def _pending_payload(row, payload):
+    if row["table_name"] != "ban_rules":
+        return payload
+    result = dict(payload)
+    for column in _PENDING_BAN_COLUMNS:
+        if row[column] is not None:
+            result[column] = row[column]
+    return result
+
+
 def load_pending_into_memory(database_path=None):
     init_buffer(database_path)
     with _LOCK:
@@ -84,7 +148,7 @@ def load_pending_into_memory(database_path=None):
         with closing(_connect(database_path)) as connection:
             rows = connection.execute(
                 """
-                SELECT table_name, op, key, payload_json
+                SELECT *
                 FROM pending_changes
                 ORDER BY id
                 """
@@ -92,7 +156,7 @@ def load_pending_into_memory(database_path=None):
         for row in rows:
             _MIRROR[(row["table_name"], row["key"])] = {
                 "op": row["op"],
-                "payload": _payload(row["payload_json"]),
+                "payload": _pending_payload(row, _payload(row["payload_json"])),
             }
 
 
@@ -125,30 +189,46 @@ def queue_change(table_name, op, key, payload=None, database_path=None):
             if row is not None:
                 existing = (row["op"], _payload(row["payload_json"]))
 
-            merged = dict(payload or {})  # pyright: ignore
+            merged = _database_payload(table_name, dict(payload or {}))  # pyright: ignore
             if op == "set" and existing and existing[0] == "set":  # pyright: ignore
                 merged_payload = dict(existing[1])
                 merged_payload.update(payload) #pyright: ignore
                 merged = merged_payload
 
+            column_names = [
+                column for column in _PENDING_BAN_COLUMNS
+                if table_name == "ban_rules" and op == "set" and column in merged
+            ]
+            if table_name == "ban_rules" and op == "set":
+                merged.setdefault("name", key)
+                column_names = ["name"] + column_names
+                column_names = list(dict.fromkeys(column_names))
+            direct_columns = ", " + ", ".join(column_names) if column_names else ""
+            direct_placeholders = ", " + ", ".join("?" for _ in column_names) if column_names else ""
+            assignments = "".join(
+                ", %s = excluded.%s" % (column, column)
+                for column in column_names
+            )
             connection.execute(
-                """
+                (
+                    """
                 INSERT INTO pending_changes
-                    (ts, table_name, op, key, payload_json)
-                VALUES (?, ?, ?, ?, ?)
+                    (ts, table_name, op, key, payload_json%s)
+                VALUES (?, ?, ?, ?, ?%s)
                 ON CONFLICT(table_name, key) DO UPDATE SET
                     ts = excluded.ts,
                     op = excluded.op,
                     key = excluded.key,
-                    payload_json = excluded.payload_json
-                """,
+                    payload_json = excluded.payload_json%s
+                """
+                ) % (direct_columns, direct_placeholders, assignments),
                 (
                     timestamp,
                     table_name,
                     op,
                     key,
                     None if op == "delete" else _encoded_payload(merged),
-                ),
+                ) + tuple(merged[column] for column in column_names),
             )
             connection.commit()
         _MIRROR[(table_name, key)] = {
@@ -164,8 +244,11 @@ def _real_row(table_name, key, database_path=None):
                 "SELECT * FROM app_settings WHERE process_name = ?", (key,)
             ).fetchone()
         elif table_name == "ban_rules":
+            columns = _row_columns(connection, table_name)
+            unique_column = "name" if "name" in columns else "category"
             row = connection.execute(
-                "SELECT * FROM ban_rules WHERE category = ?", (key,)
+                "SELECT * FROM ban_rules WHERE %s = ?" % unique_column,
+                (key,),
             ).fetchone()
         else:
             row = connection.execute(
@@ -249,21 +332,52 @@ def load_effective_time_groups(database_path=None):
 
 def _last_run_date(database_path=None):
     with closing(_connect(database_path)) as connection:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_config (
+                source TEXT NOT NULL,
+                config_key TEXT NOT NULL,
+                value_json TEXT NOT NULL,
+                PRIMARY KEY (source, config_key)
+            )
+            """
+        )
         row = connection.execute(
-            "SELECT last_run_date FROM buffer_state WHERE id = 1"
+            """
+            SELECT value_json FROM app_config
+            WHERE source = 'manual_buffer' AND config_key = 'last_run_date'
+            """
         ).fetchone()
-    return row["last_run_date"] if row else None
+    if row is None:
+        return None
+    try:
+        return json.loads(row["value_json"])
+    except json.JSONDecodeError:
+        return None
 
 
 def _set_last_run_date(date, database_path=None):
     with closing(_connect(database_path)) as connection:
         connection.execute(
             """
-            INSERT INTO buffer_state (id, last_run_date) VALUES (1, ?)
-            ON CONFLICT(id) DO UPDATE SET last_run_date = excluded.last_run_date
-            """,
-            (date,),
+            CREATE TABLE IF NOT EXISTS app_config (
+                source TEXT NOT NULL,
+                config_key TEXT NOT NULL,
+                value_json TEXT NOT NULL,
+                PRIMARY KEY (source, config_key)
+            )
+            """
         )
+        connection.execute(
+            """
+            INSERT INTO app_config (source, config_key, value_json)
+            VALUES ('manual_buffer', 'last_run_date', ?)
+            ON CONFLICT(source, config_key) DO UPDATE
+                SET value_json = excluded.value_json
+            """,
+            (_encoded_payload(date),),
+        )
+        connection.commit()
 
 
 def check_day_rollover(database_path=None):
@@ -286,7 +400,7 @@ def _apply_change(connection, table_name, key, payload, op):
                 "DELETE FROM app_settings WHERE process_name = ?", (key,)
             )
         elif table_name == "ban_rules":
-            connection.execute("DELETE FROM ban_rules WHERE category = ?", (key,))
+            connection.execute("DELETE FROM ban_rules WHERE name = ?", (key,))
         else:
             connection.execute("DELETE FROM suggestions WHERE id = ?", (int(key),))
         return
@@ -297,8 +411,8 @@ def _apply_change(connection, table_name, key, payload, op):
         payload.setdefault("process_name", key)
         unique = "process_name"
     elif table_name == "ban_rules":
-        payload.setdefault("category", key)
-        unique = "category"
+        payload.setdefault("name", key)
+        unique = "name"
     else:
         payload.setdefault("id", int(key))
         unique = "id"
@@ -338,7 +452,7 @@ def flush_pending(database_path=None):
         with closing(_connect(database_path)) as connection:
             rows = connection.execute(
                 """
-                SELECT id, table_name, op, key, payload_json
+                SELECT *
                 FROM pending_changes ORDER BY id
                 """
             ).fetchall()
@@ -352,7 +466,7 @@ def flush_pending(database_path=None):
                     savepoint = "pending_%s" % row["id"]
                     connection.execute("SAVEPOINT %s" % savepoint)
                     try:
-                        payload = _payload(row["payload_json"])
+                        payload = _pending_payload(row, _payload(row["payload_json"]))
                         _apply_change(
                             connection,
                             row["table_name"],
