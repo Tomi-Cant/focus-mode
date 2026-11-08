@@ -2,6 +2,8 @@
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
 
+# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "Focused Up" initialize_app.py      
+# pyinstaller --onedir --noupx --windowed --icon=focused_up_logo.ico --name "FocusedUpScript" main.py
 # pyinstaller --noconfirm --clean "Focused Up.spec"
 # pyinstaller --noconfirm --clean FocusedUpScript.spec
 # pyinstaller --noconfirm --clean FocusedUpSampler.spec
@@ -94,7 +96,9 @@ def run_finish_action(action, curr_time):
 def main():
     manual_buffer.check_day_rollover()
     ensure_sampler_running()
-    vars.time_group = manual_buffer.load_effective_time_groups()
+    vars.time_group = vars.normalize_time_groups(
+        manual_buffer.load_effective_time_groups()
+    )
     index = 0
     finish_action = 0
     time_list = vars.time_group
@@ -131,8 +135,8 @@ def main():
     
     while set_times != []:  # main loop goes through each time pair
         curr_time = datetime.datetime.now()
-        no_list = vars.time_group[set_temp[index]]['programs']
-        converted_list= vars.time_group[set_temp[index]]['converted']
+        no_list = vars.time_group[set_temp[index]].get('programs', [])
+        converted_list = vars.time_group[set_temp[index]].get('converted', [])
         vars.time_var= vars.time_group[set_temp[index]]
         win = win32gui.GetForegroundWindow()
         window = win32gui.GetWindowText(win)

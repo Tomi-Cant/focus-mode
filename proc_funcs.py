@@ -70,7 +70,8 @@ def convert_to_exe(no_list, curr_time, index, set_temp, closed_process_names=Non
     allowed_time = vars.time_group[set_temp[index]]["time_left"]
     for proc in window_to_process.process_search(no_list):
         if allowed_time > 0:
-            allowed_time-=.5
+            allowed_time -= 0.5
+            vars.time_group[set_temp[index]]["time_left"] = allowed_time
             vars.save_config(vars.time_group)
             return False
     # converts application titles to their .exe counterpart
@@ -120,7 +121,9 @@ def close_by_process(no_list, curr_time, time_index, skip_productive_for=None):
         if process_name.casefold() in PROTECTED_PROCESS_NAMES:
             continue
         if allowed_time > 0:
-            allowed_time-=.5
+            allowed_time -= 0.5
+            vars.time_group[time_index]["time_left"] = allowed_time
+            vars.save_config(vars.time_group)
             return
 
         with open(vars.log_path, "a") as log:
@@ -144,7 +147,8 @@ def close_by_process(no_list, curr_time, time_index, skip_productive_for=None):
 def close_by_title(added, window, win, time_index, curr_time, trigger_productive=True):
     if window in added or find_minecraft(window,added) != []: 
         if vars.time_group[time_index]["time_left"] > 0:
-            vars.time_group[time_index]["time_left"]-=.5
+            vars.time_group[time_index]["time_left"] -= 0.5
+            vars.save_config(vars.time_group)
             return False
         closed = False
         try:

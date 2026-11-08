@@ -7,6 +7,8 @@ from tkinter import filedialog, messagebox, ttk
 import json
 import os
 import shutil
+import sys
+from pathlib import Path
 from tkinter import dialog
 from urllib.parse import urlparse
 import helper_funcs
@@ -20,6 +22,7 @@ import vars
 import usage_scheduler
 import manual_buffer
 import insights
+import focused_up_intro
 
 
 def _strip_non_ascii(text: str) -> str:
@@ -31,7 +34,12 @@ class FocusModeUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Focused Up")
-        self.root.iconbitmap("../focused_up_logo.ico")
+        icon_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "focused_up_logo.ico"
+        if icon_path.is_file():
+            try:
+                self.root.iconbitmap(icon_path)
+            except tk.TclError:
+                pass
         self.root.geometry("600x600+600+100")
         vars.root = root
         
@@ -41,11 +49,30 @@ class FocusModeUI:
         self.current_view = "main"
 
         self.dashboard = None
-        self._open_dashboard()
+        self._play_startup_ident()
+
+    def _play_startup_ident(self):
+        def finish():
+            self._open_dashboard()
+
+        try:
+            focused_up_intro.play_intro(self.root, on_complete=finish)
+        except Exception as error:
+            try:
+                vars.log_path = vars.get_log_path()
+                with open(vars.log_path, "a", encoding="utf-8") as log:
+                    log.write(f"Startup intro could not load: {error}\n")
+            except Exception:
+                pass
+            finish()
 
     def _open_dashboard(self):
         self.root.withdraw()
-        database_suggestions = suggestion_ui._pending_suggestions()
+        try:
+            database_suggestions = suggestion_ui._pending_suggestions()
+        except Exception as error:
+            self._log_startup_error("Could not load dashboard suggestions", error)
+            database_suggestions = []
         dashboard_suggestions = [
             {
                 "id": suggestion["id"],
@@ -66,14 +93,23 @@ class FocusModeUI:
             }
             for suggestion in database_suggestions
         ]
-        generated_insights = insights.generate_insights()
-        self.dashboard = open_dashboard_window(
+        try:
+            generated_insights = insights.generate_insights()
+            generated_highlights = generated_insights.get("highlights", [])
+            generated_lowlights = generated_insights.get("lowlights", [])
+        except Exception as error:
+            self._log_startup_error("Could not generate dashboard insights", error)
+            generated_highlights = []
+            generated_lowlights = []
+
+        try:
+            self.dashboard = open_dashboard_window(
             parent=self.root,
             user_data={
                 "name": "there",
                 "suggestions": dashboard_suggestions,
-                "highlights": generated_insights["highlights"],
-                "lowlights": generated_insights["lowlights"],
+                "highlights": generated_highlights,
+                "lowlights": generated_lowlights,
             },
             on_manual_mode=self.open_manual_mode,
             on_audio_settings=self.open_dashboard_audio_settings,
@@ -101,7 +137,22 @@ class FocusModeUI:
                 },
                 "snoozed",
             ),
-        )
+            )
+        except Exception as error:
+            self._log_startup_error("Dashboard could not open", error)
+            self.root.deiconify()
+            self.root.lift()
+            messagebox.showerror(
+                "Dashboard Error",
+                "The dashboard could not open. See the Focused Up log for details.",
+            )
+
+    def _log_startup_error(self, message, error):
+        try:
+            with open(vars.log_path, "a", encoding="utf-8") as log:
+                log.write(f"{message}: {error}\n")
+        except Exception:
+            pass
 
     def close_from_dashboard(self):
         self.dashboard = None
@@ -1581,7 +1632,7 @@ class FocusModeUI:
             self.update_custom_finish_controls()
              
             end_time = time_data.get('end_time', '00:00')
-            allowed_time = time_data.get('allowed_time', 0)/360
+            allowed_time = time_data.get('allowed_time', 0) / 7200
              
             start_time = time_data.get('start_time', '00:00')
             self.hour_var.set(start_time[:2])
@@ -1718,7 +1769,16 @@ class FocusModeUI:
                 time_data['start_time'] = new_time
                 
                 # Validate and save time
-                end_time = f"{self.end_hour_var.get().zfill(2)}:{self.end_minute_var.get().zfill(2)}"
+                try:
+                    end_hour = int(self.end_hour_var.get())
+                    end_minute = int(self.end_minute_var.get())
+                    if not 0 <= end_hour <= 23 or not 0 <= end_minute <= 59:
+                        raise ValueError
+                except ValueError:
+                    messagebox.showerror("Invalid End Time", "Hour must be 0-23 and minute must be 0-59")
+                    return
+
+                end_time = f"{end_hour:02d}:{end_minute:02d}"
                 
                 time_data['end_time'] = end_time
                 
@@ -1741,7 +1801,7 @@ class FocusModeUI:
 
                 # Save allowed time
                 allowed_time = self.allowed_hours.get()
-                time_data['allowed_time'] = float(allowed_time)*360
+                time_data['allowed_time'] = float(allowed_time) * 7200
 
                 vars.save_config(vars.time_group)
 

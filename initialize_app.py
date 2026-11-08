@@ -2,19 +2,18 @@
 # Purpose: helps users focus by closing programs at set times and days, can be used for work, school, or just to limit distractions
 # Date: 08/12/2025
 
-import json
+
 import os
 import subprocess
 import vars
 import os.path as path
-subprocess.run(["pip","install", "-r","requirements.txt"], creationflags=subprocess.CREATE_NO_WINDOW)
 import tkinter as tk
 from tkinter import messagebox, ttk
 import create_task
 import sys
 import target_edit
 
-CURRENT_APP_VERSION = "v2.0"
+CURRENT_APP_VERSION = 2.0
 
 
 def show_setup_welcome(root, admin_confirmation=False):
@@ -62,7 +61,6 @@ def show_setup_welcome(root, admin_confirmation=False):
     x = (root.winfo_screenwidth() - width) // 2
     y = (root.winfo_screenheight() - height) // 2
     root.geometry(f"{width}x{height}+{x}+{y}")
-    root.protocol("WM_DELETE_WINDOW", lambda: None)
     root.focus_force()
     root.lift()
     root.mainloop()
@@ -74,7 +72,7 @@ def ask_desktop_icon():
     root = tk.Tk()
     root.title("Focused Up Setup")
     root.resizable(False, False)
-    root.attributes("-topmost", True)
+   
 
     def choose(create_icon):
         nonlocal choice
@@ -109,11 +107,32 @@ def ask_desktop_icon():
     x = (root.winfo_screenwidth() - width) // 2
     y = (root.winfo_screenheight() - height) // 2
     root.geometry(f"{width}x{height}+{x}+{y}")
-    root.protocol("WM_DELETE_WINDOW", lambda: None)
     root.focus_force()
     root.lift()
     root.mainloop()
     return choice
+
+
+def show_setup_complete():
+    root = tk.Tk()
+    root.withdraw()
+
+    dialog = tk.Toplevel(root)
+    dialog.title("Setup Complete")
+    dialog.resizable(False, False)
+
+    ttk.Label(
+        dialog,
+        text="Setup is complete! You can now use Focused Up to help you focus and limit distractions.",
+        wraplength=420,
+        justify="center",
+        padding=(20, 20, 20, 10),
+    ).grid(row=0, column=0)
+
+    ttk.Button(dialog, text="OK", command=root.destroy).grid(row=1, column=0, pady=(0, 20))
+    dialog.update_idletasks()
+    dialog.after(5000, root.destroy)
+    dialog.mainloop()
 
 
 class DummyStream:
@@ -177,23 +196,22 @@ def initalize_app() -> None:
     if saved_configs.get("version") != CURRENT_APP_VERSION:
         messagebox.showerror("Setup Incomplete", "The application version could not be saved.")
         return
-    messagebox.showinfo("Setup Complete", "Setup is complete! You can now use Focused Up to help you focus and limit distractions.")
+    show_setup_complete()
     target_edit.main()
     
 # Usage in your app's startup:
 if __name__ == "__main__":
-    installed_version = str(vars.configs.get("version", "")).rstrip("0").rstrip(".")
-    required_version = CURRENT_APP_VERSION.rstrip("0").rstrip(".")
+    installed_version = vars.db.load_app_config().get("version",0.0)
+    
     vars.log_path = vars.get_log_path()
     with open(vars.log_path, "a", encoding="utf-8") as log:
-        log.write(f"req: {required_version}, installed: {installed_version}\n")
-    if installed_version == required_version:
+        log.write(f"req: {CURRENT_APP_VERSION}, installed: {installed_version}\n")
+    if installed_version == CURRENT_APP_VERSION:
         target_edit.main()
         sys.exit()
     root = tk.Tk()
     root.title("Focused Up Setup")
     root.resizable(False, False)
-    root.attributes("-topmost", True)
     if not show_setup_welcome(root, admin_confirmation=pyuac.isUserAdmin()):
         sys.exit()
     initalize_app()

@@ -33,8 +33,6 @@ def get_blacklist_path():
     return os.path.join(get_data_dir(), "blacklist.json")
 def get_log_path():
     return os.path.join(get_data_dir(), "log.txt")
-def get_config_path():
-    return os.path.join(get_data_dir(), "config.json")
 def get_audio_path():
     return os.path.join(get_data_dir(), "assets", "audio")
 def save_config(data):
@@ -107,6 +105,10 @@ def normalize_time_groups(raw_groups):
             warning_times = default_warning_times
         data["warning_times"] = warning_times
         data.setdefault("no_productive_silenced", False)
+        data.setdefault("programs", [])
+        data.setdefault("converted", [])
+        data.setdefault("days", [])
+        data.setdefault("end_time", "23:59")
         if not data.get("start_time") and _looks_like_time(str(key)):
             data["start_time"] = str(key)
         elif not data.get("start_time"):
@@ -120,9 +122,8 @@ self_path = get_self_dir()
 root_dir= parent_path[:parent_path.find("\\")+1]
 log_path = get_log_path()
 json_path = get_blacklist_path()
-config_path = get_config_path()
 audio_path = get_audio_path()
-# Initializing local state now uses SQLite. JSON files are only migration inputs.
+# Application configuration is stored only in SQLite.
 db.init_db()
 if not os.path.exists(log_path):
     with open(log_path, "w", encoding="utf-8") as f:

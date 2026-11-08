@@ -204,21 +204,9 @@ def _allowed_minutes(rule):
 
 
 def _store_legacy_values(connection, source, values):
-    ignored_config_keys = (
-        {"enabled", "first_run", "active", "owned"}
-        if source == "config"
-        else set()
-    )
-    if ignored_config_keys:
-        connection.executemany(
-            "DELETE FROM app_config WHERE source = ? AND config_key = ?",
-            [(source, key) for key in ignored_config_keys],
-        )
-
     stored_keys = {
         str(key)
         for key in values
-        if str(key) not in ignored_config_keys
     }
     connection.execute(
         """
@@ -244,7 +232,6 @@ def _store_legacy_values(connection, source, values):
         [
             (source, str(key), _encode_json(value))
             for key, value in values.items()
-            if str(key) not in ignored_config_keys
         ],
     )
 
@@ -379,15 +366,8 @@ def _import_legacy_audio(connection, audio_dir, config):
     )
 
 
-def _import_legacy_config(connection, path, audio_dir):
-    if path.exists():
-        config = _read_json_object(path)
-        _store_legacy_values(connection, "config", config)
-        _import_legacy_audio(connection, audio_dir, config)
-
-
 def init_db(db_path=None):
-    """Create the Focused Up database and import existing JSON settings."""
+    """Create the Focused Up database; JSON configuration is never imported."""
     local_app_data = os.environ.get("LOCALAPPDATA")
     if db_path is None:
         # The explicit per-user path also works when the app is frozen by PyInstaller.
@@ -397,8 +377,6 @@ def init_db(db_path=None):
         db_path = Path(db_path)
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    legacy_dir = Path(local_app_data) / "Focused Up" if local_app_data else None
-
     connection = sqlite3.connect(db_path)
     try:
         with connection:
@@ -432,15 +410,6 @@ def init_db(db_path=None):
                     ADD COLUMN no_productive_silenced INTEGER NOT NULL DEFAULT 0
                     CHECK (no_productive_silenced IN (0, 1))
                     """
-                )
-            if legacy_dir is not None:
-                _import_legacy_blacklist(
-                    connection, legacy_dir / "blacklist.json"
-                )
-                _import_legacy_config(
-                    connection,
-                    legacy_dir / "config.json",
-                    legacy_dir / "assets" / "audio",
                 )
     finally:
         connection.close()
@@ -563,5 +532,7 @@ def save_audio_paths(owned, active):
 
 
 if __name__ == "__main__":
-    init_db()
-    print("Focused Up database initialized.")
+    # init_db()
+    # print("Focused Up database initialized.")
+    loaded_config = load_app_config()
+    print("Loaded config:", loaded_config["version"])
