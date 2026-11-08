@@ -318,6 +318,27 @@ def get_app_setting(process_name, database_path=None):
         "excluded": 0,
         "snooze_until": None,
     }
+def load_effective_time_groups(database_path=None):
+    """Load schedules from SQLite, overlaying buffered ban-rule edits."""
+    import db
+
+    groups = db.load_blacklist()
+    with _LOCK:
+        pending_groups = {
+            key: value
+            for (table_name, key), value in _MIRROR.items()
+            if table_name == "ban_rules"
+        }
+    for key, pending in pending_groups.items():
+        if pending["op"] == "delete":
+            groups.pop(key, None)
+            continue
+        payload = dict(pending["payload"])
+        if "time_group_json" in payload:
+            groups[key] = json.loads(payload["time_group_json"])
+        else:
+            groups[key] = {**groups.get(key, {}), **payload}
+    return groups
 
 if __name__ == "__main__":
     load_pending_into_memory()
