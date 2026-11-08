@@ -74,12 +74,12 @@ def play_intro(root, on_complete=None):
                 return
             for y in range(29, 93):
                 hw = 57 * ((y - 29) / 64)
-                poly([(159 - hw, y + off), (159 + hw, y + off),
-                      (159 + hw + 1, y + 1 + off), (159 - hw - 1, y + 1 + off)],
+                poly([(179 - hw, y + off), (179 + hw, y + off),
+                      (179 + hw + 1, y + 1 + off), (179 - hw - 1, y + 1 + off)],
                      fill=arrow_color(y), outline="")
-            for a, b in ((93, 160), (215, 282)):
-                for y in range(a, b):
-                    band(130, 188, y, off)
+            for y in range(93, 282):
+                band(150, 208, y, off)
+
 
         def f_upper(prog):
             r = (1 - ease_out(prog)) * 8
