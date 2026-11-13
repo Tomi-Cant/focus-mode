@@ -15,8 +15,8 @@ import sys
 import json
 import subprocess
 import webbrowser
-from helper_funcs import time_seperator, cull_times, find_last_run
-import helper_funcs
+from helper_funcs import time_seperator, cull_times, find_last_run, play_audio
+
 import vars
 import manual_buffer
 
@@ -128,7 +128,7 @@ def main():
     with open(vars.log_path, "a") as log:
         log.write(f"Script started at {datetime.datetime.now()}\n")
     
-    started_groups = set()
+    
     for group in set_temp:
         vars.time_group[group]["time_left"]=vars.time_group[group]["allowed_time"]
     
@@ -141,21 +141,19 @@ def main():
         window = win32gui.GetWindowText(win)
         
         if curr_time >= set_times[index] and day_of_week in vars.time_group[set_temp[index]]['days']:
-            group_key = set_temp[index]
-            if group_key not in started_groups:
-                run_start_action(vars.time_group[group_key].get('on_start', 0), curr_time)
-                started_groups.add(group_key)
-            closed_process_names = set()
+          
+            closed_names = set()
             closed = proc_funcs.convert_to_exe(
-                no_list, curr_time, index, set_temp, closed_process_names)
+                no_list, curr_time, index, set_temp, closed_names)
             closed = proc_funcs.close_by_process(
-                converted_list, curr_time, set_temp[index],
-                skip_productive_for=closed_process_names) or closed
+                converted_list, curr_time, set_temp[index], closed_names) or closed
             closed = proc_funcs.close_by_title(
-                no_list, window, win, set_temp[index], curr_time,
-                trigger_productive=not closed_process_names) or closed
+                no_list, window, win, set_temp[index], curr_time, closed_names) or closed
             if closed:
-                helper_funcs.play_audio()
+                if proc_funcs.is_new_close(set_temp[index]):
+                    play_audio()
+                    proc_funcs.productive_open(
+                        ", ".join(sorted(closed_names)), curr_time, set_temp[index])
 
         if curr_time >= end_times[index]:
             finish_action = vars.time_group[set_temp[index]].get('on_finish', finish_action)

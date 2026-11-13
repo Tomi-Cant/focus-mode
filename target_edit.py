@@ -15,7 +15,10 @@ import helper_funcs
 import webbrowser
 from dashboard_window import open_dashboard_window
 import suggestion_ui
-
+import sqlite3
+import copy
+from contextlib import closing
+from anomaly_to_ban_rule import add_to_pending 
 # Import custom modules
 from Button import Button
 import vars
@@ -573,15 +576,12 @@ class FocusModeUI:
             minutes: tk.BooleanVar(value=True)
             for minutes in vars.warning_time_minutes
         }
-        warning_state = (
-            tk.NORMAL if vars.configs.get("audio", False) is True else tk.DISABLED
-        )
+        
         for index, minutes in enumerate(vars.warning_time_minutes):
             ttk.Checkbutton(
                 warnings_frame,
                 text=f"{minutes} min",
-                variable=self.warning_vars[minutes],
-                state=warning_state,
+                variable=self.warning_vars[minutes]
             ).grid(row=index // 4, column=index % 4, sticky=tk.W, padx=8, pady=3)
         for column in range(4):
             warnings_frame.columnconfigure(column, weight=1)
@@ -1581,8 +1581,8 @@ class FocusModeUI:
                 vars.time_group[vars.time_var]["select_type"]= 'Queue'  if not self.shuffle_select.winfo_ismapped() else "Random"
                 self.update_replacement_listbox()
         elif entry!= "Enter Website" or entry !=''or ' ' in entry:
-            domain= entry.split('/')[:min(2,len(entry.split('/')))]
-            entry= ''.join(domain)
+            entry= entry.lstrip("https://")
+            
             entry= entry if entry.startswith("www.") else "www." + entry
             if messagebox.askokcancel("Testing", "Opening Website for confirmation...\n OK to open website. Cancel to skip this step."):
                 webbrowser.open(entry)
@@ -1784,18 +1784,6 @@ class FocusModeUI:
                 else:
                     finish_action = self.finish_options.index(self.finish_var.get())
 
-                if current_group != new_name:
-                    time_data = vars.time_group.pop(current_group)
-                    time_data['name'] = new_name
-                    vars.time_group[new_name] = time_data
-                    vars.time_var = new_name
-                else:
-                    time_data = vars.time_group[current_group]
-
-                time_data['name'] = new_name
-                time_data['start_time'] = new_time
-                
-                # Validate and save time
                 try:
                     end_hour = int(self.end_hour_var.get())
                     end_minute = int(self.end_minute_var.get())
@@ -1804,41 +1792,37 @@ class FocusModeUI:
                 except ValueError:
                     messagebox.showerror("Invalid End Time", "Hour must be 0-23 and minute must be 0-59")
                     return
-
                 end_time = f"{end_hour:02d}:{end_minute:02d}"
+
+                allowed_hours = float(self.allowed_hours.get())
+
+                # Build the new state on a copy; the live rules are not touched
+                rule = copy.deepcopy(vars.time_group[current_group])
+                rule.update({
+                    'name': new_name,
+                    'start_time': new_time,
+                    'end_time': end_time,
+                    'enabled': self.enabled_var.get(),
+                    'on_start': start_action,
+                    'on_finish': finish_action,
+                    'days': [day for day, var in self.day_vars.items() if var.get() == 1],
+                    'warning_times': [
+                        minutes * 60
+                        for minutes, var in self.warning_vars.items()
+                        if var.get()
+                    ],
+                    'allowed_hours': allowed_hours,
+                    'allowed_time': allowed_hours * 7200,
+                    'alowed_time': allowed_hours * 7200,
+                })
+
+                with closing(sqlite3.connect(vars.db.get_database_path())) as conn:
+                    vars.db.migrate_pending_changes(conn)
+                    add_to_pending(conn, rule, op="replace", old_name=current_group)
+                    conn.commit()
+
+                messagebox.showinfo("Saved", "Change queued. It will apply when pending changes are processed.")
                 
-                time_data['end_time'] = end_time
-                
-                # Save enabled state
-                time_data['enabled'] = self.enabled_var.get()
-
-                # Save actions for when the group starts and finishes
-                time_data['on_start'] = start_action
-                time_data['on_finish'] = finish_action
-                
-                # Save days
-                enabled_days = [day for day, var in self.day_vars.items() if var.get()==1]
-                time_data["days"] = enabled_days
-
-                time_data["warning_times"] = [
-                    minutes * 60
-                    for minutes, var in self.warning_vars.items()
-                    if var.get()
-                ]
-
-                # Save allowed time
-                allowed_time = self.allowed_hours.get()
-                time_data['allowed_time'] = float(allowed_time) * 7200
-
-                vars.save_config(vars.time_group)
-
-                self.update_time_list()
-                selected_index = list(vars.time_group).index(vars.time_var)
-                self.time_listbox.selection_clear(0, tk.END)
-                self.time_listbox.selection_set(selected_index)
-                self.update_time_display()
-                
-                messagebox.showinfo("Saved", "Time settings saved successfully")
         except Exception as e:
             messagebox.showerror("Error", f"Error saving: {str(e)}")
     

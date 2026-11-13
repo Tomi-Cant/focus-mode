@@ -24,9 +24,9 @@ DB_PATH = os.environ.get("FOCUSUP_DB") or os.path.join(
 #   - allowed time for the rule = the baseline mean
 ALLOWED_TIME_FROM_BASELINE = lambda baseline: float(baseline[0])
 WARNING_TIMES = [600, 300, 60]   # SECONDS before the limit (your app stores seconds)
-ON_FINISH = 1                    # pending_changes only allows 0 or 1 -- which one means "close program"?
+ON_FINISH = 0                   # pending_changes only allows 0 or 1
 ON_START = 0                     # 0 or 1 as well
-SELECT_TYPE = "time"             # existing rule uses "Queue"; set to whatever your app expects
+SELECT_TYPE = "Queue"             # existing rule uses "Queue"; set to whatever your app expects
 ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday",
             "Friday", "Saturday", "Sunday"]   # your app stores day NAMES
 
@@ -92,7 +92,7 @@ def rule_exists(conn, name):
     return False
 
 
-def add_to_pending(conn, rule):
+def add_to_pending(conn, rule, op="add", old_name=None):
     conn.execute(
         """
         INSERT INTO pending_changes (

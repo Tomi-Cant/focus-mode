@@ -791,7 +791,56 @@ def save_audio_paths(owned, active):
             [(path,) for path in active_paths if path in owned_paths],
         )
 
+def migrate_pending_changes(conn):
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(pending_changes)")}
+    if "id" in cols:
+        return  # already migrated
 
+    conn.execute("BEGIN")
+    try:
+        conn.execute("""
+            CREATE TABLE pending_changes_new (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                op           TEXT NOT NULL DEFAULT 'replace'
+                             CHECK (op IN ('replace', 'add', 'remove')),
+                old_name     TEXT,
+                name         TEXT NOT NULL,
+                program      TEXT NOT NULL DEFAULT '[]',
+                start_time   TEXT NOT NULL DEFAULT '00:00',
+                end_time     TEXT NOT NULL DEFAULT '23:59',
+                days         TEXT NOT NULL DEFAULT '[]',
+                productive   TEXT NOT NULL DEFAULT '[]',
+                select_type  TEXT NOT NULL DEFAULT '',
+                allowed_hours REAL NOT NULL DEFAULT 0 CHECK (allowed_hours >= 0),
+                time_left    REAL NOT NULL DEFAULT 0 CHECK (time_left >= 0),
+                on_finish    TEXT NOT NULL DEFAULT '0',
+                enabled      INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+                alowed_time  REAL NOT NULL DEFAULT 0 CHECK (alowed_time >= 0),
+                on_start     TEXT NOT NULL DEFAULT '0',
+                converted    TEXT NOT NULL DEFAULT '[]',
+                warning_times TEXT NOT NULL DEFAULT '[]'
+            )
+        """)
+        conn.execute("""
+            INSERT INTO pending_changes_new (
+                op, old_name, name, program, start_time, end_time, days,
+                productive, select_type, allowed_hours, time_left, on_finish,
+                enabled, alowed_time, on_start, converted, warning_times
+            )
+            SELECT
+                COALESCE(op, 'replace'), name, name, program, start_time,
+                end_time, days, productive, select_type, allowed_hours,
+                time_left, on_finish, enabled, alowed_time, on_start,
+                COALESCE(converted, convertted, '[]'),
+                COALESCE(warning_times, warning_tiimes, '[]')
+            FROM pending_changes
+        """)
+        conn.execute("DROP TABLE pending_changes")
+        conn.execute("ALTER TABLE pending_changes_new RENAME TO pending_changes")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 if __name__ == "__main__":
     init_db()
     print("Focused Up database initialized.")
